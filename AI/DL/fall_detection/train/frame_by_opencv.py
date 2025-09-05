@@ -46,6 +46,26 @@ def read_video_properties(cap):
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    # 모니터 크기 가져오기
+    try:
+        import tkinter as tk
+        root = tk.Tk()
+        root.withdraw()
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        root.destroy()
+
+        # 프레임 크기가 모니터의 50%를 넘으면 50%로 축소
+        max_width = int(screen_width * 0.5)
+        max_height = int(screen_height * 0.5)
+        if width > max_width or height > max_height:
+            scale = min(max_width / width, max_height / height)
+            width = int(width * scale)
+            height = int(height * scale)
+    except Exception as e:
+        print(f"[경고] 모니터 크기 확인 실패: {e}")
+
     return fps, frame_count, width, height
 
 def ms_to_hhmmss(ms_float):
@@ -172,8 +192,8 @@ def process_stream(source=0, show_preview=True, write_csv=True,
 if __name__ == "__main__":
     """
     실행 예시 (AI 디렉터리에서):
-      1) 웹캠 자동감지: python -m DL.fall_detection.train.frame_by_opencv
-      2) 파일 입력:   python -m DL.fall_detection.train.frame_by_opencv --source "/path/video.mp4"
+      1) 웹캠 자동감지: python -m fall_detection.train.frame_by_opencv
+      2) 파일 입력:   python -m fall_detection.train.frame_by_opencv --source "/path/video.mp4"
       3) person만 탐지: --yolo-classes 0
       4) 다른 가중치:  --yolo-model "yolov8s.pt"
     """
@@ -183,7 +203,7 @@ if __name__ == "__main__":
     parser.add_argument("--show-preview", action="store_true", default=True)
     parser.add_argument("--no-preview", dest="show_preview", action="store_false")
     parser.add_argument("--no-csv", dest="write_csv", action="store_false")
-    parser.add_argument("--logdir", type=str, default="DL/fall_detection/train/log")
+    parser.add_argument("--logdir", type=str, default="fall_detection/train/log")
     parser.add_argument("--every-n", type=int, default=1)
 
     parser.add_argument("--yolo-model", type=str, default="yolov8n.pt")
