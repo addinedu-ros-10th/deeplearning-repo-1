@@ -36,6 +36,9 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
+# Tr Data Generator Log
+AI/DL/fall_detection/train/log
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
