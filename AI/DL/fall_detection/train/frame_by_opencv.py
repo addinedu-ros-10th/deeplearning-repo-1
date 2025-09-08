@@ -23,7 +23,17 @@ def get_default_camera_source():
             return int(devices[0].replace("/dev/video", ""))
         print("[경고] Linux에서 카메라 장치를 찾지 못했습니다.")
         return None
-    elif system_name in ["Windows", "Darwin"]:
+    elif system_name == "Windows":
+        # Windows에서 사용 가능한 카메라 찾기
+        for i in range(10):  # 0부터 9까지 카메라 인덱스 확인
+            cap = cv2.VideoCapture(i)
+            if cap.isOpened():
+                print(f"[정보] Windows 카메라 장치 감지: {i}")
+                cap.release()
+                return i
+        print("[경고] Windows에서 카메라 장치를 찾지 못했습니다.")
+        return None
+    elif system_name == "Darwin":  # macOS
         return 0
     else:
         print(f"[경고] 지원하지 않는 OS: {system_name}")
@@ -93,7 +103,7 @@ def ensure_folder(path: str):
     os.makedirs(path, exist_ok=True)
     return path
 
-def process_stream(source=0, show_preview=True, write_csv=True,
+def process_stream(source=None, show_preview=True, write_csv=True,
                    folder="./log", every_n=1,
                    yolo_model="yolov8n.pt", yolo_device=None,
                    yolo_conf=0.25, yolo_classes=None):
@@ -191,7 +201,7 @@ def process_stream(source=0, show_preview=True, write_csv=True,
 
 if __name__ == "__main__":
     """
-    실행 예시 (AI 디렉터리에서):
+    실행 예시 (AI/DL 디렉터리에서):
       1) 웹캠 자동감지: python -m fall_detection.train.frame_by_opencv
       2) 파일 입력:   python -m fall_detection.train.frame_by_opencv --source "/path/video.mp4"
       3) person만 탐지: --yolo-classes 0
@@ -215,6 +225,7 @@ if __name__ == "__main__":
 
     # source 해석: None이면 자동, 숫자 문자열이면 int로 변환
     src = None
+    print(f"args.source : {args.source}")
     if args.source is None:
         src = None  # 자동
     else:
