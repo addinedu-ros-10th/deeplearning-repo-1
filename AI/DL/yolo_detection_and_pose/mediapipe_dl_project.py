@@ -91,7 +91,7 @@ def video_pose_estimation_all_time(video_path): # 풀타임 재생용
     gc.collect()
 
 if url_mode == False:
-    video = "./kbo_highlight_kt_vs_sl.mp4" #오프라인 파일 경로는 이곳에 지정.
+    video = "./00015_H_A_SY_C1.mp4" #오프라인 파일 경로는 이곳에 지정.
 
 else:
     video_url = "https://www.youtube.com/watch?v=eBhOX1UN37A" #유튜브 다운로드를 이용할 경우
