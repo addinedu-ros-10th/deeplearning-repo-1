@@ -1,0 +1,196 @@
+/mnt/data/fall_dataset
+├── mediapipe
+│   └── mp_samples.csv
+├── yolo
+│   ├── images
+│   │   ├── test
+│   │   │   ├── frame_00480.jpg
+│   │   │   ├── frame_00486.jpg
+│   │   │   ├── frame_00492.jpg
+│   │   │   ├── frame_00498.jpg
+│   │   │   ├── frame_00504.jpg
+│   │   │   ├── frame_00510.jpg
+│   │   │   ├── frame_00516.jpg
+│   │   │   ├── frame_00522.jpg
+│   │   │   ├── frame_00528.jpg
+│   │   │   └── frame_00534.jpg
+│   │   ├── train
+│   │   │   ├── frame_00000.jpg
+│   │   │   ├── frame_00006.jpg
+│   │   │   ├── frame_00012.jpg
+│   │   │   ├── frame_00018.jpg
+│   │   │   ├── frame_00024.jpg
+│   │   │   ├── frame_00030.jpg
+│   │   │   ├── frame_00036.jpg
+│   │   │   ├── frame_00042.jpg
+│   │   │   ├── frame_00048.jpg
+│   │   │   ├── frame_00054.jpg
+│   │   │   ├── frame_00060.jpg
+│   │   │   ├── frame_00066.jpg
+│   │   │   ├── frame_00072.jpg
+│   │   │   ├── frame_00078.jpg
+│   │   │   ├── frame_00084.jpg
+│   │   │   ├── frame_00090.jpg
+│   │   │   ├── frame_00096.jpg
+│   │   │   ├── frame_00102.jpg
+│   │   │   ├── frame_00108.jpg
+│   │   │   ├── frame_00114.jpg
+│   │   │   ├── frame_00120.jpg
+│   │   │   ├── frame_00126.jpg
+│   │   │   ├── frame_00132.jpg
+│   │   │   ├── frame_00138.jpg
+│   │   │   ├── frame_00144.jpg
+│   │   │   ├── frame_00150.jpg
+│   │   │   ├── frame_00156.jpg
+│   │   │   ├── frame_00162.jpg
+│   │   │   ├── frame_00168.jpg
+│   │   │   ├── frame_00174.jpg
+│   │   │   ├── frame_00180.jpg
+│   │   │   ├── frame_00186.jpg
+│   │   │   ├── frame_00192.jpg
+│   │   │   ├── frame_00198.jpg
+│   │   │   ├── frame_00204.jpg
+│   │   │   ├── frame_00210.jpg
+│   │   │   ├── frame_00216.jpg
+│   │   │   ├── frame_00222.jpg
+│   │   │   ├── frame_00228.jpg
+│   │   │   ├── frame_00234.jpg
+│   │   │   ├── frame_00240.jpg
+│   │   │   ├── frame_00246.jpg
+│   │   │   ├── frame_00252.jpg
+│   │   │   ├── frame_00258.jpg
+│   │   │   ├── frame_00264.jpg
+│   │   │   ├── frame_00270.jpg
+│   │   │   ├── frame_00276.jpg
+│   │   │   ├── frame_00282.jpg
+│   │   │   ├── frame_00288.jpg
+│   │   │   ├── frame_00294.jpg
+│   │   │   ├── frame_00300.jpg
+│   │   │   ├── frame_00306.jpg
+│   │   │   ├── frame_00312.jpg
+│   │   │   ├── frame_00318.jpg
+│   │   │   ├── frame_00324.jpg
+│   │   │   ├── frame_00330.jpg
+│   │   │   ├── frame_00336.jpg
+│   │   │   ├── frame_00342.jpg
+│   │   │   ├── frame_00348.jpg
+│   │   │   ├── frame_00354.jpg
+│   │   │   ├── frame_00360.jpg
+│   │   │   └── frame_00366.jpg
+│   │   └── val
+│   │       ├── frame_00372.jpg
+│   │       ├── frame_00378.jpg
+│   │       ├── frame_00384.jpg
+│   │       ├── frame_00390.jpg
+│   │       ├── frame_00396.jpg
+│   │       ├── frame_00402.jpg
+│   │       ├── frame_00408.jpg
+│   │       ├── frame_00414.jpg
+│   │       ├── frame_00420.jpg
+│   │       ├── frame_00426.jpg
+│   │       ├── frame_00432.jpg
+│   │       ├── frame_00438.jpg
+│   │       ├── frame_00444.jpg
+│   │       ├── frame_00450.jpg
+│   │       ├── frame_00456.jpg
+│   │       ├── frame_00462.jpg
+│   │       ├── frame_00468.jpg
+│   │       └── frame_00474.jpg
+│   ├── labels
+│   │   ├── test
+│   │   │   ├── frame_00480.txt
+│   │   │   ├── frame_00486.txt
+│   │   │   ├── frame_00492.txt
+│   │   │   ├── frame_00498.txt
+│   │   │   ├── frame_00504.txt
+│   │   │   ├── frame_00510.txt
+│   │   │   ├── frame_00516.txt
+│   │   │   ├── frame_00522.txt
+│   │   │   ├── frame_00528.txt
+│   │   │   └── frame_00534.txt
+│   │   ├── train
+│   │   │   ├── frame_00000.txt
+│   │   │   ├── frame_00006.txt
+│   │   │   ├── frame_00012.txt
+│   │   │   ├── frame_00018.txt
+│   │   │   ├── frame_00024.txt
+│   │   │   ├── frame_00030.txt
+│   │   │   ├── frame_00036.txt
+│   │   │   ├── frame_00042.txt
+│   │   │   ├── frame_00048.txt
+│   │   │   ├── frame_00054.txt
+│   │   │   ├── frame_00060.txt
+│   │   │   ├── frame_00066.txt
+│   │   │   ├── frame_00072.txt
+│   │   │   ├── frame_00078.txt
+│   │   │   ├── frame_00084.txt
+│   │   │   ├── frame_00090.txt
+│   │   │   ├── frame_00096.txt
+│   │   │   ├── frame_00102.txt
+│   │   │   ├── frame_00108.txt
+│   │   │   ├── frame_00114.txt
+│   │   │   ├── frame_00120.txt
+│   │   │   ├── frame_00126.txt
+│   │   │   ├── frame_00132.txt
+│   │   │   ├── frame_00138.txt
+│   │   │   ├── frame_00144.txt
+│   │   │   ├── frame_00150.txt
+│   │   │   ├── frame_00156.txt
+│   │   │   ├── frame_00162.txt
+│   │   │   ├── frame_00168.txt
+│   │   │   ├── frame_00174.txt
+│   │   │   ├── frame_00180.txt
+│   │   │   ├── frame_00186.txt
+│   │   │   ├── frame_00192.txt
+│   │   │   ├── frame_00198.txt
+│   │   │   ├── frame_00204.txt
+│   │   │   ├── frame_00210.txt
+│   │   │   ├── frame_00216.txt
+│   │   │   ├── frame_00222.txt
+│   │   │   ├── frame_00228.txt
+│   │   │   ├── frame_00234.txt
+│   │   │   ├── frame_00240.txt
+│   │   │   ├── frame_00246.txt
+│   │   │   ├── frame_00252.txt
+│   │   │   ├── frame_00258.txt
+│   │   │   ├── frame_00264.txt
+│   │   │   ├── frame_00270.txt
+│   │   │   ├── frame_00276.txt
+│   │   │   ├── frame_00282.txt
+│   │   │   ├── frame_00288.txt
+│   │   │   ├── frame_00294.txt
+│   │   │   ├── frame_00300.txt
+│   │   │   ├── frame_00306.txt
+│   │   │   ├── frame_00312.txt
+│   │   │   ├── frame_00318.txt
+│   │   │   ├── frame_00324.txt
+│   │   │   ├── frame_00330.txt
+│   │   │   ├── frame_00336.txt
+│   │   │   ├── frame_00342.txt
+│   │   │   ├── frame_00348.txt
+│   │   │   ├── frame_00354.txt
+│   │   │   ├── frame_00360.txt
+│   │   │   └── frame_00366.txt
+│   │   └── val
+│   │       ├── frame_00372.txt
+│   │       ├── frame_00378.txt
+│   │       ├── frame_00384.txt
+│   │       ├── frame_00390.txt
+│   │       ├── frame_00396.txt
+│   │       ├── frame_00402.txt
+│   │       ├── frame_00408.txt
+│   │       ├── frame_00414.txt
+│   │       ├── frame_00420.txt
+│   │       ├── frame_00426.txt
+│   │       ├── frame_00432.txt
+│   │       ├── frame_00438.txt
+│   │       ├── frame_00444.txt
+│   │       ├── frame_00450.txt
+│   │       ├── frame_00456.txt
+│   │       ├── frame_00462.txt
+│   │       ├── frame_00468.txt
+│   │       └── frame_00474.txt
+│   └── data.yaml
+├── DATASET_TREE.txt
+├── README.md
+└── labels_intervals_template.csv
