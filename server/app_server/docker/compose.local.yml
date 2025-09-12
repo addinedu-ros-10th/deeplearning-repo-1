@@ -1,0 +1,29 @@
+services:
+  api:
+    # 로컬 개발: 코드 마운트 / 디버그 옵션 유지
+    volumes:
+      - ../app:/app/app
+      - files-data:/app/files
+      - secrets-data:/app/secrets
+      - ../logs:/app/logs
+      - ../secret:/app/secret:ro
+    command: >
+      uvicorn app.main:create_app
+      --factory --host 0.0.0.0 --port 8000
+      --reload --log-level debug
+    ports:
+      - "8000:8000"
+      - "9090:9090"  # Prometheus (개발용)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  redis:
+    environment:
+      - REDIS_PASSWORD=
+    ports:
+      - "6379:6379"
+
+  nginx:
+    ports:
+      - "8080:80"
+      - "3000:3000"  # Grafana (개발용)

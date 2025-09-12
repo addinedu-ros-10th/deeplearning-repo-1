@@ -1,0 +1,204 @@
+"""
+간단한 FastAPI 애플리케이션 (SQLAdmin 포함)
+"""
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+import asyncpg
+import os
+from dotenv import load_dotenv
+from typing import List, Dict, Any
+from datetime import datetime
+from sqladmin import Admin
+from sqlalchemy import create_engine
+from app.infrastructure.db.models.scheduled_job import ScheduledJob
+
+# 환경 변수 로딩
+load_dotenv('secret/.env.local')
+
+app = FastAPI(
+    title="App Server API with Admin",
+    description="IoT Care App Server with Scheduled Jobs Management and Admin Panel",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# SQLAdmin 설정
+db_url = 'postgresql://svc_dev:IOT_dev_123%21%40%23@0.0.0.0:15432/iot_care'
+
+engine = create_engine(db_url)
+admin = Admin(app, engine, title="IoT Care 스케줄러 관리")
+
+# ScheduledJob 모델을 위한 간단한 관리자 뷰
+from sqladmin import ModelView
+
+class ScheduledJobAdmin(ModelView, model=ScheduledJob):
+    name = "스케줄 작업"
+    name_plural = "스케줄 작업들"
+    icon = "fa-solid fa-clock"
+    
+    column_list = ["id", "name", "func", "cron", "enabled", "status", "created_at"]
+    column_searchable_list = ["name", "func", "status"]
+    column_sortable_list = ["name", "enabled", "status", "created_at"]
+    
+    can_delete = False  # 논리 삭제 정책
+    can_edit = True
+    can_create = True
+    can_view_details = True
+
+admin.add_view(ScheduledJobAdmin)
+
+@app.get("/")
+async def root():
+    """루트 엔드포인트"""
+    return {
+        "message": "App Server API with Admin Panel",
+        "version": "1.0.0",
+        "status": "running",
+        "timestamp": datetime.now().isoformat(),
+        "docs": "/docs",
+        "admin": "/admin"
+    }
+
+@app.get("/health")
+async def health_check():
+    """헬스 체크 엔드포인트"""
+    return {
+        "status": "healthy",
+        "service": "App Server with Admin",
+        "version": "1.0.0",
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.get("/api/v1/tables")
+async def list_tables():
+    """데이터베이스 테이블 목록 조회"""
+    try:
+        conn = await asyncpg.connect(
+            host="0.0.0.0",
+            port=15432,
+            user="svc_dev",
+            password="IOT_dev_123!@#",
+            database="iot_care"
+        )
+        
+        tables = await conn.fetch("""
+            SELECT table_name, table_type
+            FROM information_schema.tables 
+            WHERE table_schema = 'public'
+            ORDER BY table_name
+        """)
+        
+        await conn.close()
+        
+        return {
+            "tables": [dict(table) for table in tables],
+            "count": len(tables),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch tables: {str(e)}")
+
+@app.get("/api/v1/scheduled-jobs")
+async def get_scheduled_jobs():
+    """스케줄 작업 목록 조회"""
+    try:
+        conn = await asyncpg.connect(
+            host="0.0.0.0",
+            port=15432,
+            user="svc_dev",
+            password="IOT_dev_123!@#",
+            database="iot_care"
+        )
+        
+        jobs = await conn.fetch("""
+            SELECT id, name, func, cron, enabled, status, 
+                   last_run_at, next_run_at, created_at
+            FROM scheduled_jobs 
+            WHERE is_deleted = false
+            ORDER BY created_at DESC
+        """)
+        
+        await conn.close()
+        
+        return {
+            "jobs": [dict(job) for job in jobs],
+            "count": len(jobs),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch scheduled jobs: {str(e)}")
+
+@app.get("/api/v1/database/info")
+async def get_database_info():
+    """데이터베이스 정보 조회"""
+    try:
+        conn = await asyncpg.connect(
+            host="0.0.0.0",
+            port=15432,
+            user="svc_dev",
+            password="IOT_dev_123!@#",
+            database="iot_care"
+        )
+        
+        # 데이터베이스 버전
+        version = await conn.fetchval("SELECT version()")
+        
+        # 테이블 개수
+        table_count = await conn.fetchval("""
+            SELECT COUNT(*) FROM information_schema.tables 
+            WHERE table_schema = 'public'
+        """)
+        
+        # scheduled_jobs 테이블 통계
+        job_stats = await conn.fetchrow("""
+            SELECT 
+                COUNT(*) as total_jobs,
+                COUNT(CASE WHEN enabled = true THEN 1 END) as enabled_jobs,
+                COUNT(CASE WHEN status = 'idle' THEN 1 END) as idle_jobs,
+                COUNT(CASE WHEN status = 'running' THEN 1 END) as running_jobs
+            FROM scheduled_jobs 
+            WHERE is_deleted = false
+        """)
+        
+        await conn.close()
+        
+        return {
+            "database_version": version,
+            "table_count": table_count,
+            "scheduled_jobs_stats": dict(job_stats),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch database info: {str(e)}")
+
+@app.get("/api/v1/admin/info")
+async def get_admin_info():
+    """관리자 패널 정보 조회"""
+    return {
+        "admin_url": "/admin",
+        "features": [
+            "스케줄 작업 관리",
+            "작업 생성/수정/삭제",
+            "실시간 상태 모니터링",
+            "Cron 표현식 검증"
+        ],
+        "available_models": [
+            "ScheduledJob"
+        ],
+        "timestamp": datetime.now().isoformat()
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
