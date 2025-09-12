@@ -15,7 +15,8 @@ import datetime
 
 3. detection_training_data = pd.read_csv("") 구문에는 데이터셋 이름을 입력할 것.
 
-4. 처리속도 향상을 꾀하고자 한다면 cv2.imshow("image extracting", image) 구문을 삭제하거나 각주처리하고 사용할 것. 단, 이 경우에는 중간 종료가 안 되므로 주의.
+4. 처리속도 향상을 꾀하고자 한다면 cv2.imshow("image extracting", image) 구문을 삭제하거나 각주처리하고 사용할 것.
+    단, 이 경우에는 'q' 키를 이용한 중간 종료가 안 되므로 주의.
 
 5. 작업 도중에 모종의 이유로 중단된 경우에는 images 폴더의 마지막 번호가 적힌 하위 폴더만 삭제하고 작업을 재개할 것.
 
@@ -126,7 +127,7 @@ def poseDataExtractor(cap_link, warning_start_frame, fall_start_frame):
                                                  "kpt_31_x","kpt_31_y","kpt_31_z",
                                                  "kpt_32_x","kpt_32_y","kpt_32_z"])
         frame_count = 1 # cv2 프레임 번호와 일치
-
+        frame_save = 0
 
 
         print(f"Started saving to: {image_folder_path} and keypoints_{coord_folder_number}")
@@ -178,9 +179,10 @@ def poseDataExtractor(cap_link, warning_start_frame, fall_start_frame):
                 pose_dataframe = pd.concat([pose_dataframe, df_pose], ignore_index=True)
                 pose_data = []
 
-                
-
                 cv2.imwrite(img_file_path, black_background)
+
+                if img_file_path is not None and black_background is not None:
+                    frame_save += 1
                 
         frame_count +=1
 
@@ -201,24 +203,33 @@ def poseDataExtractor(cap_link, warning_start_frame, fall_start_frame):
     is_saving = False
 
     if sw == True:
-        return True
+        return True, frame_save
     else:
-        return False
+        return False, frame_save
+    
+# ===============================================================================================================================
 
 stop_switch = False
 skip_switch = False
 complete_count = 0
+efl = ""
 
 if os.path.exists("extract_record.csv"):
     data_record = pd.read_csv("extract_record.csv")
+    complete_count = data_record.iloc[0, 2]
+    efl = data_record.iloc[0, 1]
     skip_switch = True
 
+if os.path.exists("complete_list.csv"):
+    complete_list = pd.read_csv("complete_list.csv")
+else:
+    complete_list = pd.DataFrame(columns = ["index", "video", "frames"])
 
 for line in detection_training_data_list_transformed:
 
     extract_file_link = BASE_PATH + local_base_link + "/" + line[0] + "/" + line[0] + VIDEO_TYPE
 
-    if os.path.exists("extract_record.csv") and extract_file_link == data_record.iloc[0, 1]:
+    if os.path.exists("extract_record.csv") and extract_file_link == efl:
         skip_switch = False
         continue
     elif skip_switch == True:
@@ -226,7 +237,7 @@ for line in detection_training_data_list_transformed:
 
     print("\n\n@@@@@@@@@@[[ Pose Extracting... : " + extract_file_link + " ]]@@@@@@@@@@\n\n")
 
-    stop_switch = poseDataExtractor(extract_file_link, line[1], line[3])
+    stop_switch, frame_save = poseDataExtractor(extract_file_link, line[1], line[3])
 
     if stop_switch == True:
         break
@@ -238,5 +249,9 @@ for line in detection_training_data_list_transformed:
                                         "complete_video_number": [complete_count]})
                                     # 추출 작업이 중단된 경우에는 반드시 images 폴더 내 마지막 번호의 폴더를 지우고 실행.
         run_data_record.to_csv("extract_record.csv", sep = ",", index=False)
-    
+
+        df = pd.DataFrame({"index": [complete_count], "video": line[0] + VIDEO_TYPE, "frames": frame_save})
+
+        complete_list = pd.concat([complete_list, df], ignore_index=True)
+        complete_list.to_csv("complete_list.csv", index = False)
     
