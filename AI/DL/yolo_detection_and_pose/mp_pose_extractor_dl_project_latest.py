@@ -3,9 +3,31 @@ import mediapipe as mp
 import os
 import gc
 import numpy as np
-import time
 import pandas as pd
+import datetime
 
+"""
+========== 사용 안내 ==========
+0. 반드시 현재 위치를 AI/DL/yolo_detection_and_pose 로 설정하고 실행할 것.
+1. 데이터 추출에 사용될 영상은 두자리 알파벳 코드로 된 폴더와 분류 기록이 저장된 csv 파일을 AI/DL/yolo_detection_and_pose 에 넣을 것.
+
+2. local_base_link = "" 구문에는 영상이 들어있는 폴더명을 입력할 것. 
+
+3. detection_training_data = pd.read_csv("") 구문에는 데이터셋 이름을 입력할 것.
+
+4. 처리속도 향상을 꾀하고자 한다면 cv2.imshow("image extracting", image) 구문을 삭제하거나 각주처리하고 사용할 것. 단, 이 경우에는 중간 종료가 안 되므로 주의.
+
+5. 작업 도중에 모종의 이유로 중단된 경우에는 images 폴더의 마지막 번호가 적힌 하위 폴더만 삭제하고 작업을 재개할 것.
+
+6. 작업을 처음부터 다시 시작하고자 하는 경우에는 extract_record.csv 파일과 images 폴더, coordinate 폴더를 모두 삭제하고 실행할 것.
+
+번외. detection_training_data = detection_training_data.drop([0, 1, 2]) 코드는 프로토타입 영상의 오류 정정용 코드이므로 삭제 또는 각주처리하고 사용할 것.
+"""
+
+local_base_link = "FY"                                                                # 영상 모음 폴더
+detection_training_data = pd.read_csv("Fall Detectoin Training Data Set - 정규호.csv") # 데이터셋
+
+# ========================================================================================================================================
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 mp_drawing = mp.solutions.drawing_utils
@@ -16,11 +38,7 @@ COORD_FOLDER_NAME = "coordinate"
 VIDEO_TYPE = ".mp4"
 os.makedirs(BASE_PATH, exist_ok = True)
 
-start_time = time.time()
-
-local_base_link = "FY"
-detection_training_data = pd.read_csv("Fall Detectoin Training Data Set - 정규호.csv") #데이터 읽어들이기
-detection_training_data = detection_training_data.drop([0, 1, 2]) # 테스트용 코드.
+# detection_training_data = detection_training_data.drop([0, 1, 2]) # 테스트용 코드.
 detection_training_data_list = detection_training_data.values.tolist()
 
 detection_training_data_list_transformed = []
@@ -66,7 +84,6 @@ def poseDataExtractor(cap_link, warning_start_frame, fall_start_frame):
     is_saving = True
     sw = False
 
-    # cap_link = "./00007_H_A_FY_C1.mp4"
     cap = cv2.VideoCapture(cap_link)
 
     pose_data = []
@@ -108,7 +125,7 @@ def poseDataExtractor(cap_link, warning_start_frame, fall_start_frame):
                                                  "kpt_30_x","kpt_30_y","kpt_30_z",
                                                  "kpt_31_x","kpt_31_y","kpt_31_z",
                                                  "kpt_32_x","kpt_32_y","kpt_32_z"])
-        frame_count = 0
+        frame_count = 1 # cv2 프레임 번호와 일치
 
 
 
@@ -148,9 +165,9 @@ def poseDataExtractor(cap_link, warning_start_frame, fall_start_frame):
                 else:
                     label = "Normal"
 
-                pose_data.append(f"{int(cap.get(cv2.CAP_PROP_POS_FRAMES)-1):04d}")
-                pose_data.append(image_folder_path + "/" + img_file_name)
-                pose_data.append(label)
+                pose_data.append(f"{int(cap.get(cv2.CAP_PROP_POS_FRAMES)):04d}") # 프레임 번호
+                pose_data.append(image_folder_path + "/" + img_file_name)       # 이미지 파일 주소
+                pose_data.append(label)                                         # 레이블
                 
                 for key in keypoints:
                     for k in key:
@@ -167,7 +184,7 @@ def poseDataExtractor(cap_link, warning_start_frame, fall_start_frame):
                 
         frame_count +=1
 
-        cv2.imshow("image extracting", image)
+        cv2.imshow("image extracting", image) # 이미지 출력
 
         key_input = cv2.waitKey(1)
 
@@ -188,17 +205,38 @@ def poseDataExtractor(cap_link, warning_start_frame, fall_start_frame):
     else:
         return False
 
-# poseDataExtractor("./00007_H_A_FY_C1.mp4", 263, 363)
-
 stop_switch = False
+skip_switch = False
+complete_count = 0
+
+if os.path.exists("extract_record.csv"):
+    data_record = pd.read_csv("extract_record.csv")
+    skip_switch = True
+
 
 for line in detection_training_data_list_transformed:
+
     extract_file_link = BASE_PATH + local_base_link + "/" + line[0] + "/" + line[0] + VIDEO_TYPE
+
+    if os.path.exists("extract_record.csv") and extract_file_link == data_record.iloc[0, 1]:
+        skip_switch = False
+        continue
+    elif skip_switch == True:
+        continue
+
+    print("\n\n@@@@@@@@@@[[ Pose Extracting... : " + extract_file_link + " ]]@@@@@@@@@@\n\n")
+
     stop_switch = poseDataExtractor(extract_file_link, line[1], line[3])
 
     if stop_switch == True:
         break
 
-end_time = time.time()
-
-print(end_time - start_time)
+    else:
+        complete_count += 1
+        run_data_record = pd.DataFrame({"save_time": [datetime.datetime.now()],
+                                        "latest_extracted_video_path": [extract_file_link],
+                                        "complete_video_number": [complete_count]})
+                                    # 추출 작업이 중단된 경우에는 반드시 images 폴더 내 마지막 번호의 폴더를 지우고 실행.
+        run_data_record.to_csv("extract_record.csv", sep = ",", index=False)
+    
+    
