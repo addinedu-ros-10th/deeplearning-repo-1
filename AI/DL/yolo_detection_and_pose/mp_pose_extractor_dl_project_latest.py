@@ -13,11 +13,14 @@ mp_drawing = mp.solutions.drawing_utils
 BASE_PATH = "./"
 IMAGE_FOLDER_NAME = "images"
 COORD_FOLDER_NAME = "coordinate"
+VIDEO_TYPE = ".mp4"
 os.makedirs(BASE_PATH, exist_ok = True)
 
 start_time = time.time()
 
+local_base_link = "FY"
 detection_training_data = pd.read_csv("Fall Detectoin Training Data Set - 정규호.csv") #데이터 읽어들이기
+detection_training_data = detection_training_data.drop([0, 1, 2]) # 테스트용 코드.
 detection_training_data_list = detection_training_data.values.tolist()
 
 detection_training_data_list_transformed = []
@@ -25,7 +28,7 @@ detection_training_data_list_transformed = []
 for line in range(0, len(detection_training_data_list), 3):
     detection_training_data_list_transformed_line = []
 
-    detection_training_data_list_transformed_line.append(detection_training_data_list[line][0])
+    detection_training_data_list_transformed_line.append(detection_training_data_list[line][0].split(".")[0])
     detection_training_data_list_transformed_line.append(detection_training_data_list[line+1][1])
     detection_training_data_list_transformed_line.append(detection_training_data_list[line+1][3])
     detection_training_data_list_transformed_line.append(detection_training_data_list[line+2][1])
@@ -40,7 +43,7 @@ def createNewImageFolder(base_path):
     existing_folders = [int(name) for name in os.listdir(folder_path) if name.isdigit()]
 
     next_number = max(existing_folders) + 1 if existing_folders else 1
-    sub_folder_path = os.path.join(folder_path, "train_" + str(next_number))
+    sub_folder_path = os.path.join(folder_path, str(next_number))
 
     os.makedirs(sub_folder_path, exist_ok = True)
 
@@ -58,7 +61,10 @@ def drawLandmarksOnBlack(image, pose_landmarks):
 
 def poseDataExtractor(cap_link, warning_start_frame, fall_start_frame):
 
+    pose = mp_pose.Pose()
+
     is_saving = True
+    sw = False
 
     # cap_link = "./00007_H_A_FY_C1.mp4"
     cap = cv2.VideoCapture(cap_link)
@@ -106,7 +112,7 @@ def poseDataExtractor(cap_link, warning_start_frame, fall_start_frame):
 
 
 
-        print(f"Started daving to: {image_folder_path} and keypoints_{coord_folder_number}")
+        print(f"Started saving to: {image_folder_path} and keypoints_{coord_folder_number}")
 
     while True:
 
@@ -167,6 +173,7 @@ def poseDataExtractor(cap_link, warning_start_frame, fall_start_frame):
 
         if key_input == ord('q'):
             gc.collect()
+            sw = True
             break
 
 
@@ -176,10 +183,21 @@ def poseDataExtractor(cap_link, warning_start_frame, fall_start_frame):
 
     is_saving = False
 
-poseDataExtractor("./00007_H_A_FY_C1.mp4", 263, 363)
+    if sw == True:
+        return True
+    else:
+        return False
 
-"""for line in detection_training_data_list_transformed:
-    poseDataExtractor(line[0], line[1], line[3])"""
+# poseDataExtractor("./00007_H_A_FY_C1.mp4", 263, 363)
+
+stop_switch = False
+
+for line in detection_training_data_list_transformed:
+    extract_file_link = BASE_PATH + local_base_link + "/" + line[0] + "/" + line[0] + VIDEO_TYPE
+    stop_switch = poseDataExtractor(extract_file_link, line[1], line[3])
+
+    if stop_switch == True:
+        break
 
 end_time = time.time()
 
