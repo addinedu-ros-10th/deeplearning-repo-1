@@ -1,0 +1,196 @@
+version: "3.9"
+
+x-env: &env
+  env_file:
+    - ../secret/.env.local  # 실제 실행 시 --env-file 로 덮어씀
+  environment:
+    # 기본 애플리케이션 설정
+    - APP_ENV=${APP_ENV}
+    - PYTHON_VERSION=${PYTHON_VERSION}
+    - PROJECT_NAME=${PROJECT_NAME}
+    - API_V1_STR=${API_V1_STR}
+    - DEBUG=${DEBUG}
+    
+    # 데이터베이스 설정
+    - DB_MODE=${DB_MODE}
+    - DB_APP_URL=${DB_APP_URL}
+    - DB_LEGACY_URL=${DB_LEGACY_URL}
+    
+    # SSH 터널 설정
+    - SSH_TUNNEL_ENABLE=${SSH_TUNNEL_ENABLE}
+    - SSH_TUNNEL_LOCAL_PORT=${SSH_TUNNEL_LOCAL_PORT}
+    - SSH_TUNNEL_REMOTE_HOST=${SSH_TUNNEL_REMOTE_HOST}
+    - SSH_TUNNEL_REMOTE_PORT=${SSH_TUNNEL_REMOTE_PORT}
+    - SSH_TUNNEL_BASTION_HOST=${SSH_TUNNEL_BASTION_HOST}
+    - SSH_TUNNEL_USER=${SSH_TUNNEL_USER}
+    - SSH_TUNNEL_KEY_PATH=${SSH_TUNNEL_KEY_PATH}
+    
+    # Redis 설정
+    - REDIS_URL=${REDIS_URL}
+    - REDIS_PASSWORD=${REDIS_PASSWORD}
+    - REDIS_DB=${REDIS_DB}
+    
+    # 파일 저장소 설정
+    - FILES_BASE_DIR=${FILES_BASE_DIR}
+    - FILES_MAX_SIZE=${FILES_MAX_SIZE}
+    - FILES_ALLOWED_TYPES=${FILES_ALLOWED_TYPES}
+    
+    # 관리자 설정
+    - ADMIN_USERNAME=${ADMIN_USERNAME}
+    - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    - ADMIN_EMAIL=${ADMIN_EMAIL}
+    
+    # Google Drive 설정
+    - GDRIVE_ENABLE=${GDRIVE_ENABLE}
+    - GDRIVE_CLIENT_SECRETS=${GDRIVE_CLIENT_SECRETS}
+    - GDRIVE_CREDENTIALS=${GDRIVE_CREDENTIALS}
+    
+    # 로깅 설정
+    - LOG_LEVEL=${LOG_LEVEL}
+    - LOG_FORMAT=${LOG_FORMAT}
+    - LOG_FILE=${LOG_FILE}
+    
+    # CORS 설정
+    - CORS_ORIGINS=${CORS_ORIGINS}
+    - CORS_ALLOW_CREDENTIALS=${CORS_ALLOW_CREDENTIALS}
+    - CORS_ALLOW_METHODS=${CORS_ALLOW_METHODS}
+    - CORS_ALLOW_HEADERS=${CORS_ALLOW_HEADERS}
+    
+    # JWT 인증 설정
+    - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    - JWT_ALGORITHM=${JWT_ALGORITHM}
+    - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=${JWT_ACCESS_TOKEN_EXPIRE_MINUTES}
+    - JWT_REFRESH_TOKEN_EXPIRE_DAYS=${JWT_REFRESH_TOKEN_EXPIRE_DAYS}
+    
+    # 보안 설정
+    - SECRET_KEY=${SECRET_KEY}
+    - BCRYPT_ROUNDS=${BCRYPT_ROUNDS}
+    - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE}
+    - SESSION_COOKIE_HTTPONLY=${SESSION_COOKIE_HTTPONLY}
+    - SESSION_COOKIE_SAMESITE=${SESSION_COOKIE_SAMESITE}
+    - HTTPS_ONLY=${HTTPS_ONLY}
+    
+    # API 설정
+    - API_HOST=${API_HOST}
+    - API_PORT=${API_PORT}
+    - API_WORKERS=${API_WORKERS}
+    - API_RELOAD=${API_RELOAD}
+    
+    # 스케줄러 설정
+    - SCHEDULER_TIMEZONE=${SCHEDULER_TIMEZONE}
+    - SCHEDULER_MAX_WORKERS=${SCHEDULER_MAX_WORKERS}
+    - SCHEDULER_COALESCE=${SCHEDULER_COALESCE}
+    
+    # 모니터링 설정
+    - PROMETHEUS_ENABLE=${PROMETHEUS_ENABLE}
+    - PROMETHEUS_PORT=${PROMETHEUS_PORT}
+    - GRAFANA_ENABLE=${GRAFANA_ENABLE}
+    - GRAFANA_PORT=${GRAFANA_PORT}
+    - ELK_STACK_ENABLE=${ELK_STACK_ENABLE}
+    
+    # 성능 설정
+    - DATABASE_POOL_SIZE=${DATABASE_POOL_SIZE}
+    - DATABASE_MAX_OVERFLOW=${DATABASE_MAX_OVERFLOW}
+    - REDIS_POOL_SIZE=${REDIS_POOL_SIZE}
+    
+    # 백업 설정
+    - BACKUP_ENABLE=${BACKUP_ENABLE}
+    - BACKUP_SCHEDULE=${BACKUP_SCHEDULE}
+    - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS}
+    
+    # 알림 설정
+    - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+    - EMAIL_SMTP_HOST=${EMAIL_SMTP_HOST}
+    - EMAIL_SMTP_PORT=${EMAIL_SMTP_PORT}
+    - EMAIL_SMTP_USER=${EMAIL_SMTP_USER}
+    - EMAIL_SMTP_PASSWORD=${EMAIL_SMTP_PASSWORD}
+    
+    # 테스트 설정
+    - TEST_DATABASE_URL=${TEST_DATABASE_URL}
+    - TEST_REDIS_URL=${TEST_REDIS_URL}
+    
+    # 개발 도구 설정
+    - PYTEST_ADDOPTS=${PYTEST_ADDOPTS}
+    - BLACK_LINE_LENGTH=${BLACK_LINE_LENGTH}
+    - RUFF_LINE_LENGTH=${RUFF_LINE_LENGTH}
+    - MYPY_STRICT=${MYPY_STRICT}
+
+services:
+  ssh-tunnel:
+    build:
+      context: ..
+      dockerfile: docker/ssh-tunnel.Dockerfile
+    <<: *env
+    volumes:
+      - ../secret:/app/secret:ro
+    command: python /app/scripts/ssh_tunnel.py
+    ports:
+      - "15432:15432"  # SSH 터널 포트 노출 (다른 프로그램에서 접근 가능)
+    healthcheck:
+      test: ["CMD", "netstat", "-an", "|", "grep", "15432"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/python.Dockerfile
+    <<: *env
+    volumes:
+      - ../app:/app/app
+      - files-data:${FILES_BASE_DIR}
+      - ../secret:/app/secret:ro
+    depends_on:
+      - redis
+      - ssh-tunnel
+    command: >
+      uvicorn app.main:create_app
+      --factory --host 0.0.0.0 --port 8000
+      --log-level info
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    build:
+      context: ..
+      dockerfile: docker/nginx.Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ../static:/var/www/static:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  files-data:
+  redis-data:
+  secrets-data:

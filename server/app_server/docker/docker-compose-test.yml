@@ -1,0 +1,43 @@
+# Docker Compose 테스트용 설정
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/python.Dockerfile
+    environment:
+      - APP_ENV=local
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - DB_APP_URL=postgresql://svc_dev:IOT_dev_123%21%40%23@host.docker.internal:15432/iot_care
+      - SCHEDULER_TIMEZONE=UTC
+      - SCHEDULER_MAX_WORKERS=4
+    volumes:
+      - ..:/app
+      - ../secret:/app/secret:ro
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: >
+      uvicorn app.main:create_app
+      --factory --host 0.0.0.0 --port 8000
+      --log-level debug
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
