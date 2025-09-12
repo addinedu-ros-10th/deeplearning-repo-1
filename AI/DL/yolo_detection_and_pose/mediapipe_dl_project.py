@@ -155,7 +155,8 @@ def video_pose_estimation_all_time(video_path): # 풀타임 재생용
     gc.collect()
 
 if url_mode == False:
-    video = "./00007_H_A_FY_C1.mp4" #오프라인 파일 경로는 이곳에 지정.
+    video = "./FY/02373_H_A_FY_C7/02373_H_A_FY_C7.mp4" #오프라인 파일 경로는 이곳에 지정.
+    # video = "./00007_H_A_FY_C1.mp4" #오프라인 파일 경로는 이곳에 지정.
 
 else:
     video_url = "https://www.youtube.com/watch?v=eBhOX1UN37A" #유튜브 다운로드를 이용할 경우
