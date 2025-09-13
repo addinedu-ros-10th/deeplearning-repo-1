@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>WebRTC Stream Receiver</title>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <style>
+    body { font-family: sans-serif; }
+    video { width: 640px; max-width: 100%; background: #000; display:block; margin:8px 0; }
+    #status { color:#555; font-size:14px; white-space:pre-line; }
+  </style>
+</head>
+<body>
+  <h2>Receiver</h2>
+  <div id="videos"></div>
+  <button id="btnStart">Start Receiving</button>
+  <div id="status"></div>
+
+  <script>
+    const socket = io('https://100.65.221.86:3000', { transports: ['websocket'] });
+    let pc;
+
+    const S = (...args) => {
+      console.log('[receiver]', ...args);
+      const el = document.getElementById('status');
+      el.textContent = `${el.textContent}\n${args.join(' ')}`.trim();
+    };
+
+    async function startReceiving() {
+      if (pc && pc.connectionState !== "closed") { S('Already connected.'); return; }
+
+      pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'turn:openrelay.metered.ca:80',   username:'openrelayproject', credential:'openrelayproject' },
+          { urls: 'turn:openrelay.metered.ca:80?transport=tcp',  username:'openrelayproject', credential:'openrelayproject' },
+          { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username:'openrelayproject', credential:'openrelayproject' },
+        ]
+      });
+
+      pc.oniceconnectionstatechange = () => S('iceConnectionState:', pc.iceConnectionState);
+      pc.onconnectionstatechange    = () => S('connectionState:',     pc.connectionState);
+      pc.onsignalingstatechange     = () => S('signalingState:',      pc.signalingState);
+
+      pc.onicecandidate = (e) => {
+        if (e.candidate) socket.emit('candidate', e.candidate.toJSON());
+      };
+
+      // ✅ ontrack 핸들러 수정
+      pc.ontrack = (event) => {
+        S(`ontrack: ${event.track.kind} track received.`);
+        // 비디오 트랙만 화면에 추가
+        if (event.track.kind === 'video') {
+            const video = document.createElement('video');
+            // 각 비디오 요소를 구분하기 위해 스트림 ID를 사용
+            video.id = `remoteVideo_${event.streams[0].id}`; 
+            video.autoplay = true;
+            video.playsinline = true;
+            
+            // --- ✨ 핵심 수정 사항 ---
+            // 항상 event.track으로 새로운 MediaStream을 생성하여 할당합니다.
+            // 이렇게 하면 각 비디오 요소가 고유한 스트림 소스를 갖게 됩니다.
+            video.srcObject = new MediaStream([event.track]);
+            // -------------------------
+
+            document.getElementById('videos').appendChild(video);
+            video.play().catch(e => console.error("Video play failed:", e));
+        }
+      };
+
+      // ✅ 여러 비디오와 오디오 스트림을 수신하기 위해 넉넉하게 5개씩 "슬롯"을 미리 생성
+      for (let i = 0; i < 5; i++) {
+        pc.addTransceiver('video', { direction: 'recvonly' });
+        pc.addTransceiver('audio', { direction: 'recvonly' });
+      }
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit('offer', { sdp: offer.sdp, type: offer.type, role: 'receiver' });
+      S('local offer sent.');
+
+      socket.off('answer');
+      socket.on('answer', async (answer) => {
+        if (pc.signalingState === "have-local-offer") {
+          await pc.setRemoteDescription(new RTCSessionDescription(answer));
+          S('remote answer set.');
+        }
+      });
+
+      socket.off('candidate');
+      socket.on('candidate', async (cand) => {
+        try {
+          if (cand) {
+            await pc.addIceCandidate(new RTCIceCandidate(cand));
+          }
+        } catch (err) {
+          console.error('[receiver] addIceCandidate error:', err);
+          S('addIceCandidate error:', err && err.message);
+        }
+      });
+    }
+
+    document.getElementById('btnStart').addEventListener('click', startReceiving);
+  </script>
+</body>
+</html>

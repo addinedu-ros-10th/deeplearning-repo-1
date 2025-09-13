@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>WebRTC Webcam Sender</title>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <style> video { width: 640px; max-width: 100%; background:#000; } #status{color:#555;} </style>
+</head>
+<body>
+  <h2>Sender</h2>
+  <video id="localVideo" autoplay playsinline muted></video>
+  <button id="btnStart">Start Streaming</button>
+  <div id="status"></div>
+
+  <script>
+    const socket = io('https://100.65.221.86:3000', { transports: ['websocket'] });
+    let pc;
+    const S = (...a)=>{ console.log('[sender]', ...a); document.getElementById('status').textContent = a.join(' '); };
+
+    // SDP를 조작하여 대역폭(bitrate)을 설정하는 도우미 함수
+    function setBandwidthLimit(sdp, bitrate) {
+        // m=video 라인을 찾아서 그 아래에 b=AS:{bitrate} 라인을 추가합니다.
+        let sdpLines = sdp.split('\r\n');
+        let videoMLineIndex = -1;
+        
+        for (let i = 0; i < sdpLines.length; i++) {
+            if (sdpLines[i].startsWith('m=video')) {
+                videoMLineIndex = i;
+                break;
+            }
+        }
+
+        if (videoMLineIndex === -1) {
+            console.warn('비디오 m-line을 찾을 수 없습니다.');
+            return sdp;
+        }
+
+        sdpLines.splice(videoMLineIndex + 1, 0, `b=AS:${bitrate}`);
+        return sdpLines.join('\r\n');
+    }
+
+    document.getElementById('btnStart').onclick = async () => {
+      if (pc && pc.connectionState !== "closed") { S('already started.'); return; }
+
+      pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          // 공개 TURN 서버 정보를 추가합니다.
+          // 이 서버가 중간에서 영상/음성 데이터를 중계해 줄 것입니다.
+          // {
+          //   urls: "turn:openrelay.metered.ca:80",
+          //   username: "openrelayproject",
+          //   credential: "openrelayproject",
+          // },
+          // {
+          //   urls: "turn:openrelay.metered.ca:443",
+          //   username: "openrelayproject",
+          //   credential: "openrelayproject",
+          // }
+
+          // {
+          //   urls: "turn:openrelay.metered.ca:80?transport=tcp",
+          //   username: "openrelayproject",
+          //   credential: "openrelayproject",
+          // }
+
+          // TURN 사용 시:
+          // { urls: 'turn:YOUR_TURN_IP:3478', username: 'user', credential: 'pass' }
+          // iceTransportPolicy: 'relay' // TURN 강제 시 주석 해제
+
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'turn:openrelay.metered.ca:80',   username:'openrelayproject', credential:'openrelayproject' },     // UDP (가능하면)
+          { urls: 'turn:openrelay.metered.ca:80?transport=tcp',  username:'openrelayproject', credential:'openrelayproject' },
+          { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username:'openrelayproject', credential:'openrelayproject' },
+          // 테스트용으로 막히는 환경이면 일시적으로 iceTransportPolicy:'relay'도 고려
+        ]
+      });
+
+      pc.oniceconnectionstatechange = () => S('iceConnectionState:', pc.iceConnectionState);
+      pc.onconnectionstatechange    = () => S('connectionState:',     pc.connectionState);
+
+      // trickle ICE: 후보마다 즉시 서버로 전송
+      pc.onicecandidate = (e) => { 
+        if (e.candidate) socket.emit('candidate', e.candidate.toJSON()); 
+        // if (!e.candidate || e.candidate.candidate.includes("192.168.")) {
+        //   return;
+        // }
+        // socket.emit('candidate', e.candidate.toJSON())
+      };
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        document.getElementById('localVideo').srcObject = stream;
+        stream.getTracks().forEach(t => pc.addTrack(t, stream));
+      } catch (e) { console.error('getUserMedia error:', e); return; }
+
+      const offer = await pc.createOffer();
+
+      offer.sdp = setBandwidthLimit(offer.sdp, 500);
+
+      await pc.setLocalDescription(offer);
+      socket.emit('offer', { sdp: offer.sdp, type: offer.type, role: 'sender' });
+
+      socket.off('answer'); // 중복 리스너 방지
+      socket.on('answer', async (answer) => {
+        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        S('remote answer set.');
+      });
+
+      socket.off('candidate');
+      socket.on('candidate', async (cand) => {
+        try { await pc.addIceCandidate(new RTCIceCandidate(cand)); }
+        catch (err) { console.error('[sender] addIceCandidate error:', err); }
+      });
+    };
+  </script>
+</body>
+</html>
