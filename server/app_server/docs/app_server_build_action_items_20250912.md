@@ -1,11 +1,167 @@
 
 ---
 
+# 액션 아이템 (헥사고날 아키텍처 적용 버전)
+
+## 📊 현재 작업 현황 리포트 (2025-09-12)
+
+### ✅ 완료된 작업
+
+1. **기본 인프라 구축**
+   - Python 3.12 환경 설정 및 가상환경 구성
+   - Docker Compose 환경 구축 (local, prod, test)
+   - PostgreSQL 데이터베이스 연결 (SSH 터널)
+   - Redis 캐시 서버 구성
+
+2. **스케줄러 시스템 구축**
+   - APScheduler 기반 스케줄러 구현
+   - SQLAdmin 관리자 화면 구축
+   - 스케줄 작업 CRUD API 구현
+   - 수동 작업 실행 기능
+
+3. **데이터베이스 관리**
+   - Alembic 마이그레이션 시스템 구축
+   - scheduled_jobs 테이블 생성
+   - 다중 데이터베이스 바인딩 (legacy, app)
+
+4. **웹 서버 구성**
+   - Nginx 프록시 서버 설정
+   - FastAPI 애플리케이션 연동
+   - Swagger UI 문서화
+
+5. **환경 관리**
+   - 환경별 설정 파일 (.env.local, .env.prod)
+   - Docker Compose 환경별 구성
+   - 보안 파일 관리 (SSH 키, 환경 변수)
+
+### 🔄 현재 상태 (2025-09-13 업데이트)
+- **API 서버**: 정상 동작 (http://localhost:8000)
+- **데이터베이스**: 연결 성공 (SSH 터널 통해)
+- **스케줄러**: 기본 기능 동작
+- **관리자 화면**: SQLAdmin 구축 완료
+- **Nginx 프록시**: 정상 동작 (http://localhost:80)
+- **Docker Compose**: 모든 서비스 정상 실행 (api, nginx, redis)
+- **SSH 터널 자동화**: 호스트 기반 스크립트로 완전 자동화
+
+### 🛠️ 해결된 주요 문제들 (2025-09-13)
+
+#### 1. Docker Compose 실행 문제들
+- **볼륨 마운트 오류**: `invalid mount path: '.'` → 환경변수 기본값 설정으로 해결
+- **포트 충돌**: 8000 포트 중복 사용 → 포트 분리 구성으로 해결
+- **Nginx www-data 사용자 오류**: Alpine Linux 호환성 문제 → `user nginx;` 설정으로 해결
+- **환경변수 치환 미적용**: `--env-file` 옵션 사용으로 해결
+
+#### 2. SSH 터널 자동화
+- **Docker 컨테이너 내 SSH 터널 문제**: 호스트 기반 스크립트로 변경
+- **포트 진단 및 자동 복구**: 포트 사용 상태 확인 후 적절한 조치 수행
+- **데이터베이스 연결 검증**: Python 기반 연결 테스트로 안정성 확보
+
+#### 3. Nginx 프록시 설정
+- **업스트림 서버 설정**: `api:8000` Docker 서비스명 사용
+- **헬스체크 경로 통일**: `/healthz` 엔드포인트로 통일
+- **프록시 헤더 설정**: FastAPI와의 완전한 호환성 확보
+
+#### 4. 서비스 통합 테스트
+- **API 직접 접근**: `http://localhost:8000/health` ✅
+- **Nginx 프록시**: `http://localhost/healthz` ✅
+- **Swagger UI**: `http://localhost/docs` ✅
+- **모든 서비스 정상**: Docker Compose 상태 확인 완료
+
+---
+
 # 액션 아이템 (업데이트 버전)
 
 ### 0. 프로젝트 루트 확정
 
 * 작업 루트 디렉터리를 `server/app_server` 로 고정하고 모든 경로/도커 마운트를 여기를 기준으로 구성한다.
+
+---
+
+## 🏗️ 헥사고날 아키텍처 적용
+
+### 12. 아키텍처 선택 & 전체 그림 (헥사고날 + 포트/어댑터)
+
+**헥사고날(Ports & Adapters)**로 도메인/애플리케이션과 I/O(HTTP, DB, 큐, 외부AI)를 분리하고 DI로 의존성 역전하며, WebSocket/SSE/TCP, AI 게이트웨이, 스케줄러, 파일 저장을 각각 어댑터로 붙인다.
+
+* **포트**: `domain/ports/{repository, ai_gateway, file_storage, scheduler_port}.py`
+* **어댑터**: `adapters/{http, repositories, ai, file, scheduler, tcp, streaming}`
+* **실무 예**: "센서 업링크→유즈케이스→리포지토리→Timescale 저장→스케줄/워커→알림(WebSocket)" 데이터흐름을 유즈케이스 단위로 캡슐화.
+
+### 13. 프로젝트 구조 (실무 예시 디렉터리)
+
+* 모노레포의 `server/app_server/`에 다음 구조를 생성하고 앱 팩토리 패턴으로 유연하게 기동한다.
+
+```python
+server/app_server/
+  app/
+    domain/                # 엔티티·값객체·도메인서비스·포트(추상)
+      entities/
+      value_objects/
+      services/
+      ports/
+    application/           # 유즈케이스 구현(트랜잭션 경계, DTO)
+      use_cases/
+      dto/
+    adapters/              # I/O 구현(HTTP/WS/SSE/TCP/Repo/AI/Files/Scheduler)
+      http/
+      repositories/
+      ai/
+      file/
+      scheduler/
+      tcp/
+      streaming/
+    infrastructure/        # 기술 구현(SQLAlchemy, Alembic, Redis, DI, 설정)
+      db/
+        models/            # 신규 스키마 Declarative
+        reflection/        # 기존 스키마 Reflect(Read/Write, 삭제 금지)
+        session.py
+        migrations/        # Alembic(신규만)
+      cache/
+      di/
+      settings.py
+    main.py                # FastAPI app factory
+  docs/                    # 매뉴얼/런북/테스트 문서
+  tests/                   # TDD 테스트(단위/통합/프로토콜/E2E)
+  docker/                  # Dockerfile.compose(※ Postgres 제외)
+  .pre-commit-config.yaml
+  pyproject.toml
+  .env.example
+```
+
+* **실무 팁**: `main.py`는 DI 컨테이너 바인딩, 라우터 등록, 스케줄러 초기화만 담당해 프레임워크 의존을 최소화.
+
+### 14. 의존성 주입 및 관리 정책
+
+* **DI 컨테이너**: `dependency-injector` 사용
+* **의존성 역전**: 도메인 레이어는 인프라 레이어에 의존하지 않음
+* **포트-어댑터 패턴**: 인터페이스와 구현체 분리
+* **팩토리 패턴**: 객체 생성 로직 캡슐화
+
+### 15. 헥사고날 아키텍처 구현 계획
+
+#### Phase 1: 도메인 레이어 구축 ✅
+- [x] 엔티티 및 값 객체 정의
+- [x] 도메인 서비스 구현
+- [x] 포트 인터페이스 정의
+
+#### Phase 2: 애플리케이션 레이어 구축 ✅
+- [x] 유즈케이스 구현
+- [x] DTO 정의
+- [x] 트랜잭션 경계 설정
+
+#### Phase 3: 어댑터 레이어 구축 ✅
+- [x] HTTP 어댑터 (FastAPI)
+- [x] 리포지토리 어댑터 (SQLAlchemy)
+- [x] 스케줄러 어댑터 (APScheduler)
+- [ ] 파일 저장소 어댑터 (향후 구현)
+
+#### Phase 4: 인프라 레이어 구축 ✅
+- [x] 데이터베이스 설정
+- [x] 캐시 설정
+- [x] DI 컨테이너 설정
+- [x] 설정 관리
+
+---
 
 ### 1. 브랜치 네이밍 전략(모노레포 경로와 충돌 없는 방식)
 

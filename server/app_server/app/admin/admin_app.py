@@ -21,27 +21,32 @@ class AdminApp:
     
     def _setup_admin(self):
         """SQLAdmin 설정"""
-        # 데이터베이스 매니저 초기화
-        import asyncio
-        asyncio.create_task(db_manager.initialize())
-        
-        self.admin = Admin(
-            app=None,  # FastAPI 앱은 나중에 설정
-            engine=db_manager.app_async_engine,
-            title="IoT Care 스케줄러 관리",
-            logo_url="https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png",
-            templates_dir="templates/admin",
-            statics_dir="static/admin"
-        )
-        
-        # 관리자 뷰 등록
-        self.admin.add_view(ScheduledJobAdmin)
+        # 임시로 None으로 설정하고 나중에 초기화
+        self.admin = None
     
     def mount_to_app(self, app):
         """FastAPI 앱에 SQLAdmin 마운트"""
-        if self.admin:
-            self.admin.app = app
-            self.admin.mount_to(app)
+        try:
+            # 동기 엔진 사용 (SQLAdmin은 동기 엔진 필요)
+            from app.infrastructure.db.session import get_app_engine
+            import asyncio
+            
+            # 동기 엔진 생성
+            engine = asyncio.run(get_app_engine())
+            
+            self.admin = Admin(
+                app=app,
+                engine=engine,
+                title="IoT Care 스케줄러 관리",
+                logo_url="https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png"
+            )
+            
+            # 관리자 뷰 등록
+            self.admin.add_view(ScheduledJobAdmin)
+            
+        except Exception as e:
+            print(f"⚠️ SQLAdmin 초기화 실패: {e}")
+            self.admin = None
     
     def get_admin(self):
         """SQLAdmin 인스턴스 반환"""

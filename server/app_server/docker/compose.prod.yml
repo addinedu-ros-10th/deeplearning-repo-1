@@ -24,7 +24,7 @@ services:
         max-size: "10m"
         max-file: "3"
     volumes:
-      - files-data:${FILES_BASE_DIR}
+      - files-data:${FILES_BASE_DIR:-/app/files}   # ✅ 기본값 /app/files
       - secrets-data:/app/secrets
       - logs-data:/app/logs
 
