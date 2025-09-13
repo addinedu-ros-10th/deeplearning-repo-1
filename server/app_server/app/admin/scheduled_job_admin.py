@@ -29,21 +29,8 @@ class ScheduledJobAdmin(ModelView, model=ScheduledJob):
         "created_at"
     ]
     
-    # 상세 보기에서 표시할 컬럼
-    column_details_list = [
-        "id",
-        "name",
-        "func", 
-        "cron",
-        "args",
-        "kwargs",
-        "enabled",
-        "status",
-        "last_run_at",
-        "next_run_at",
-        "created_at",
-        "updated_at"
-    ]
+    # 상세 보기에서 제외할 컬럼
+    column_details_exclude_list = ["is_deleted", "deleted_at"]
     
     # 검색 가능한 컬럼
     column_searchable_list = ["name", "func", "status"]
@@ -67,9 +54,6 @@ class ScheduledJobAdmin(ModelView, model=ScheduledJob):
         "kwargs",
         "enabled"
     ]
-    
-    # 읽기 전용 컬럼
-    column_details_exclude_list = ["is_deleted", "deleted_at"]
     
     # 컬럼 레이블 설정
     column_labels = {
