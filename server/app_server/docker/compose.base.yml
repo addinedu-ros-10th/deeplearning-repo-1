@@ -116,23 +116,6 @@ x-env: &env
     - MYPY_STRICT=${MYPY_STRICT}
 
 services:
-  ssh-tunnel:
-    build:
-      context: ..
-      dockerfile: docker/ssh-tunnel.Dockerfile
-    <<: *env
-    volumes:
-      - ../secret:/app/secret:ro
-    command: python /app/scripts/ssh_tunnel.py
-    ports:
-      - "15432:15432"  # SSH 터널 포트 노출 (다른 프로그램에서 접근 가능)
-    healthcheck:
-      test: ["CMD", "netstat", "-an", "|", "grep", "15432"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
-
   api:
     build:
       context: ..
@@ -140,11 +123,10 @@ services:
     <<: *env
     volumes:
       - ../app:/app/app
-      - files-data:${FILES_BASE_DIR}
+      - files-data:${FILES_BASE_DIR:-/app/files}   # ✅ 기본값 /app/files
       - ../secret:/app/secret:ro
     depends_on:
       - redis
-      - ssh-tunnel
     command: >
       uvicorn app.main:create_app
       --factory --host 0.0.0.0 --port 8000
