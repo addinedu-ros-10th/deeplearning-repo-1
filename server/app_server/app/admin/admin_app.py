@@ -28,11 +28,10 @@ class AdminApp:
         """FastAPI 앱에 SQLAdmin 마운트"""
         try:
             # 동기 엔진 사용 (SQLAdmin은 동기 엔진 필요)
-            from app.infrastructure.db.session import get_app_engine
-            import asyncio
+            from app.infrastructure.db.session import get_sync_engine
             
             # 동기 엔진 생성
-            engine = asyncio.run(get_app_engine())
+            engine = get_sync_engine()
             
             self.admin = Admin(
                 app=app,
@@ -43,6 +42,7 @@ class AdminApp:
             
             # 관리자 뷰 등록
             self.admin.add_view(ScheduledJobAdmin)
+            print("✅ SQLAdmin 초기화 성공")
             
         except Exception as e:
             print(f"⚠️ SQLAdmin 초기화 실패: {e}")
