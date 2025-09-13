@@ -61,7 +61,7 @@ def create_app() -> FastAPI:
 
 
 def _setup_admin_panel(app: FastAPI) -> None:
-    """SQLAdmin 관리자 패널 설정"""
+    """SQLAdmin 관리자 패널 설정 (동기 버전 - 호환성 유지)"""
     try:
         from app.admin.admin_app import admin_app
         admin_app.mount_to_app(app)
