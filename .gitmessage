@@ -1,0 +1,148 @@
+# <type>(<scope>): <action>, <description>  ← 여기에 커밋 메시지 작성
+#
+# <body>  ← 상세 설명 (선택사항)
+#
+# <footer>  ← 추가 정보 (선택사항)
+
+# =============================================================================
+# 📝 커밋 메시지 작성 안내
+# =============================================================================
+#
+# 위의 첫 번째 줄에 커밋 메시지를 작성하세요.
+# 주석(#으로 시작하는 줄)은 커밋 메시지에 포함되지 않습니다.
+#
+# 예시:
+# feat(api): ADD, User Authentication API
+#
+# =============================================================================
+# 📋 간단한 메시지 작성 예시
+# =============================================================================
+#
+# 1. 기본 형식 (가장 많이 사용)
+# feat(api): ADD, User Authentication API
+#
+# 2. 버그 수정
+# fix(scheduler): FIX, Serialization Issue
+#
+# 3. 문서 업데이트
+# docs(server): UPDATE, API Documentation
+#
+# 4. 리팩토링
+# refactor(admin): OPTIMIZE, SQLAdmin Configuration
+#
+# 5. 설정 변경
+# chore(docker): UPDATE, Docker Compose Configuration
+#
+# =============================================================================
+# 📋 커밋 메시지 작성 가이드
+# =============================================================================
+#
+# Type (필수): 커밋의 성격을 나타냄
+# feat: 새로운 기능 추가
+# fix: 버그 수정
+# docs: 문서 변경 (README, API 문서, 주석 등)
+# style: 코드 스타일 변경 (포맷팅, 세미콜론, 들여쓰기 등)
+# refactor: 코드 리팩토링 (기능 변경 없이 코드 구조 개선)
+# test: 테스트 코드 추가/수정
+# chore: 빌드, 설정 파일, 패키지 관리 등
+# ci: CI/CD 설정 변경
+# build: 빌드 시스템 변경
+# revert: 이전 커밋 되돌리기
+#
+# Scope (필수): 변경된 영역을 명시
+# 프로젝트 레벨: server, client, docs, docker, scripts
+# 서버 세부 영역: api, admin, scheduler, db, nginx, auth, config
+# 기타: ui, utils, tests, deploy
+#
+# Action (필수): 수행한 작업을 동사로 명시
+# ADD: 새로운 기능/파일 추가
+# EDIT: 기존 기능/파일 수정
+# DELETE: 기능/파일 삭제
+# UPDATE: 업데이트/개선
+# FIX: 버그 수정
+# REFACTOR: 리팩토링
+# REMOVE: 제거
+# CREATE: 생성
+# IMPLEMENT: 구현
+# CONFIGURE: 설정
+# OPTIMIZE: 최적화
+#
+# Description (필수): 변경사항을 간결하게 설명 (50자 이내)
+# - 첫 글자는 대문자
+# - 마침표로 끝내지 않음
+# - 명령형 어조 사용
+# - 구체적이고 명확하게 작성
+#
+# Body (선택사항): 변경사항의 상세 설명
+# - 왜 변경했는지 (Why)
+# - 어떻게 변경했는지 (How)
+# - 어떤 영향을 미치는지 (Impact)
+# - 각 줄은 72자 이내로 작성
+#
+# Footer (선택사항): 추가 정보
+# - Breaking Changes: 호환성 깨지는 변경사항
+# - Closes #123: 관련 이슈 번호
+# - Co-authored-by: 공동 작업자
+# - Reviewed-by: 리뷰어
+#
+# =============================================================================
+# 💡 상세한 사용 예시
+# =============================================================================
+#
+# 기능 추가
+# feat(api): ADD, User Authentication API
+# feat(admin): CREATE, SQLAdmin Management Panel
+# feat(scheduler): IMPLEMENT, Job Scheduling System
+#
+# 버그 수정
+# fix(api): FIX, Database Connection Error
+# fix(scheduler): FIX, Serialization Issue
+# fix(admin): FIX, Internal Server Error
+#
+# 문서 업데이트
+# docs(api): UPDATE, API Documentation
+# docs(server): ADD, Development Guide
+# docs(docker): UPDATE, Setup Instructions
+#
+# 리팩토링
+# refactor(api): REFACTOR, Database Connection Logic
+# refactor(admin): OPTIMIZE, SQLAdmin Configuration
+# refactor(scheduler): IMPROVE, Job Execution Flow
+#
+# 설정 변경
+# chore(docker): UPDATE, Docker Compose Configuration
+# chore(scripts): ADD, Deployment Automation Script
+# chore(config): CONFIGURE, Environment Variables
+#
+# 테스트
+# test(api): ADD, Unit Tests for User API
+# test(scheduler): UPDATE, Integration Tests
+# test(admin): ADD, SQLAdmin Test Cases
+#
+# =============================================================================
+# ❌ 잘못된 예시
+# =============================================================================
+#
+# ❌ 너무 간단함
+# fix: bug fix
+# feat: new feature
+#
+# ❌ 스코프 없음
+# feat: add user api
+# fix: database error
+#
+# ❌ 액션 없음
+# feat(api): user authentication
+# fix(scheduler): serialization
+#
+# ❌ 대문자 사용 (액션 제외)
+# Feat(api): ADD, User API
+# fix(API): FIX, Database Error
+#
+# ❌ 마침표 사용
+# feat(api): ADD, User API.
+# fix(scheduler): FIX, Serialization Issue.
+#
+# ❌ 너무 길거나 모호함
+# feat(api): ADD, A very long description that exceeds the recommended length
+# fix: something

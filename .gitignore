@@ -212,3 +212,174 @@ __marimo__/
 
 # train data
 AI/DL/fall_detection/data/
+
+# =============================================================================
+# Server Environment Variables & Secrets
+# =============================================================================
+server/app_server/secret/
+server/app_server/.env*
+server/app_server/secrets/
+server/app_server/credentials/
+server/app_server/*.key
+server/app_server/*.pem
+server/app_server/*.p12
+server/app_server/*.pfx
+server/app_server/.env.local
+server/app_server/.env.prod
+server/app_server/.env.aws
+server/app_server/.env.development
+server/app_server/.env.test
+server/app_server/.env.staging
+
+# Database credentials
+**/database.ini
+**/db_config.json
+**/db_credentials.json
+
+# SSH Keys
+**/.ssh/
+**/id_rsa*
+**/id_ed25519*
+**/known_hosts
+
+# Google Drive credentials
+**/client_secrets.json
+**/credentials.json
+**/token.json
+**/service_account.json
+
+# Logs
+**/logs/
+**/*.log
+**/app.log
+**/error.log
+**/access.log
+**/debug.log
+
+# Docker volumes data
+**/data/
+**/volumes/
+**/redis-data/
+**/files-data/
+**/postgres-data/
+
+# SSL certificates
+**/*.crt
+**/*.csr
+**/*.pem
+**/ssl/
+**/certs/
+
+# Backup files
+**/*.bak
+**/*.backup
+**/*.sql.gz
+**/*.dump
+**/backups/
+
+# IDE and editor files
+**/.vscode/
+**/.idea/
+**/*.swp
+**/*.swo
+**/*~
+
+# OS generated files
+**/.DS_Store
+**/Thumbs.db
+**/.directory
+
+# Temporary files
+**/tmp/
+**/temp/
+**/*.tmp
+
+# Python specific
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.Python
+**/venv/
+**/.venv/
+**/env/
+**/.env/
+
+# Node.js specific
+**/node_modules/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+
+# Coverage reports
+**/htmlcov/
+**/.coverage
+**/coverage.xml
+**/.pytest_cache/
+
+# Jupyter Notebook
+**/.ipynb_checkpoints/
+
+# pyenv
+**/.python-version
+
+# pipenv
+**/Pipfile.lock
+
+# Poetry
+**/poetry.lock
+
+# Celery
+**/celerybeat-schedule
+**/celerybeat.pid
+
+# SageMath
+**/*.sage.py
+
+# Spyder
+**/.spyderproject
+**/.spyproject
+
+# Rope
+**/.ropeproject
+
+# mkdocs
+**/site/
+
+# mypy
+**/.mypy_cache/
+**/.dmypy.json
+**/dmypy.json
+
+# Pyre
+**/.pyre/
+
+# pytype
+**/.pytype/
+
+# Cython
+**/cython_debug/
+
+# PyCharm
+**/.idea/
+
+# Abstra
+**/.abstra/
+
+# Visual Studio Code
+**/.vscode/
+
+# Ruff
+**/.ruff_cache/
+
+# PyPI
+**/.pypirc
+
+# Cursor
+**/.cursorignore
+**/.cursorindexingignore
+
+# Marimo
+**/marimo/_static/
+**/marimo/_lsp/
+**/__marimo__/
