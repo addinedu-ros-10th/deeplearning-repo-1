@@ -35,8 +35,8 @@ class ScheduledJobAdmin(ModelView, model=ScheduledJob):
     # 검색 가능한 컬럼
     column_searchable_list = ["name", "func", "status"]
     
-    # 필터링 가능한 컬럼
-    column_filters = ["enabled", "status", "created_at"]
+    # 필터링 가능한 컬럼 (임시로 비활성화)
+    # column_filters = ["enabled", "status"]
     
     # 정렬 가능한 컬럼
     column_sortable_list = ["name", "enabled", "status", "created_at", "last_run_at"]
@@ -86,7 +86,8 @@ class ScheduledJobAdmin(ModelView, model=ScheduledJob):
     }
     
     # 검색 설정
-    search_placeholder = "작업명, 함수명, 상태로 검색..."
+    def search_placeholder(self):
+        return "작업명, 함수명, 상태로 검색..."
     
     # 정렬 기본값
     column_default_sort = [("created_at", True)]

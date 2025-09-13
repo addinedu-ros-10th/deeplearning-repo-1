@@ -32,7 +32,7 @@ class SchedulerService:
         
     def _get_db_url(self) -> str:
         """데이터베이스 URL 생성"""
-        db_url = os.getenv('DB_APP_URL', 'postgresql://svc_dev:IOT_dev_123%21%40%23@0.0.0.0:15432/iot_care')
+        db_url = os.getenv('DB_APP_URL', 'postgresql://svc_dev:IOT_dev_123%21%40%23@host.docker.internal:15432/iot_care')
         if db_url.startswith('postgresql+asyncpg://'):
             db_url = db_url.replace('postgresql+asyncpg://', 'postgresql://')
         return db_url
@@ -93,7 +93,7 @@ class SchedulerService:
         """데이터베이스에서 활성화된 작업들을 로드"""
         try:
             conn = await asyncpg.connect(
-                host="0.0.0.0",
+                host="host.docker.internal",
                 port=15432,
                 user="svc_dev",
                 password="IOT_dev_123!@#",
@@ -142,9 +142,9 @@ class SchedulerService:
                 day_of_week=cron_parts[4]
             )
             
-            # 작업 추가
+            # 작업 추가 (정적 메서드 사용)
             self.scheduler.add_job(
-                func=self._execute_job,
+                func=SchedulerService._execute_job_static,
                 trigger=trigger,
                 args=[job_id, func, args, kwargs],
                 id=job_id,
@@ -157,8 +157,39 @@ class SchedulerService:
         except Exception as e:
             logger.error(f"작업 추가 실패: {e}")
     
+    @staticmethod
+    async def _execute_job_static(job_id: str, func: str, args: Any, kwargs: Any):
+        """작업 실행 (정적 메서드)"""
+        try:
+            # 전역 스케줄러 서비스 인스턴스 가져오기
+            from app.services.scheduler_service import scheduler_service
+            
+            # 작업 상태를 'running'으로 업데이트
+            await scheduler_service._update_job_status(job_id, 'running')
+            
+            # args와 kwargs 파싱
+            parsed_args = scheduler_service._parse_json_args(args)
+            parsed_kwargs = scheduler_service._parse_json_args(kwargs)
+            
+            # 함수 실행
+            result = await scheduler_service._call_function(func, parsed_args, parsed_kwargs)
+            
+            # 성공 시 상태 업데이트
+            await scheduler_service._update_job_status(job_id, 'completed', result)
+            
+            logger.info(f"작업 실행 완료: {job_id}")
+            
+        except Exception as e:
+            # 실패 시 상태 업데이트
+            try:
+                from app.services.scheduler_service import scheduler_service
+                await scheduler_service._update_job_status(job_id, 'failed', str(e))
+            except:
+                pass
+            logger.error(f"작업 실행 실패: {job_id}, 오류: {e}")
+
     async def _execute_job(self, job_id: str, func: str, args: Any, kwargs: Any):
-        """작업 실행"""
+        """작업 실행 (인스턴스 메서드 - 호환성 유지)"""
         try:
             # 작업 상태를 'running'으로 업데이트
             await self._update_job_status(job_id, 'running')
@@ -215,7 +246,7 @@ class SchedulerService:
         """작업 상태 업데이트"""
         try:
             conn = await asyncpg.connect(
-                host="0.0.0.0",
+                host="host.docker.internal",
                 port=15432,
                 user="svc_dev",
                 password="IOT_dev_123!@#",
