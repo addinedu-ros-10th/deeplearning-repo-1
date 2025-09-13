@@ -119,3 +119,21 @@ async def get_app_engine():
 async def get_legacy_engine():
     """레거시 스키마 엔진 반환"""
     return db_manager.legacy_async_engine
+
+def get_sync_engine():
+    """동기 엔진 반환 (SQLAdmin용)"""
+    # 환경 변수에서 데이터베이스 URL 가져오기
+    app_url = os.getenv('DB_APP_URL')
+    if not app_url:
+        raise ValueError("DB_APP_URL 환경 변수가 설정되지 않았습니다")
+    
+    # 동기 엔진 생성
+    sync_engine = create_engine(
+        app_url.replace('postgresql+asyncpg://', 'postgresql://'),
+        pool_size=int(os.getenv('DATABASE_POOL_SIZE', '20')),
+        max_overflow=int(os.getenv('DATABASE_MAX_OVERFLOW', '30')),
+        pool_pre_ping=True,
+        echo=os.getenv('DEBUG', 'false').lower() == 'true'
+    )
+    
+    return sync_engine
