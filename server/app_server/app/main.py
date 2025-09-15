@@ -47,6 +47,13 @@ def create_app() -> FastAPI:
     # 스케줄러 애플리케이션의 라우터들을 메인 앱에 포함
     app.include_router(scheduler_router)
     
+    # ML 레지스트리 라우터 포함
+    from app.adapters.http.dataset_router import router as dataset_router
+    from app.adapters.http.experiment_router import router as experiment_router
+    
+    app.include_router(dataset_router)
+    app.include_router(experiment_router)
+    
     # 스케줄러 이벤트 핸들러 포함
     app.add_event_handler("startup", startup_event)
     app.add_event_handler("shutdown", shutdown_event)
