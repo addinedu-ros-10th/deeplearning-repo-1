@@ -6,7 +6,7 @@ services:
       - files-data:/app/files
       - secrets-data:/app/secrets
       - ../logs:/app/logs
-      - ../secret:/app/secret:ro
+      - secrets-data:/app/secret:ro
     command: >
       uvicorn app.main:create_app
       --factory --host 0.0.0.0 --port 8000
