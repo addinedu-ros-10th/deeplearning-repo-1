@@ -15,7 +15,7 @@ services:
       - SCHEDULER_MAX_WORKERS=4
     volumes:
       - ..:/app
-      - ../secret:/app/secret:ro
+      - secrets-data:/app/secret:ro
     ports:
       - "8000:8000"
     extra_hosts:
