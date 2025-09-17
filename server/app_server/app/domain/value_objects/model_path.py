@@ -74,3 +74,4 @@ class ModelPath:
         valid_extensions = ['pt', 'pth', 'h5', 'hdf5', 'onnx', 'pb', 'tflite', 'pkl', 'joblib']
         extension = self.get_extension()
         return extension in valid_extensions if extension else False
+

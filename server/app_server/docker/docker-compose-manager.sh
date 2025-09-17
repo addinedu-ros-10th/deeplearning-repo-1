@@ -101,9 +101,9 @@ start_prod() {
     
     if [ $? -eq 0 ]; then
         log_success "운영 환경이 성공적으로 시작되었습니다!"
-        log_info "API 서버: http://localhost:8000"
-        log_info "관리자 패널: http://localhost:8000/admin"
-        log_info "API 문서: http://localhost:8000/docs"
+        log_info "API 서버: http://ec2-43-201-96-23.ap-northeast-2.compute.amazonaws.com/"
+        log_info "관리자 패널: http://ec2-43-201-96-23.ap-northeast-2.compute.amazonaws.com/admin"
+        log_info "API 문서: http://ec2-43-201-96-23.ap-northeast-2.compute.amazonaws.com/docs"
     else
         log_error "운영 환경 시작에 실패했습니다."
         exit 1
@@ -236,3 +236,4 @@ case "${1:-help}" in
         exit 1
         ;;
 esac
+
