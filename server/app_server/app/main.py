@@ -128,9 +128,10 @@ def _setup_additional_endpoints(app: FastAPI) -> None:
     async def list_tables():
         """데이터베이스 테이블 목록 조회"""
         try:
-            from app.infrastructure.db.session import get_app_session
+            from app.infrastructure.db.session import db_manager
             from sqlalchemy import text
-            async with get_app_session() as session:
+            session = db_manager.get_app_session()
+            try:
                 result = await session.execute(text("""
                     SELECT table_name, table_type
                     FROM information_schema.tables 
@@ -138,12 +139,13 @@ def _setup_additional_endpoints(app: FastAPI) -> None:
                     ORDER BY table_name
                 """))
                 tables = result.fetchall()
-                
-                return {
-                    "tables": [{"table_name": row[0], "table_type": row[1]} for row in tables],
-                    "count": len(tables),
-                    "timestamp": datetime.now().isoformat()
-                }
+            finally:
+                await session.close()
+            return {
+                "tables": [{"table_name": row[0], "table_type": row[1]} for row in tables],
+                "count": len(tables),
+                "timestamp": datetime.now().isoformat()
+            }
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to fetch tables: {str(e)}")
 
@@ -151,9 +153,10 @@ def _setup_additional_endpoints(app: FastAPI) -> None:
     async def get_scheduled_jobs():
         """스케줄 작업 목록 조회"""
         try:
-            from app.infrastructure.db.session import get_app_session
+            from app.infrastructure.db.session import db_manager
             from sqlalchemy import text
-            async with get_app_session() as session:
+            session = db_manager.get_app_session()
+            try:
                 result = await session.execute(text("""
                     SELECT id, name, func, cron, enabled, status, 
                            last_run_at, next_run_at, created_at
@@ -162,14 +165,15 @@ def _setup_additional_endpoints(app: FastAPI) -> None:
                     ORDER BY created_at DESC
                 """))
                 jobs = result.fetchall()
-                
-                return {
-                    "jobs": [{"id": row[0], "name": row[1], "func": row[2], "cron": row[3], 
-                             "enabled": row[4], "status": row[5], "last_run_at": row[6], 
-                             "next_run_at": row[7], "created_at": row[8]} for row in jobs],
-                    "count": len(jobs),
-                    "timestamp": datetime.now().isoformat()
-                }
+            finally:
+                await session.close()
+            return {
+                "jobs": [{"id": row[0], "name": row[1], "func": row[2], "cron": row[3], 
+                         "enabled": row[4], "status": row[5], "last_run_at": row[6], 
+                         "next_run_at": row[7], "created_at": row[8]} for row in jobs],
+                "count": len(jobs),
+                "timestamp": datetime.now().isoformat()
+            }
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to fetch scheduled jobs: {str(e)}")
 
@@ -177,21 +181,17 @@ def _setup_additional_endpoints(app: FastAPI) -> None:
     async def get_database_info():
         """데이터베이스 정보 조회"""
         try:
-            from app.infrastructure.db.session import get_app_session
+            from app.infrastructure.db.session import db_manager
             from sqlalchemy import text
-            async with get_app_session() as session:
-                # 데이터베이스 버전
+            session = db_manager.get_app_session()
+            try:
                 version_result = await session.execute(text("SELECT version()"))
                 version = version_result.scalar()
-                
-                # 테이블 개수
                 table_count_result = await session.execute(text("""
                     SELECT COUNT(*) FROM information_schema.tables 
                     WHERE table_schema = 'public'
                 """))
                 table_count = table_count_result.scalar()
-                
-                # scheduled_jobs 테이블 통계
                 job_stats_result = await session.execute(text("""
                     SELECT 
                         COUNT(*) as total_jobs,
@@ -202,18 +202,19 @@ def _setup_additional_endpoints(app: FastAPI) -> None:
                     WHERE is_deleted = false
                 """))
                 job_stats_row = job_stats_result.fetchone()
-                
-                return {
-                    "database_version": version,
-                    "table_count": table_count,
-                    "scheduled_jobs_stats": {
-                        "total_jobs": job_stats_row[0],
-                        "enabled_jobs": job_stats_row[1],
-                        "idle_jobs": job_stats_row[2],
-                        "running_jobs": job_stats_row[3]
-                    },
-                    "timestamp": datetime.now().isoformat()
-                }
+            finally:
+                await session.close()
+            return {
+                "database_version": version,
+                "table_count": table_count,
+                "scheduled_jobs_stats": {
+                    "total_jobs": job_stats_row[0],
+                    "enabled_jobs": job_stats_row[1],
+                    "idle_jobs": job_stats_row[2],
+                    "running_jobs": job_stats_row[3]
+                },
+                "timestamp": datetime.now().isoformat()
+            }
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to fetch database info: {str(e)}")
 
