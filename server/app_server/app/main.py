@@ -69,9 +69,13 @@ def create_app() -> FastAPI:
     # ML 레지스트리 라우터 포함
     from app.adapters.http.dataset_router import router as dataset_router
     from app.adapters.http.experiment_router import router as experiment_router
+    from app.adapters.http.frame_prediction_router import router as frame_prediction_router
+    from app.adapters.http.detection_event_router import router as detection_event_router
     
     app.include_router(dataset_router)
     app.include_router(experiment_router)
+    app.include_router(frame_prediction_router)
+    app.include_router(detection_event_router)
     
     # 스케줄러 이벤트 핸들러 포함
     app.add_event_handler("startup", startup_event)
