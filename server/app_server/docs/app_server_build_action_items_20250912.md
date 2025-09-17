@@ -966,3 +966,58 @@ curl http://localhost:8080/api/v1/health  # API 헬스체크
 5. **운영 안정성**: 헬스체크, 에러 핸들링, 로깅 시스템
 
 ---
+
+## 2025-09-17 업데이트: ML 추론 로깅 테이블 및 REST API 추가
+
+### 개요
+- 신규 테이블: `ml.frame_prediction`, `ml.detection_event` (DB 반영 완료)
+- SQLAlchemy 모델 추가: `FramePredictionModel`, `DetectionEventModel`
+- 도메인/포트/리포지토리/유즈케이스/DTO/라우터 일괄 구현(헥사고날 패턴 준수)
+- 메인 앱 라우터 등록 완료
+
+### 추가된 경로 및 컴포넌트
+- Domain
+  - `app/domain/entities/frame_prediction.py`
+  - `app/domain/entities/detection_event.py`
+  - `app/domain/ports/frame_prediction_repository.py`
+  - `app/domain/ports/detection_event_repository.py`
+- DTO
+  - `app/application/dto/frame_prediction_dto.py`
+  - `app/application/dto/detection_event_dto.py`
+- Use Cases
+  - `app/application/use_cases/frame_prediction_use_cases.py`
+  - `app/application/use_cases/detection_event_use_cases.py`
+- Repository Implementations
+  - `app/adapters/repositories/frame_prediction_repository_impl.py`
+  - `app/adapters/repositories/detection_event_repository_impl.py`
+- HTTP Routers
+  - `app/adapters/http/frame_prediction_router.py`
+  - `app/adapters/http/detection_event_router.py`
+- Models
+  - `app/infrastructure/db/models/ml_models.py` 내 모델 2종 추가
+- Main
+  - `app/main.py` 라우터 include 추가
+
+### 신규 REST API
+- FramePrediction `/api/v1/frame-predictions`
+  - POST `/` (단건 생성)
+  - POST `/batch` (배치 생성)
+  - GET `/` (필터: `session_id, experiment_id, input_uri, label_pred, frame_index_from/to`, 페이징)
+  - GET `/{frame_pred_id}` (단건)
+  - DELETE `/{frame_pred_id}` (삭제)
+- DetectionEvent `/api/v1/detection-events`
+  - POST `/` (생성)
+  - GET `/` (필터: `session_id, experiment_id, input_uri, event_type, top_label, start_ts_ms_from/to`, 페이징)
+  - GET `/{event_id}` (단건)
+  - DELETE `/{event_id}` (삭제)
+
+### 설계 준수 사항
+- ML 세션 DI(`get_ml_session`)을 통한 비동기 세션 주입
+- 도메인 → 포트 → 리포지토리(구현) → 유즈케이스 → 라우터 계층 구조
+- DTO 검증 및 응답 모델 `from_attributes = True`
+- 상태코드/에러 응답 표준화(400/404/500)
+
+### 후속 작업 제안
+- 목록 응답 래핑 표준화 `{items,total,offset,limit}` 적용
+- `/datasets?name=&tag=` 스타일로 필터 일원화(기존 라우터와 일관성)
+- 관리자/내부용 엔드포인트는 `/admin` 또는 `/internal` 네임스페이스로 이동 및 인증 적용
