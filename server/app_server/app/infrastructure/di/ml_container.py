@@ -143,3 +143,4 @@ class MLContainer(containers.DeclarativeContainer):
 
 # 전역 컨테이너 인스턴스
 ml_container = MLContainer()
+
