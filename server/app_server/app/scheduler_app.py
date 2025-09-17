@@ -43,29 +43,35 @@ async def health_check():
         "timestamp": datetime.now().isoformat()
     }
 
-@router.get("/api/v1/scheduled-jobs")
+async def _connect_db_from_env():
+    """환경변수(DB_APP_URL) 기반 asyncpg 연결 헬퍼 (Docker 호스트 IP 보정)"""
+    try:
+        db_url = os.getenv("DB_APP_URL", "postgresql://svc_dev:IOT_dev_123%21%40%23@host.docker.internal:15432/iot_care")
+        # postgresql+asyncpg 스킴 보정
+        if db_url.startswith("postgresql+asyncpg://"):
+            db_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
+        from urllib.parse import urlparse, unquote
+        parsed = urlparse(db_url)
+        host = parsed.hostname or "host.docker.internal"
+        # Linux 컨테이너 내 host.docker.internal 해석 실패 대비
+        if host == "host.docker.internal":
+            host = os.getenv("DOCKER_HOST_IP", "172.17.0.1")
+        return await asyncpg.connect(
+            host=host,
+            port=parsed.port or 15432,
+            user=unquote(parsed.username) if parsed.username else None,
+            password=unquote(parsed.password) if parsed.password else None,
+            database=parsed.path[1:] if parsed.path else None,
+        )
+    except Exception:
+        raise
+
+
+@router.get("/internal/scheduled-jobs")
 async def get_scheduled_jobs():
     """스케줄 작업 목록 조회"""
     try:
-        # 환경변수에서 데이터베이스 연결 정보 파싱
-        db_url = os.getenv("DB_APP_URL", "postgresql://svc_dev:IOT_dev_123%21%40%23@host.docker.internal:15432/iot_care")
-        
-        # URL 디코딩
-        from urllib.parse import unquote
-        if db_url.startswith("postgresql://"):
-            db_url = db_url.replace("postgresql://", "")
-        
-        # URL 파싱
-        from urllib.parse import urlparse
-        parsed = urlparse(f"postgresql://{db_url}")
-        
-        conn = await asyncpg.connect(
-            host=parsed.hostname or "host.docker.internal",
-            port=parsed.port or 15432,
-            user=unquote(parsed.username) if parsed.username else "svc_dev",
-            password=unquote(parsed.password) if parsed.password else "IOT_dev_123!@#",
-            database=parsed.path[1:] if parsed.path else "iot_care"
-        )
+        conn = await _connect_db_from_env()
         
         jobs = await conn.fetch("""
             SELECT id, name, func, cron, enabled, status, 
@@ -112,29 +118,11 @@ async def reload_scheduler():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to reload scheduler: {str(e)}")
 
-@router.post("/api/v1/scheduled-jobs/{job_id}/execute")
+@router.post("/internal/scheduled-jobs/{job_id}/execute")
 async def execute_job_manually(job_id: str):
     """작업 수동 실행"""
     try:
-        # 환경변수에서 데이터베이스 연결 정보 파싱
-        db_url = os.getenv("DB_APP_URL", "postgresql://svc_dev:IOT_dev_123%21%40%23@host.docker.internal:15432/iot_care")
-        
-        # URL 디코딩
-        from urllib.parse import unquote
-        if db_url.startswith("postgresql://"):
-            db_url = db_url.replace("postgresql://", "")
-        
-        # URL 파싱
-        from urllib.parse import urlparse
-        parsed = urlparse(f"postgresql://{db_url}")
-        
-        conn = await asyncpg.connect(
-            host=parsed.hostname or "host.docker.internal",
-            port=parsed.port or 15432,
-            user=unquote(parsed.username) if parsed.username else "svc_dev",
-            password=unquote(parsed.password) if parsed.password else "IOT_dev_123!@#",
-            database=parsed.path[1:] if parsed.path else "iot_care"
-        )
+        conn = await _connect_db_from_env()
         
         # 작업 정보 조회
         job = await conn.fetchrow("""
@@ -172,29 +160,11 @@ async def execute_job_manually(job_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to execute job: {str(e)}")
 
-@router.get("/api/v1/tables")
+@router.get("/internal/tables")
 async def list_tables():
     """데이터베이스 테이블 목록 조회"""
     try:
-        # 환경변수에서 데이터베이스 연결 정보 파싱
-        db_url = os.getenv("DB_APP_URL", "postgresql://svc_dev:IOT_dev_123%21%40%23@host.docker.internal:15432/iot_care")
-        
-        # URL 디코딩
-        from urllib.parse import unquote
-        if db_url.startswith("postgresql://"):
-            db_url = db_url.replace("postgresql://", "")
-        
-        # URL 파싱
-        from urllib.parse import urlparse
-        parsed = urlparse(f"postgresql://{db_url}")
-        
-        conn = await asyncpg.connect(
-            host=parsed.hostname or "host.docker.internal",
-            port=parsed.port or 15432,
-            user=unquote(parsed.username) if parsed.username else "svc_dev",
-            password=unquote(parsed.password) if parsed.password else "IOT_dev_123!@#",
-            database=parsed.path[1:] if parsed.path else "iot_care"
-        )
+        conn = await _connect_db_from_env()
         
         tables = await conn.fetch("""
             SELECT table_name, table_type
@@ -213,29 +183,11 @@ async def list_tables():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch tables: {str(e)}")
 
-@router.get("/api/v1/database/info")
+@router.get("/internal/database/info")
 async def get_database_info():
     """데이터베이스 정보 조회"""
     try:
-        # 환경변수에서 데이터베이스 연결 정보 파싱
-        db_url = os.getenv("DB_APP_URL", "postgresql://svc_dev:IOT_dev_123%21%40%23@host.docker.internal:15432/iot_care")
-        
-        # URL 디코딩
-        from urllib.parse import unquote
-        if db_url.startswith("postgresql://"):
-            db_url = db_url.replace("postgresql://", "")
-        
-        # URL 파싱
-        from urllib.parse import urlparse
-        parsed = urlparse(f"postgresql://{db_url}")
-        
-        conn = await asyncpg.connect(
-            host=parsed.hostname or "host.docker.internal",
-            port=parsed.port or 15432,
-            user=unquote(parsed.username) if parsed.username else "svc_dev",
-            password=unquote(parsed.password) if parsed.password else "IOT_dev_123!@#",
-            database=parsed.path[1:] if parsed.path else "iot_care"
-        )
+        conn = await _connect_db_from_env()
         
         # 데이터베이스 버전
         version = await conn.fetchval("SELECT version()")
