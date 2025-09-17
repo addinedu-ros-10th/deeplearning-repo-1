@@ -41,3 +41,4 @@ class ExperimentId:
     def to_string(self) -> str:
         """문자열로 변환"""
         return str(self.value)
+
