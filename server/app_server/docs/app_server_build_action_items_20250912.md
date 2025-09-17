@@ -1021,3 +1021,26 @@ curl http://localhost:8080/api/v1/health  # API 헬스체크
 - 목록 응답 래핑 표준화 `{items,total,offset,limit}` 적용
 - `/datasets?name=&tag=` 스타일로 필터 일원화(기존 라우터와 일관성)
 - 관리자/내부용 엔드포인트는 `/admin` 또는 `/internal` 네임스페이스로 이동 및 인증 적용
+
+## 2025-09-17 업데이트: Scheduler API 표준화 및 내부 엔드포인트 특이사항/조치
+
+### 공개 엔드포인트 표준화
+- `/api/v1/scheduled-jobs`: SQLAlchemy 세션 기반으로 일원화(정상 동작 확인)
+
+### 내부 엔드포인트 분리
+- `scheduler_app`의 관리/메타 엔드포인트를 `/internal/*` 로 이동하여 중복/충돌 제거
+
+### 특이사항
+- `/internal/scheduled-jobs` 호출 시 "Connection refused" 발생 가능
+  - 원인: 컨테이너/호스트 조합에서 DB 호스트(DNS/포트) 미열림 또는 해석 실패
+  - 비고: 공개 `/api/v1/scheduled-jobs` 는 SQLAlchemy 세션을 사용하므로 정상 동작
+
+### 조치 가능 방안
+- 환경변수 보정(택1)
+  - 로컬(컨테이너 외부 실행): `DB_APP_URL=postgresql+asyncpg://...@127.0.0.1:15432/...`
+  - 컨테이너 실행: `DB_APP_URL` 호스트를 실제 접속 가능한 서비스/엔드포인트로 지정(db, RDS 등)
+  - 컨테이너→호스트 접속 시: `DOCKER_HOST_IP`를 실제 호스트 IP로 설정(기본 `172.17.0.1`)
+- 코드 정렬(권장)
+  - `/internal/*` 엔드포인트도 SQLAlchemy 세션 기반으로 통일해 환경 의존성(직접 TCP 접속) 축소
+- 운영 방침
+  - `/internal/*` 는 내부/관리용 → 인증/JWT 보호 및 비공개 노출 권장
