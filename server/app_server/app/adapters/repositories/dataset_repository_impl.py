@@ -191,3 +191,4 @@ class DatasetRepositoryImpl(DatasetRepository):
         model.license = entity.license
         model.class_schema = entity.class_schema
         model.tags = entity.tags
+

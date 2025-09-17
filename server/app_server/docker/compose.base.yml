@@ -1,8 +1,8 @@
 version: "3.9"
 
 x-env: &env
-  # env_file:
-    # 환경변수 파일은 --env-file 옵션으로 로드
+  env_file:
+    - ../secret/.env.local  # 실제 실행 시 --env-file 로 덮어씀
   environment:
     # 기본 애플리케이션 설정
     - APP_ENV=${APP_ENV}
