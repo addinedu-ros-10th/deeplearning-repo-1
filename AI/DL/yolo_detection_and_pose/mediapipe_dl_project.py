@@ -6,7 +6,7 @@ import gc
 from pytubefix import YouTube
 from pytubefix.cli import on_progress
 
-url_mode = True #url 재생원 사용 여부 설정. False는 오프라인, True는 url 사용
+url_mode = False #url 재생원 사용 여부 설정. False는 오프라인, True는 url 사용
 
 def video_show(frame, width = 640):
     _, buffer = cv2.imencode(".jpg", frame)
@@ -23,6 +23,9 @@ def video_pose_estimation_all_time(video_path): # 풀타임 재생용
 
     if cap.isOpened():
         fps = cap.get(cv2.CAP_PROP_FPS) # 영상의 초당 프레임 수 구하기 
+    else:
+        print("cap is not opened!!")
+        return
     
     period_fps = 1/fps # 초당 프레임수의 역수. 재생시간간격
 
@@ -46,16 +49,18 @@ def video_pose_estimation_all_time(video_path): # 풀타임 재생용
 
         cv2.imshow("mediapipe results", image)
 
-        if cv2.waitKey(1) == ord("q"): # 'q' 키를 눌러 종료
+        key = cv2.waitKey(1)
+        if key == ord("q"): # 'q' 키를 눌러 종료
             gc.collect()
             break
 
-        if cv2.waitKey(1) == ord("s"): # 's' 키를 눌러 일시정지. 재생 전까지는 다른 커맨드를 사용할 수 없음.
+        elif key == ord("s"): # 's' 키를 눌러 일시정지. 재생 전까지는 다른 커맨드를 사용할 수 없음.
             while True:
-                if cv2.waitKey(1) == ord("w"): # 'w' 키를 눌러 재생
+                key2 = cv2.waitKey(0)
+                if key2 == ord("w"): # 'w' 키를 눌러 재생
                     break
 
-        if cv2.waitKey(1) == ord("a"): # 'a' 키를 눌러 2초 이전으로 이동.
+        elif key == ord("a"): # 'a' 키를 눌러 2초 이전으로 이동.
             cap.set(cv2.CAP_PROP_POS_MSEC, cap.get(cv2.CAP_PROP_POS_MSEC) - 2000)
 
         # if (loop_end - loop_start) < period_fps:
@@ -66,7 +71,7 @@ def video_pose_estimation_all_time(video_path): # 풀타임 재생용
     gc.collect()
 
 if url_mode == False:
-    video = "" #오프라인 파일 경로는 이곳에 지정.
+    video = "./kbo_highlight_kt_vs_sl.mp4" #오프라인 파일 경로는 이곳에 지정.
 
 else:
     video_url = "https://www.youtube.com/watch?v=eBhOX1UN37A" #유튜브 다운로드를 이용할 경우
