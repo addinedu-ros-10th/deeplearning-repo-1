@@ -24,25 +24,6 @@ from urllib.parse import unquote, urlparse
 def create_app() -> FastAPI:
     """통합된 FastAPI 애플리케이션 팩토리 함수"""
     
-    # 데이터베이스 매니저 초기화
-    from app.infrastructure.db.session import db_manager
-    import asyncio
-    
-    # 비동기 초기화를 동기적으로 실행
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # 이미 실행 중인 이벤트 루프가 있는 경우
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, db_manager.initialize())
-                future.result()
-        else:
-            asyncio.run(db_manager.initialize())
-        print("✅ 데이터베이스 매니저 초기화 완료")
-    except Exception as e:
-        print(f"⚠️ 데이터베이스 매니저 초기화 실패: {e}")
-    
     app = FastAPI(
         title="App Server API with Scheduler & Admin",
         description="Deep Learning/IoT Care App Server with APScheduler, SQLAdmin, and Hexagonal Architecture",
@@ -76,6 +57,17 @@ def create_app() -> FastAPI:
     app.include_router(experiment_router)
     app.include_router(frame_prediction_router)
     app.include_router(detection_event_router)
+    
+    # 데이터베이스 초기화 이벤트 핸들러
+    @app.on_event("startup")
+    async def startup_db():
+        """데이터베이스 매니저 초기화"""
+        from app.infrastructure.db.session import db_manager
+        try:
+            await db_manager.initialize()
+            print("✅ 데이터베이스 매니저 초기화 완료")
+        except Exception as e:
+            print(f"⚠️ 데이터베이스 매니저 초기화 실패: {e}")
     
     # 스케줄러 이벤트 핸들러 포함
     app.add_event_handler("startup", startup_event)
