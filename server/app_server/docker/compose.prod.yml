@@ -1,5 +1,7 @@
 services:
   api:
+    env_file:
+    - ../secret/.env.prod  # 실제 실행 시 --env-file 로 덮어씀
     environment:
       - APP_ENV=production
       - DEBUG=false
