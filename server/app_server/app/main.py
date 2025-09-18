@@ -19,7 +19,7 @@ from datetime import datetime
 from urllib.parse import unquote, urlparse
 
 # 환경 변수 로딩
-load_dotenv('secret/.env.local')
+# load_dotenv('secret/.env.local')
 
 def create_app() -> FastAPI:
     """통합된 FastAPI 애플리케이션 팩토리 함수"""
