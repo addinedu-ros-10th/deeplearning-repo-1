@@ -43,6 +43,9 @@ def video_pose_estimation_all_time(video_path): # 풀타임 재생용
 
     if cap.isOpened():
         fps = cap.get(cv2.CAP_PROP_FPS) # 영상의 초당 프레임 수 구하기 
+    else:
+        print("cap is not opened!!")
+        return
     
     period_fps = 1/fps # 초당 프레임수의 역수. 재생시간간격
 

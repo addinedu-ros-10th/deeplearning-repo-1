@@ -152,3 +152,30 @@
 ### Phase 4 목표 (향후)
 - [ ] 모니터링 시스템
 - [ ] 테스트 자동화
+
+---
+
+## 2025-09-17 업데이트
+
+### 작업 개요
+- 신규 ML 로깅 테이블 기반 API 구현 완료
+  - `ml.frame_prediction` (프레임 단위 추론 결과)
+  - `ml.detection_event` (임계치 충족 이벤트)
+
+### 코드 추가
+- SQLAlchemy 모델: `FramePredictionModel`, `DetectionEventModel` (파일: `app/infrastructure/db/models/ml_models.py`)
+- 도메인/포트: `frame_prediction.py`, `detection_event.py`, 각 리포지토리 포트 추가
+- DTO: `frame_prediction_dto.py`, `detection_event_dto.py`
+- 유즈케이스: `frame_prediction_use_cases.py`, `detection_event_use_cases.py`
+- 리포지토리 구현: `frame_prediction_repository_impl.py`, `detection_event_repository_impl.py`
+- 라우터: `frame_prediction_router.py`, `detection_event_router.py` 등록
+- 메인 앱 라우터 include: `app/main.py`
+
+### API 요약
+- `/api/v1/frame-predictions`: POST(단건/배치), GET(필터/페이징), GET/{id}, DELETE/{id}
+- `/api/v1/detection-events`: POST, GET(필터/페이징), GET/{id}, DELETE/{id}
+
+### 비고
+- 헥사고날 아키텍처 및 DI 규칙 준수
+- ML 세션 의존성 사용(`get_ml_session`)
+- 에러 코드 표준화(400/404/500)
