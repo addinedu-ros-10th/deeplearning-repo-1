@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.engine import Engine
 from sqlalchemy import create_engine
 import logging
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +30,21 @@ class DatabaseManager:
     async def initialize(self):
         """데이터베이스 엔진 초기화"""
         try:
+            def _mask_db_url(url: str) -> str:
+                try:
+                    parsed = urlparse(url.replace('postgresql+asyncpg://', 'postgresql://'))
+                    host = parsed.hostname or 'unknown-host'
+                    port = parsed.port or '5432'
+                    db = (parsed.path[1:] if parsed.path else '') or 'unknown-db'
+                    scheme = 'postgresql+asyncpg' if url.startswith('postgresql+asyncpg://') else 'postgresql'
+                    return f"{scheme}://***:***@{host}:{port}/{db}"
+                except Exception:
+                    return "(invalid url)"
+
             # 신규 스키마용 엔진 (앱 전용)
             app_url = os.getenv('DB_APP_URL')
             if app_url:
+                logger.info(f"[DB] Initializing APP engine with URL: {_mask_db_url(app_url)}")
                 self.app_async_engine = create_async_engine(
                     app_url,
                     pool_size=int(os.getenv('DATABASE_POOL_SIZE', '20')),
@@ -49,6 +62,7 @@ class DatabaseManager:
             # 레거시 스키마용 엔진 (읽기 전용)
             legacy_url = os.getenv('DB_LEGACY_URL')
             if legacy_url:
+                logger.info(f"[DB] Initializing LEGACY engine with URL: {_mask_db_url(legacy_url)}")
                 self.legacy_async_engine = create_async_engine(
                     legacy_url,
                     pool_size=int(os.getenv('DATABASE_POOL_SIZE', '20')),
@@ -64,8 +78,14 @@ class DatabaseManager:
                 logger.info("레거시 스키마 엔진 초기화 완료")
             
             # ML 스키마용 엔진 (ML 레지스트리 전용)
-            ml_url = os.getenv('ML_DB_URL', app_url)  # ML_DB_URL이 없으면 app_url 사용
+            raw_ml_url = os.getenv('ML_DB_URL')
+            ml_url = raw_ml_url if raw_ml_url else app_url  # ML_DB_URL이 없으면 app_url 사용
+            if raw_ml_url:
+                logger.info(f"[DB] ML_DB_URL detected: {_mask_db_url(raw_ml_url)}")
+            else:
+                logger.info("[DB] ML_DB_URL not set; falling back to DB_APP_URL for ML engine")
             if ml_url:
+                logger.info(f"[DB] Initializing ML engine with URL: {_mask_db_url(ml_url)}")
                 self.ml_async_engine = create_async_engine(
                     ml_url,
                     pool_size=int(os.getenv('DATABASE_POOL_SIZE', '20')),
@@ -79,6 +99,8 @@ class DatabaseManager:
                     expire_on_commit=False
                 )
                 logger.info("ML 스키마 엔진 초기화 완료")
+            else:
+                logger.warning("[DB] ML engine not initialized (no ML_DB_URL/DB_APP_URL available)")
                 
         except Exception as e:
             logger.error(f"데이터베이스 엔진 초기화 실패: {e}")
