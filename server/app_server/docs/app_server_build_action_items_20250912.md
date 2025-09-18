@@ -1126,3 +1126,24 @@ curl http://localhost:8080/api/v1/health  # API 헬스체크
 ### 추가 로그로 확인 가능한 사항
 - APP/LEGACY/ML 각각의 엔진 초기화 여부 및 대상 호스트/포트/DB(자격정보 마스킹)
 - ML_DB_URL 미설정 시 APP 폴백 사용 여부
+
+## 2025-09-18 업데이트: Compose(prod) 환경변수 주입 정정(우선순위 통일)
+
+### 변경 배경
+- 컨테이너 내부에서 `ML_DB_URL` 값이 `host.docker.internal:15432`로 나타남 → base의 `.env.local`이 컨테이너에 주입되었기 때문.
+
+### 적용 내용
+- `docker/compose.prod.yml`에서 서비스 단위로 `env_file: ../secret/.env.prod` 명시하여 base의 env_file을 프로덕션에서 덮어쓰기.
+- 목적: 컨테이너 환경에 `.env.prod` 변수(특히 `ML_DB_URL`, `DB_APP_URL`)를 일관 주입.
+
+### 기대 효과
+- 컨테이너 스타트업 로그(`[ENV] Startup config`)에서 `ML_DB_URL`이 RDS(또는 내부 IP)로 표기.
+- ML 세션 초기화 시 올바른 호스트/포트로 연결.
+
+### 검증 절차
+```bash
+docker compose -f docker/compose.base.yml -f docker/compose.prod.yml down
+docker compose --env-file ../secret/.env.prod -f docker/compose.base.yml -f docker/compose.prod.yml up -d --build
+docker compose exec api env | grep -E 'ML_DB_URL|DB_APP_URL'
+# API 로그에 [ENV] Startup config 확인
+```
