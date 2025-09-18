@@ -45,7 +45,7 @@ def create_app() -> FastAPI:
     
     app = FastAPI(
         title="App Server API with Scheduler & Admin",
-        description="IoT Care App Server with APScheduler, SQLAdmin, and Hexagonal Architecture",
+        description="Deep Learning/IoT Care App Server with APScheduler, SQLAdmin, and Hexagonal Architecture",
         version="1.0.0",
         docs_url="/docs",
         redoc_url="/redoc"
@@ -265,30 +265,11 @@ def _setup_additional_endpoints(app: FastAPI) -> None:
 
 async def _get_db_connection():
     """데이터베이스 연결 생성"""
-    # 환경변수에서 데이터베이스 연결 정보 파싱
-    db_url = os.getenv("DB_APP_URL", "postgresql://svc_dev:IOT_dev_123%21%40%23@host.docker.internal:15432/iot_care")
+    from app.infrastructure.db.connection_utils import get_db_connection_params
     
-    # URL 디코딩 - postgresql+asyncpg:// 형식도 처리
-    if db_url.startswith("postgresql+asyncpg://"):
-        db_url = db_url.replace("postgresql+asyncpg://", "")
-    elif db_url.startswith("postgresql://"):
-        db_url = db_url.replace("postgresql://", "")
-    
-    # URL 파싱
-    parsed = urlparse(f"postgresql://{db_url}")
-    
-    # Docker 컨테이너에서 host.docker.internal 대신 직접 IP 사용
-    host = parsed.hostname or "host.docker.internal"
-    if host == "host.docker.internal":
-        host = "172.17.0.1"  # Docker 호스트의 실제 IP
-    
-    return await asyncpg.connect(
-        host=host,
-        port=parsed.port or 15432,
-        user=unquote(parsed.username) if parsed.username else "svc_dev",
-        password=unquote(parsed.password) if parsed.password else "IOT_dev_123!@#",
-        database=parsed.path[1:] if parsed.path else "iot_care"
-    )
+    # 환경변수에서 DB 연결 정보 파싱
+    conn_params = get_db_connection_params('DB_APP_URL')
+    return await asyncpg.connect(**conn_params)
 
 
 # Docker Compose에서 사용할 수 있도록 직접 실행 가능
