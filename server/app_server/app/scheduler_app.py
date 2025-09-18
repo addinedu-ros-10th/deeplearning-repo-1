@@ -11,6 +11,7 @@ from typing import List, Dict, Any
 from datetime import datetime
 from app.services.scheduler_service import scheduler_service
 from app.admin.simple_admin import create_admin_app
+from app.infrastructure.db.connection_utils import get_db_connection_params
 
 # 환경 변수 로딩
 load_dotenv('secret/.env.local')
@@ -44,25 +45,10 @@ async def health_check():
     }
 
 async def _connect_db_from_env():
-    """환경변수(DB_APP_URL) 기반 asyncpg 연결 헬퍼 (Docker 호스트 IP 보정)"""
+    """환경변수(DB_APP_URL) 기반 asyncpg 연결 헬퍼"""
     try:
-        db_url = os.getenv("DB_APP_URL", "postgresql://svc_dev:IOT_dev_123%21%40%23@host.docker.internal:15432/iot_care")
-        # postgresql+asyncpg 스킴 보정
-        if db_url.startswith("postgresql+asyncpg://"):
-            db_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
-        from urllib.parse import urlparse, unquote
-        parsed = urlparse(db_url)
-        host = parsed.hostname or "host.docker.internal"
-        # Linux 컨테이너 내 host.docker.internal 해석 실패 대비
-        if host == "host.docker.internal":
-            host = os.getenv("DOCKER_HOST_IP", "172.17.0.1")
-        return await asyncpg.connect(
-            host=host,
-            port=parsed.port or 15432,
-            user=unquote(parsed.username) if parsed.username else None,
-            password=unquote(parsed.password) if parsed.password else None,
-            database=parsed.path[1:] if parsed.path else None,
-        )
+        conn_params = get_db_connection_params('DB_APP_URL')
+        return await asyncpg.connect(**conn_params)
     except Exception:
         raise
 
