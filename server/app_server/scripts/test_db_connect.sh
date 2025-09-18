@@ -31,8 +31,30 @@ ROOT_DIR="$(cd "$(dirname "$0")"/.. && pwd)"
 
 if [[ -n "$ENV_FILE" ]]; then
   if [[ -f "$ENV_FILE" ]]; then
-    # shellcheck disable=SC1090
-    source "$ENV_FILE"
+    echo "[INFO] Loading env from $ENV_FILE"
+    # Robust .env loader: only accept KEY=VALUE lines; ignore others (e.g., INI headers, comments, YAML)
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      # Trim leading/trailing spaces
+      line="${line%%[[:space:]]*}$([[ ${line##*[![:space:]]} ]] && printf '')"
+      # Skip blanks or comments
+      [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+      # Accept only KEY=VALUE format (allow spaces around '=')
+      if [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=[[:space:]]*.+$ ]]; then
+        key="${line%%=*}"
+        val="${line#*=}"
+        # Trim spaces around key and value
+        key="${key//[[:space:]]/}"
+        val="${val##[[:space:]]}"
+        val="${val%%[[:space:]]}"
+        # Strip surrounding single/double quotes
+        [[ "$val" =~ ^\".*\"$ ]] && val="${val:1:${#val}-2}"
+        [[ "$val" =~ ^\'.*\'$ ]] && val="${val:1:${#val}-2}"
+        export "$key"="$val"
+      else
+        # Ignore lines like "Section:", "Server:", INI headers, etc.
+        continue
+      fi
+    done < "$ENV_FILE"
   else
     echo "[WARN] Env file not found: $ENV_FILE" >&2
   fi
