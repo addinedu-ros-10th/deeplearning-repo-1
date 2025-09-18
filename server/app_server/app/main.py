@@ -18,12 +18,50 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 from urllib.parse import unquote, urlparse
 
-# 환경 변수 로딩
-# load_dotenv('secret/.env.local')
+def _mask_url(url: str) -> str:
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(url.replace('postgresql+asyncpg://', 'postgresql://'))
+        host = parsed.hostname or 'unknown-host'
+        port = parsed.port or '5432'
+        db = (parsed.path[1:] if parsed.path else '') or 'unknown-db'
+        scheme = 'postgresql+asyncpg' if url.startswith('postgresql+asyncpg://') else 'postgresql'
+        return f"{scheme}://***:***@{host}:{port}/{db}"
+    except Exception:
+        return '(invalid url)'
+
+def _load_env():
+    env_file = None
+    app_env = os.getenv('APP_ENV', '').lower()
+    if app_env == 'local':
+        env_file = 'secret/.env.local'
+    elif app_env in ('prod', 'production'):
+        env_file = 'secret/.env.prod'
+    if env_file and os.path.exists(env_file):
+        load_dotenv(env_file)
+        print(f"[ENV] Loaded dotenv file: {env_file}")
+    else:
+        print("[ENV] Skipping dotenv load (using process environment)")
+
+def _log_startup_env():
+    vars_to_log = ['APP_ENV','DB_MODE','DB_APP_URL','ML_DB_URL','DB_LEGACY_URL','DEBUG']
+    masked = {}
+    for k in vars_to_log:
+        v = os.getenv(k)
+        if not v:
+            masked[k] = None
+        elif k.endswith('_URL'):
+            masked[k] = _mask_url(v)
+        else:
+            masked[k] = v
+    print(f"[ENV] Startup config: {masked}")
 
 def create_app() -> FastAPI:
     """통합된 FastAPI 애플리케이션 팩토리 함수"""
     
+    _load_env()
+    _log_startup_env()
+
     app = FastAPI(
         title="App Server API with Scheduler & Admin",
         description="Deep Learning/IoT Care App Server with APScheduler, SQLAdmin, and Hexagonal Architecture",
