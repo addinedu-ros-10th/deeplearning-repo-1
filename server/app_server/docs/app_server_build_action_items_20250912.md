@@ -1103,3 +1103,26 @@ curl http://localhost:8080/api/v1/health  # API 헬스체크
   - `/internal/*` 엔드포인트도 SQLAlchemy 세션 기반으로 통일해 환경 의존성(직접 TCP 접속) 축소
 - 운영 방침
   - `/internal/*` 는 내부/관리용 → 인증/JWT 보호 및 비공개 노출 권장
+
+## 2025-09-18 업데이트: AWS DB 연결 점검 및 ML 세션 이슈 분석
+
+### 작업 개요
+- AWS 내부 IP 기반 DB 접속 점검 스크립트 추가 및 보강
+  - `scripts/test_db_connect.sh` 추가: DNS→TCP→SQL 순서 점검, `--env`/`--url` 지원
+  - .env 로더 개선: KEY=VALUE 라인만 로드(설명/섹션 라인 무시), 따옴표 처리
+  - psql 플래그 수정: `-tA -c "SELECT version();"`
+- DB 세션 초기화 로그 강화
+  - `app/infrastructure/db/session.py`에 마스킹된 URL 로그 및 ML 폴백 로그 추가
+
+### 현재 상태
+- prod .env로 실행 시 RDS에 대해 DNS/TCP/SQL 모두 OK (버전 획득 확인)
+- 공개 엔드포인트 `/api/v1/scheduled-jobs` 정상 동작
+- 내부 엔드포인트 `/internal/*` 는 운영 정책상 비공개/보호 대상
+
+### ML 세션 연결 이슈 원인
+- 컨테이너 관점에서 `ML_DB_URL` 호스트/DNS가 유효하지 않거나, `.env` 로딩 형식 문제로 변수 미적용 시 `Name or service not known` 발생
+- 조치: `.env` KEY=VALUE 정리, `ML_DB_URL`을 컨테이너에서 접근 가능한 RDS 엔드포인트로 지정(필요 시 sslmode), SG 인바운드 허용
+
+### 추가 로그로 확인 가능한 사항
+- APP/LEGACY/ML 각각의 엔진 초기화 여부 및 대상 호스트/포트/DB(자격정보 마스킹)
+- ML_DB_URL 미설정 시 APP 폴백 사용 여부
