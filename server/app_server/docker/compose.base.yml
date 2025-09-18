@@ -124,7 +124,7 @@ services:
     volumes:
       - ../app:/app/app
       - files-data:${FILES_BASE_DIR:-/app/files}   # ✅ 기본값 /app/files
-      - ../secret:/app/secret:ro
+      - secrets-data:/app/secret:ro
     depends_on:
       - redis
     command: >
