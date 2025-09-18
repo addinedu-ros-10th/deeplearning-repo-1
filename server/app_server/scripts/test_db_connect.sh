@@ -121,7 +121,7 @@ if command -v psql >/dev/null 2>&1; then
   # Use URL directly so psql handles percent-encoded password
   # Add sslmode from URL params if present; otherwise rely on default
   set +e
-  PSQL_OUT=$(psql "$NORM_URL" -c "SELECT version();" -tAo 2>&1)
+  PSQL_OUT=$(psql "$NORM_URL" -tA -c "SELECT version();" 2>&1)
   PSQL_CODE=$?
   set -e
   if [[ $PSQL_CODE -ne 0 ]]; then
