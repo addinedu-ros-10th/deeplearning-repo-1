@@ -40,6 +40,12 @@
    - Docker 네트워크 호환성 개선
    - 모든 서비스 통합 DB 연결 관리
 
+7. **ML 스키마 초기화 안정화 (2025-09-18)**
+   - FastAPI startup 이벤트 기반 데이터베이스 매니저 초기화
+   - 운영 환경에서 ML API 안정성 확보
+   - 이벤트 루프 충돌 문제 해결
+   - 모든 ML Registry API 정상 작동 보장
+
 ### 🔄 현재 상태 (2025-09-18 최종 업데이트)
 - **API 서버**: ✅ 정상 동작 (http://localhost:8000) - Health Check 통과
 - **데이터베이스**: ✅ 연결 성공 (환경변수 기반) - 모든 스키마 정상 접근
@@ -51,6 +57,8 @@
 - **ML Registry API**: ✅ 완전 구현 및 테스트 완료 - Dataset, Experiment CRUD API
 - **환경변수 관리**: ✅ Docker Compose 환경변수 기반 DB 연결 완전 구현
 - **DB 연결 통합**: ✅ 모든 서비스가 환경변수 기반으로 통일된 DB 연결
+- **ML 스키마 초기화**: ✅ FastAPI startup 이벤트 기반 안정적 초기화
+- **운영 환경 호환성**: ✅ 운영 환경에서 모든 ML API 정상 작동
 - **전체 시스템**: ✅ 완전 정상 작동 - 모든 기능 테스트 통과
 
 ### 🛠️ 해결된 주요 문제들 (2025-09-18)
@@ -82,6 +90,20 @@
   - `postgresql+asyncpg://` 형식 자동 변환
   - 중앙화된 연결 관리로 유지보수성 향상
 - **결과**: 환경별 DB 설정 변경이 코드 수정 없이 가능
+
+#### 4. ML 스키마 초기화 문제 해결 (운영 환경)
+- **문제**: 운영 환경에서 ML 스키마 엔진 초기화 실패로 인한 API 오류
+  - `[Errno -2] Name or service not known` 오류 발생
+  - `ML 스키마 엔진이 초기화되지 않았습니다` RuntimeError
+  - `500: Failed to list datasets` API 오류
+- **해결**:
+  - FastAPI startup 이벤트로 데이터베이스 매니저 초기화 이동
+  - 비동기 초기화를 안전하게 처리하는 `@app.on_event("startup")` 사용
+  - 이벤트 루프 충돌 문제 해결
+- **영향**:
+  - `main.py`: 동기적 초기화 제거, startup 이벤트로 이동
+  - 모든 ML API 정상 작동 (datasets, experiments, detection-events)
+- **결과**: 운영 환경에서 모든 ML Registry API 정상 작동
 
 ### 🛠️ 해결된 주요 문제들 (2025-09-15)
 
