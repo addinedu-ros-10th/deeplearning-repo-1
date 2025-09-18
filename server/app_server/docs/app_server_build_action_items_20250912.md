@@ -1147,3 +1147,21 @@ docker compose --env-file ../secret/.env.prod -f docker/compose.base.yml -f dock
 docker compose exec api env | grep -E 'ML_DB_URL|DB_APP_URL'
 # API 로그에 [ENV] Startup config 확인
 ```
+
+## 2025-09-18 업데이트: API 인터페이스 명세 및 공통 클라이언트 추가
+
+### 추가 문서
+- `docs/apis/datasets_api.md`: Datasets REST API 명세 (Base URL/엔드포인트/요청/응답/예시)
+- `docs/apis/experiments_api.md`: Experiments REST API 명세
+- `docs/apis/frame_predictions_api.md`: Frame-Predictions REST API 명세
+- `docs/apis/detection_events_api.md`: Detection-Events REST API 명세
+
+### 공통 클라이언트
+- `Util/common_api.py`: 범용 REST API 클라이언트 (requests 기반)
+  - BASE_URL 자동 보정(/api/v1), GET/POST/PUT/PATCH/DELETE/HEAD/OPTIONS 편의 함수 제공
+  - 설치: `pip install requests`
+  - 예시: 본 프로젝트의 Datasets/Experiments/FramePredictions/DetectionEvents 호출 예시 포함
+
+### 목적/효과
+- 팀 내/외부 소비자가 API 스펙과 사용 예시를 즉시 확인 가능
+- 신규/외부 REST API에도 재사용 가능한 표준 클라이언트 확보
