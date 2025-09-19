@@ -31,7 +31,7 @@ mp_drawing = mp.solutions.drawing_utils
 cap = cv2.VideoCapture(0)
 """0번: 노트북 카메라, 1번~: 기타 카메라. 카메라 포트 확인 시에는 터미널에 "ls -l /dev/video*" 커맨드를 입력하여 확인. """
 
-model_path = "./GHJSJMJGM_20250915_v1.pt" # 학습모델 적용하는 위치
+model_path = "./data_511_yb_sdj_v1.0.pt" # 학습모델 적용하는 위치
 model = torch.jit.load(model_path)
 model.eval()
 
