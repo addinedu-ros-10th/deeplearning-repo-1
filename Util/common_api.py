@@ -226,7 +226,7 @@ class CommonApiClient:
 
 if __name__ == "__main__":
     # 간단 예제 실행: Datasets 목록 가져오기
-    client = CommonApiClient(base_url="http://localhost:8000")
+    client = CommonApiClient(base_url="http://ec2-43-201-96-23.ap-northeast-2.compute.amazonaws.com")
     status, body = client.get("/datasets", params={"skip": 0, "limit": 5})
     print(status, body)
 
