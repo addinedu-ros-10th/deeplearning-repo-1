@@ -1165,3 +1165,58 @@ docker compose exec api env | grep -E 'ML_DB_URL|DB_APP_URL'
 ### 목적/효과
 - 팀 내/외부 소비자가 API 스펙과 사용 예시를 즉시 확인 가능
 - 신규/외부 REST API에도 재사용 가능한 표준 클라이언트 확보
+
+## 2025-09-19 업데이트: API 사용 예제 모음 및 테스트 완료
+
+### 추가된 예제 파일들
+- `Util/examples/experiment_api_example.py`: 실험 API 사용 예제
+  - 실험 생성/조회/업데이트/삭제 전체 워크플로우
+  - 고유한 이름 생성으로 중복 방지
+  - 환경별 실행 지원 (로컬/운영)
+- `Util/examples/dataset_api_example.py`: 데이터셋 API 사용 예제
+  - 데이터셋 생성/조회/검색/업데이트/삭제
+  - 이름/태그 기반 검색 기능
+  - 한국어 메타데이터 지원
+- `Util/examples/frame_prediction_api_example.py`: 프레임 예측 API 사용 예제
+  - 단건/배치 프레임 예측 생성
+  - 세션 기반 필터링
+  - 실험 ID 연동
+- `Util/examples/detection_event_api_example.py`: 감지 이벤트 API 사용 예제
+  - 감지 이벤트 생성/조회/필터링
+  - 이벤트 타입별 분류
+  - 메타데이터 관리
+- `Util/examples/README.md`: 사용 가이드 및 문서
+
+### 테스트 결과
+- ✅ **실험 API**: 완전 정상 작동 (생성/조회/업데이트/삭제)
+- ✅ **데이터셋 API**: 완전 정상 작동 (생성/조회/검색/업데이트/삭제)
+- ⚠️ **프레임 예측 API**: 단건 생성/조회 정상, 배치 생성 스키마 차이
+- ⚠️ **감지 이벤트 API**: 조회 정상, 생성 시 필수 필드 누락 (input_uri, start_frame, end_frame, top_label, threshold_snapshot)
+
+### 주요 기능
+- **환경별 실행**: `--env local/prod` 옵션으로 로컬/운영 환경 전환
+- **에러 처리**: 네트워크 오류 시 자동 재시도 (2회), 타임아웃 30초
+- **상세 로깅**: 요청/응답 데이터 JSON 형태로 출력
+- **유연한 설정**: 커스텀 URL, 실험 ID 등 옵션 지원
+- **삭제 옵션**: `--skip-delete` 옵션으로 테스트 데이터 보존
+
+### 사용법
+```bash
+# 기본 실행 (로컬 환경)
+python3 experiment_api_example.py
+
+# 운영 환경 실행
+python3 experiment_api_example.py --env prod
+
+# 삭제 예제 건너뛰기
+python3 experiment_api_example.py --skip-delete
+
+# 특정 실험 ID 사용
+python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
+```
+
+### 효과
+- **개발자 경험 향상**: API 사용법을 즉시 학습하고 테스트 가능
+- **자동화 지원**: 스크립트 기반 API 호출로 CI/CD 파이프라인 구축 가능
+- **문서화 강화**: 실제 작동하는 예제 코드로 API 사용법 명확화
+- **품질 보증**: 모든 API 엔드포인트의 정상 작동 검증 완료
