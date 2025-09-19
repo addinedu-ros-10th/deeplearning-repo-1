@@ -24,6 +24,11 @@ void setup() {
   Serial.setDebugOutput(true);
   Serial.println();
 
+  if( !WiFi.config( local_IP, gateway, subnet ) )
+  {
+    Serial.println( "STA failed to configure" );
+  }
+
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -111,6 +116,7 @@ void setup() {
   setupLedFlash();
 #endif
 
+  WiFi.mode( WIFI_STA );
   WiFi.begin(ssid, password);
   WiFi.setSleep(false);
 
