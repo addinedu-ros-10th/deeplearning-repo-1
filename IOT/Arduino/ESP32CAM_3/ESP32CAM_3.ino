@@ -12,7 +12,7 @@
 const char *ssid = "AIE_509_2.4G";
 const char *password = "addinedu_class1";
 
-IPAddress local_IP(192, 168, 0, 61);    // ESP32-CAM IP
+IPAddress local_IP(192, 168, 0, 63);    // ESP32-CAM IP
 IPAddress gateway(192, 168, 0, 1);      // 공유기 게이트웨이
 IPAddress subnet(255, 255, 255, 0);     // 서브넷 마스크
 
@@ -57,7 +57,7 @@ void setup() {
   config.jpeg_quality = 12;
   config.fb_count = 1;
 
-  WiFi.setHostname("Person-A_ESP32");
+  WiFi.setHostname("Person-A_ESP32_3"); //ESP32_Name setup
   // if PSRAM IC present, init with UXGA resolution and higher JPEG quality
   //                      for larger pre-allocated frame buffer.
   if (config.pixel_format == PIXFORMAT_JPEG) {
