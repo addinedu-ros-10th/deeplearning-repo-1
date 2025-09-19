@@ -179,10 +179,39 @@ API 서버가 실행 중인지 확인하세요.
 - 필수 필드 누락 여부 확인
 - 데이터 타입 및 값 검증
 
+## 🎥 ESP32 영상 스트림 테스트
+
+ESP32에서 송출하는 영상 스트림을 테스트하고 모니터링할 수 있는 도구가 추가되었습니다.
+
+### 기본 사용법
+```bash
+# ESP32 스트림 연결 테스트
+python3 esp32_stream_test.py
+
+# 스트림 품질 테스트 (10초)
+python3 esp32_stream_test.py --test-quality 10
+
+# 프레임 캡처 (5개 프레임)
+python3 esp32_stream_test.py --capture-frames --max-frames 5
+
+# 실시간 모니터링 (30초)
+python3 esp32_stream_test.py --monitor 30
+```
+
+### 주요 기능
+- ✅ **연결 테스트**: ESP32와의 네트워크 연결 상태 확인
+- ✅ **품질 측정**: 실제 FPS, 해상도, 프레임 손실률 측정
+- ✅ **프레임 캡처**: 스트림에서 이미지 프레임 저장
+- ✅ **실시간 모니터링**: OpenCV 창에서 실시간 스트림 확인
+- ✅ **네트워크 진단**: TCP/HTTP 연결 상태 진단
+
+자세한 사용법은 `../ESP32_STREAM_GUIDE.md`를 참조하세요.
+
 ## 📚 추가 정보
 
 - **API 문서**: `server/app_server/docs/apis/` 디렉토리 참조
 - **공통 클라이언트**: `../common_api.py` 파일 참조
+- **ESP32 스트림 가이드**: `../ESP32_STREAM_GUIDE.md` 파일 참조
 - **서버 설정**: `server/app_server/` 디렉토리 참조
 
 ## 🤝 기여하기
