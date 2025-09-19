@@ -182,7 +182,7 @@ with torch.no_grad():
         y_true.extend(y_batch.numpy())
         y_pred.extend(preds.numpy())
 
-# print(classification_report(y_true, y_pred, target_names = list(labels_map.keys())))
+print(classification_report(y_true, y_pred, target_names = list(labels_map.keys())))
 
 scripted_model = torch.jit.script(model)
 
