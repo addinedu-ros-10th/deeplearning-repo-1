@@ -5,6 +5,8 @@ import torch
 from ultralytics import YOLO # 객체인식용 모듈
 import ultralytics
 import gc
+import time
+from util import common_api
 
 ultralytics.checks()
 
@@ -28,9 +30,11 @@ mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 mp_drawing = mp.solutions.drawing_utils
 
+url = "http://192.168.0.61:81/stream"
+
 # cap = cv2.VideoCapture(0)
-cap = cv2.VideoCapture("http://100.65.221.86:3010/receiver?camera_id=cam2")
-# cap = cv2.VideoCapture("http://192.168.0.61:81/stream")
+# cap = cv2.VideoCapture("http://100.65.221.86:3010/receiver?camera_id=cam2")
+cap = cv2.VideoCapture(url)
 # cap = cv2.VideoCapture("/home/dj/dev_ws/EDA/data/LSTM_test/test/test.mp4")
 """0번: 노트북 카메라, 1번~: 기타 카메라. 카메라 포트 확인 시에는 터미널에 "ls -l /dev/video*" 커맨드를 입력하여 확인. """
 
@@ -41,12 +45,25 @@ model.eval()
 model_yolo = YOLO("yolo11n.pt")
 model_yolo.predict(classes = 0)
 
+items = []
+
+session_id = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+# session_id = str(uuid.uuid4())
+experiment_id = "12bd0c67-a10c-4e01-adec-871010e49031"
+
+server_url = "http://ec2-43-201-96-23.ap-northeast-2.compute.amazonaws.com"
+
 labels_map = {0: "Normal", 1: "Warning", 2: "Fall"}
 
 is_collecting = True
 keypoints_list = []
 yolo_activate_switch = False
 yolo_activate_count = 0
+
+index_number = 0
+confidence_bool = False
+
+client = common_api.CommonApiClient(base_url= server_url)
 
 while cap.isOpened():
 
@@ -105,6 +122,11 @@ while cap.isOpened():
 
         keypoints_list = []
 
+        if confidence_percent > 80:
+            confidence_bool = True
+        else:
+            confidence_bool = False
+
         # if yolo_activate_switch == True: # yolo 연산 횟수를 절반으로 줄이는 코드
         #     if yolo_activate_count < 1:
         #         yolo_activate_count += 1
@@ -112,6 +134,37 @@ while cap.isOpened():
         #         yolo_activate_count = 0
         #         result_yolo = model_yolo(frame)
         #         frame = list(result_yolo)[0].plot()
+
+        item = {
+            "session_id": session_id,
+            "experiment_id": experiment_id,
+            "input_uri": url,
+            "frame_index": index_number,
+            "probabilities": {
+                "normal": float(probabilities[0][0]),
+                "warning": float(probabilities[0][1]),
+                "fall": float(probabilities[0][2]),
+            },
+            "label_pred": predicted_label,
+            "ts_rel_ms": int(time.time()),
+            "confidence": confidence,
+            "passed": confidence_bool,
+            "threshold_name": "yolo_threshold",
+            "threshold_snapshot": {
+                "threshold": 0.5
+            }
+        }
+
+        items.append(item)
+        index_number += 1
+        print(len(items))
+
+    if len(items) == 60:
+        items_dict = {"items": items}
+        status, body = client.post("/frame-predictions/batch", json = items_dict)
+        print(status, body)
+        items = []
+        index_number = 0
 
     if yolo_activate_switch == True:
         result_yolo = model_yolo(frame)
