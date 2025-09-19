@@ -31,7 +31,7 @@ def parse_db_url(db_url: str) -> Dict[str, Any]:
         # Docker 컨테이너에서 host.docker.internal 처리
         host = parsed.hostname or "localhost"
         if host == "host.docker.internal":
-            host = "172.17.0.1"  # Docker 호스트의 실제 IP
+            host = os.getenv("DOCKER_HOST_IP", "172.17.0.1")  # Docker 호스트의 실제 IP (환경변수 우선)
         
         # 연결 파라미터 구성
         conn_params = {
@@ -45,7 +45,7 @@ def parse_db_url(db_url: str) -> Dict[str, Any]:
         # None 값 제거
         conn_params = {k: v for k, v in conn_params.items() if v is not None}
         
-        logger.debug(f"DB 연결 파라미터: {conn_params}")
+        logger.info(f"[DB] Parsed URL -> host={conn_params.get('host')} port={conn_params.get('port')} db={conn_params.get('database')} user={'***' if conn_params.get('user') else None}")
         return conn_params
         
     except Exception as e:
@@ -70,10 +70,21 @@ def get_db_connection_params(env_var: str = 'DB_APP_URL') -> Dict[str, Any]:
         asyncpg.connect()에 전달할 연결 파라미터 딕셔너리
     """
     db_url = os.getenv(env_var)
+    logger.info(f"[DB] Resolving env_var={env_var} -> url={'(none)' if not db_url else '(masked)'}")
     if not db_url:
         logger.warning(f"환경변수 {env_var}가 설정되지 않음. 기본값 사용")
         db_url = "postgresql://svc_dev:IOT_dev_123%21%40%23@host.docker.internal:15432/iot_care"
-    
+    else:
+        # 마스킹된 URL 로그
+        try:
+            masked = db_url.replace('postgresql+asyncpg://', 'postgresql://')
+            p = urlparse(masked)
+            host = p.hostname or 'unknown'
+            port = p.port or 5432
+            db = (p.path[1:] if p.path else '') or 'unknown'
+            logger.info(f"[DB] Using URL: postgresql+asyncpg://***:***@{host}:{port}/{db}")
+        except Exception:
+            pass
     return parse_db_url(db_url)
 
 def get_ml_db_connection_params() -> Dict[str, Any]:
