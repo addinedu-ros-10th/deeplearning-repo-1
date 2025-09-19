@@ -7,7 +7,7 @@ from PyQt6.QtCore import QTimer
 from PyQt6 import uic
 
 
-from_class = uic.loadUiType("test01.ui")[0]
+from_class = uic.loadUiType("/home/addinedu/dev_ws/deeplearning-repo-1/IOT/PyQt/ESP32_Test/test01.ui")[0]
 
 class CameraWidget(QWidget):
     def __init__(self, url):
@@ -43,7 +43,7 @@ class CameraWidget(QWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     # ESP32-CAM 스트림 URL
-    url = "http://192.168.0.27:81/stream"  # 실제 ESP32-CAM IP와 포트 사용
+    url = "http://192.168.0.61:81/stream"  # 실제 ESP32-CAM IP와 포트 사용
     win = CameraWidget(url)
     win.show()
     sys.exit(app.exec())
