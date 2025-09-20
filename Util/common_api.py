@@ -226,7 +226,50 @@ class CommonApiClient:
 
 if __name__ == "__main__":
     # 간단 예제 실행: Datasets 목록 가져오기
-    client = CommonApiClient(base_url="http://localhost:8000")
-    status, body = client.get("/datasets", params={"skip": 0, "limit": 5})
+    client = CommonApiClient(base_url="http://ec2-43-201-96-23.ap-northeast-2.compute.amazonaws.com")
+    status, body = client.post(
+        "/frame-predictions/batch", json={
+                                    "items": [
+                                        {
+                                        "session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                                        "experiment_id": "12bd0c67-a10c-4e01-adec-871010e49031",
+                                        "input_uri": "http://192.168.0.61:81/stream",
+                                        "frame_index": 1,
+                                        "probabilities": {
+                                            "normal": 0.95,
+                                            "warning": 0.03,
+                                            "fall": 0.02
+                                        },
+                                        "label_pred": "normal",
+                                        "ts_rel_ms": 100,
+                                        "confidence": 0.95,
+                                        "passed": True,
+                                        "threshold_name": "test",
+                                        "threshold_snapshot": {
+                                            "additionalProp1": {}
+                                        }
+                                        },
+                                        {
+                                        "session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                                        "experiment_id": "12bd0c67-a10c-4e01-adec-871010e49031",
+                                        "input_uri": "http://192.168.0.61:81/stream",
+                                        "frame_index": 2,
+                                        "probabilities": {
+                                            "normal": 0.1,
+                                            "warning": 0.85,
+                                            "fall": 0.05
+                                        },
+                                        "label_pred": "warning",
+                                        "ts_rel_ms": 200,
+                                        "confidence": 0.85,
+                                        "passed": True,
+                                        "threshold_name": "test",
+                                        "threshold_snapshot": {
+                                            "additionalProp1": {}
+                                        }
+                                        }
+                                    ]
+                                }
+)
     print(status, body)
 
