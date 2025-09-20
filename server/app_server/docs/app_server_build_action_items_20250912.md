@@ -34,22 +34,85 @@
    - Docker Compose 환경별 구성
    - 보안 파일 관리 (SSH 키, 환경 변수)
 
-### 🔄 현재 상태 (2025-09-13 최종 업데이트)
+6. **데이터베이스 연결 통합 (2025-09-18)**
+   - 공통 DB 연결 유틸리티 구현 (`connection_utils.py`)
+   - 환경변수 기반 DB 연결 표준화
+   - Docker 네트워크 호환성 개선
+   - 모든 서비스 통합 DB 연결 관리
+
+7. **ML 스키마 초기화 안정화 (2025-09-18)**
+   - FastAPI startup 이벤트 기반 데이터베이스 매니저 초기화
+   - 운영 환경에서 ML API 안정성 확보
+   - 이벤트 루프 충돌 문제 해결
+   - 모든 ML Registry API 정상 작동 보장
+
+### 🔄 현재 상태 (2025-09-18 최종 업데이트)
 - **API 서버**: ✅ 정상 동작 (http://localhost:8000) - Health Check 통과
-- **데이터베이스**: ✅ 연결 성공 (SSH 터널 통해) - 2개 스케줄 작업 로드
-- **스케줄러**: ✅ 완전 정상 동작 - 직렬화 문제 해결됨
+- **데이터베이스**: ✅ 연결 성공 (환경변수 기반) - 모든 스키마 정상 접근
+- **스케줄러**: ✅ 완전 정상 동작 - 환경변수 기반 DB 연결
 - **관리자 화면**: ✅ SQLAdmin 완전 정상 - Internal Server Error 해결됨
 - **Nginx 프록시**: ✅ 정상 동작 (http://localhost:80) - 모든 엔드포인트 접근 가능
 - **Docker Compose**: ✅ 모든 서비스 Up(healthy) - api, nginx, redis
 - **SSH 터널 자동화**: ✅ 호스트 기반 스크립트로 완전 자동화
+- **ML Registry API**: ✅ 완전 구현 및 테스트 완료 - Dataset, Experiment CRUD API
+- **환경변수 관리**: ✅ Docker Compose 환경변수 기반 DB 연결 완전 구현
+- **DB 연결 통합**: ✅ 모든 서비스가 환경변수 기반으로 통일된 DB 연결
+- **ML 스키마 초기화**: ✅ FastAPI startup 이벤트 기반 안정적 초기화
+- **운영 환경 호환성**: ✅ 운영 환경에서 모든 ML API 정상 작동
 - **전체 시스템**: ✅ 완전 정상 작동 - 모든 기능 테스트 통과
 
-### 🛠️ 해결된 주요 문제들 (2025-09-13)
+### 🛠️ 해결된 주요 문제들 (2025-09-18)
+
+#### 1. 데이터베이스 연결 통합 및 환경변수 기반 설정
+- **문제**: 각 서비스마다 하드코딩된 DB 연결 정보 사용
+- **해결**: 
+  - 공통 DB 연결 유틸리티 생성 (`app/infrastructure/db/connection_utils.py`)
+  - 모든 서비스가 환경변수 기반으로 통일된 DB 연결 방식 사용
+  - Docker Compose 환경변수 자동 파싱 및 적용
+- **영향**: 
+  - `scheduler_service.py`: 스케줄러 서비스 DB 연결 개선
+  - `scheduler_app.py`: 스케줄러 앱 DB 연결 개선
+  - `main.py`: 메인 앱 DB 연결 개선
+- **결과**: ML 스키마 오류 완전 해결, 모든 API 정상 작동
+
+#### 2. Docker 네트워크 호환성 개선
+- **문제**: `host.docker.internal` 해석 실패로 인한 DB 연결 오류
+- **해결**: 
+  - 자동 IP 변환 로직 구현 (`host.docker.internal` → `172.17.0.1`)
+  - URL 파싱 및 연결 파라미터 자동 생성
+  - 연결 실패 시 기본값 fallback 메커니즘
+- **결과**: Docker 환경에서 안정적인 DB 연결 보장
+
+#### 3. 환경변수 기반 설정 표준화
+- **문제**: 하드코딩된 DB 연결 정보로 인한 유연성 부족
+- **해결**:
+  - `DB_APP_URL`, `ML_DB_URL`, `DB_LEGACY_URL` 환경변수 지원
+  - `postgresql+asyncpg://` 형식 자동 변환
+  - 중앙화된 연결 관리로 유지보수성 향상
+- **결과**: 환경별 DB 설정 변경이 코드 수정 없이 가능
+
+#### 4. ML 스키마 초기화 문제 해결 (운영 환경)
+- **문제**: 운영 환경에서 ML 스키마 엔진 초기화 실패로 인한 API 오류
+  - `[Errno -2] Name or service not known` 오류 발생
+  - `ML 스키마 엔진이 초기화되지 않았습니다` RuntimeError
+  - `500: Failed to list datasets` API 오류
+- **해결**:
+  - FastAPI startup 이벤트로 데이터베이스 매니저 초기화 이동
+  - 비동기 초기화를 안전하게 처리하는 `@app.on_event("startup")` 사용
+  - 이벤트 루프 충돌 문제 해결
+- **영향**:
+  - `main.py`: 동기적 초기화 제거, startup 이벤트로 이동
+  - 모든 ML API 정상 작동 (datasets, experiments, detection-events)
+- **결과**: 운영 환경에서 모든 ML Registry API 정상 작동
+
+### 🛠️ 해결된 주요 문제들 (2025-09-15)
 
 #### 1. Docker Compose 실행 문제들
 - **볼륨 마운트 오류**: `invalid mount path: '.'` → 환경변수 기본값 설정으로 해결
 - **포트 충돌**: 8000 포트 중복 사용 → 포트 분리 구성으로 해결
 - **Nginx www-data 사용자 오류**: Alpine Linux 호환성 문제 → `user nginx;` 설정으로 해결
+- **환경변수 로드 실패**: `DB_APP_URL`, `ML_DB_URL` 미인식 → `--env-file` 옵션 사용으로 해결
+- **호스트 접근 문제**: `localhost:15432` 연결 실패 → `host.docker.internal` 사용으로 해결
 - **환경변수 치환 미적용**: `--env-file` 옵션 사용으로 해결
 
 #### 2. SSH 터널 자동화
@@ -805,6 +868,53 @@ def create_app() -> FastAPI:
 
 ---
 
+## 🚀 **Docker Compose 실행 방법**
+
+### **환경별 실행 명령어**
+
+#### **로컬 개발 환경**
+```bash
+# 기본 실행 (환경변수 파일 사용)
+docker compose --env-file ./secret/.env.local -f docker/compose.base.yml -f docker/compose.local.yml up -d
+
+# 빌드와 함께 실행
+docker compose --env-file ./secret/.env.local -f docker/compose.base.yml -f docker/compose.local.yml up --build
+
+# 로그 확인
+docker compose --env-file ./secret/.env.local -f docker/compose.base.yml -f docker/compose.local.yml logs -f
+
+# 중지
+docker compose --env-file ./secret/.env.local -f docker/compose.base.yml -f docker/compose.local.yml down
+```
+
+#### **운영 환경**
+```bash
+# 운영 환경 실행
+docker compose --env-file ./secret/.env.prod -f docker/compose.base.yml -f docker/compose.prod.yml up -d
+
+# 빌드와 함께 실행
+docker compose --env-file ./secret/.env.prod -f docker/compose.base.yml -f docker/compose.prod.yml up --build
+```
+
+#### **관리 스크립트 사용**
+```bash
+# 로컬 환경 실행
+./docker/docker-compose-manager.sh local
+
+# 운영 환경 실행
+./docker/docker-compose-manager.sh prod
+
+# 중지
+./docker/docker-compose-manager.sh stop
+```
+
+### **주요 해결 사항**
+- **환경변수 로드**: `--env-file` 옵션으로 `.env.local`, `.env.prod` 파일 로드
+- **호스트 접근**: `host.docker.internal`을 사용하여 SSH 터널 접근
+- **ML Registry API**: 완전 구현 및 테스트 완료
+
+---
+
 ## 📋 **개선된 액션 아이템 실행 계획**
 
 ### **Phase 1: 기반 인프라 구축 (1-2주)**
@@ -915,3 +1025,143 @@ curl http://localhost:8080/api/v1/health  # API 헬스체크
 5. **운영 안정성**: 헬스체크, 에러 핸들링, 로깅 시스템
 
 ---
+
+## 2025-09-17 업데이트: ML 추론 로깅 테이블 및 REST API 추가
+
+### 개요
+- 신규 테이블: `ml.frame_prediction`, `ml.detection_event` (DB 반영 완료)
+- SQLAlchemy 모델 추가: `FramePredictionModel`, `DetectionEventModel`
+- 도메인/포트/리포지토리/유즈케이스/DTO/라우터 일괄 구현(헥사고날 패턴 준수)
+- 메인 앱 라우터 등록 완료
+
+### 추가된 경로 및 컴포넌트
+- Domain
+  - `app/domain/entities/frame_prediction.py`
+  - `app/domain/entities/detection_event.py`
+  - `app/domain/ports/frame_prediction_repository.py`
+  - `app/domain/ports/detection_event_repository.py`
+- DTO
+  - `app/application/dto/frame_prediction_dto.py`
+  - `app/application/dto/detection_event_dto.py`
+- Use Cases
+  - `app/application/use_cases/frame_prediction_use_cases.py`
+  - `app/application/use_cases/detection_event_use_cases.py`
+- Repository Implementations
+  - `app/adapters/repositories/frame_prediction_repository_impl.py`
+  - `app/adapters/repositories/detection_event_repository_impl.py`
+- HTTP Routers
+  - `app/adapters/http/frame_prediction_router.py`
+  - `app/adapters/http/detection_event_router.py`
+- Models
+  - `app/infrastructure/db/models/ml_models.py` 내 모델 2종 추가
+- Main
+  - `app/main.py` 라우터 include 추가
+
+### 신규 REST API
+- FramePrediction `/api/v1/frame-predictions`
+  - POST `/` (단건 생성)
+  - POST `/batch` (배치 생성)
+  - GET `/` (필터: `session_id, experiment_id, input_uri, label_pred, frame_index_from/to`, 페이징)
+  - GET `/{frame_pred_id}` (단건)
+  - DELETE `/{frame_pred_id}` (삭제)
+- DetectionEvent `/api/v1/detection-events`
+  - POST `/` (생성)
+  - GET `/` (필터: `session_id, experiment_id, input_uri, event_type, top_label, start_ts_ms_from/to`, 페이징)
+  - GET `/{event_id}` (단건)
+  - DELETE `/{event_id}` (삭제)
+
+### 설계 준수 사항
+- ML 세션 DI(`get_ml_session`)을 통한 비동기 세션 주입
+- 도메인 → 포트 → 리포지토리(구현) → 유즈케이스 → 라우터 계층 구조
+- DTO 검증 및 응답 모델 `from_attributes = True`
+- 상태코드/에러 응답 표준화(400/404/500)
+
+### 후속 작업 제안
+- 목록 응답 래핑 표준화 `{items,total,offset,limit}` 적용
+- `/datasets?name=&tag=` 스타일로 필터 일원화(기존 라우터와 일관성)
+- 관리자/내부용 엔드포인트는 `/admin` 또는 `/internal` 네임스페이스로 이동 및 인증 적용
+
+## 2025-09-17 업데이트: Scheduler API 표준화 및 내부 엔드포인트 특이사항/조치
+
+### 공개 엔드포인트 표준화
+- `/api/v1/scheduled-jobs`: SQLAlchemy 세션 기반으로 일원화(정상 동작 확인)
+
+### 내부 엔드포인트 분리
+- `scheduler_app`의 관리/메타 엔드포인트를 `/internal/*` 로 이동하여 중복/충돌 제거
+
+### 특이사항
+- `/internal/scheduled-jobs` 호출 시 "Connection refused" 발생 가능
+  - 원인: 컨테이너/호스트 조합에서 DB 호스트(DNS/포트) 미열림 또는 해석 실패
+  - 비고: 공개 `/api/v1/scheduled-jobs` 는 SQLAlchemy 세션을 사용하므로 정상 동작
+
+### 조치 가능 방안
+- 환경변수 보정(택1)
+  - 로컬(컨테이너 외부 실행): `DB_APP_URL=postgresql+asyncpg://...@127.0.0.1:15432/...`
+  - 컨테이너 실행: `DB_APP_URL` 호스트를 실제 접속 가능한 서비스/엔드포인트로 지정(db, RDS 등)
+  - 컨테이너→호스트 접속 시: `DOCKER_HOST_IP`를 실제 호스트 IP로 설정(기본 `172.17.0.1`)
+- 코드 정렬(권장)
+  - `/internal/*` 엔드포인트도 SQLAlchemy 세션 기반으로 통일해 환경 의존성(직접 TCP 접속) 축소
+- 운영 방침
+  - `/internal/*` 는 내부/관리용 → 인증/JWT 보호 및 비공개 노출 권장
+
+## 2025-09-18 업데이트: AWS DB 연결 점검 및 ML 세션 이슈 분석
+
+### 작업 개요
+- AWS 내부 IP 기반 DB 접속 점검 스크립트 추가 및 보강
+  - `scripts/test_db_connect.sh` 추가: DNS→TCP→SQL 순서 점검, `--env`/`--url` 지원
+  - .env 로더 개선: KEY=VALUE 라인만 로드(설명/섹션 라인 무시), 따옴표 처리
+  - psql 플래그 수정: `-tA -c "SELECT version();"`
+- DB 세션 초기화 로그 강화
+  - `app/infrastructure/db/session.py`에 마스킹된 URL 로그 및 ML 폴백 로그 추가
+
+### 현재 상태
+- prod .env로 실행 시 RDS에 대해 DNS/TCP/SQL 모두 OK (버전 획득 확인)
+- 공개 엔드포인트 `/api/v1/scheduled-jobs` 정상 동작
+- 내부 엔드포인트 `/internal/*` 는 운영 정책상 비공개/보호 대상
+
+### ML 세션 연결 이슈 원인
+- 컨테이너 관점에서 `ML_DB_URL` 호스트/DNS가 유효하지 않거나, `.env` 로딩 형식 문제로 변수 미적용 시 `Name or service not known` 발생
+- 조치: `.env` KEY=VALUE 정리, `ML_DB_URL`을 컨테이너에서 접근 가능한 RDS 엔드포인트로 지정(필요 시 sslmode), SG 인바운드 허용
+
+### 추가 로그로 확인 가능한 사항
+- APP/LEGACY/ML 각각의 엔진 초기화 여부 및 대상 호스트/포트/DB(자격정보 마스킹)
+- ML_DB_URL 미설정 시 APP 폴백 사용 여부
+
+## 2025-09-18 업데이트: Compose(prod) 환경변수 주입 정정(우선순위 통일)
+
+### 변경 배경
+- 컨테이너 내부에서 `ML_DB_URL` 값이 `host.docker.internal:15432`로 나타남 → base의 `.env.local`이 컨테이너에 주입되었기 때문.
+
+### 적용 내용
+- `docker/compose.prod.yml`에서 서비스 단위로 `env_file: ../secret/.env.prod` 명시하여 base의 env_file을 프로덕션에서 덮어쓰기.
+- 목적: 컨테이너 환경에 `.env.prod` 변수(특히 `ML_DB_URL`, `DB_APP_URL`)를 일관 주입.
+
+### 기대 효과
+- 컨테이너 스타트업 로그(`[ENV] Startup config`)에서 `ML_DB_URL`이 RDS(또는 내부 IP)로 표기.
+- ML 세션 초기화 시 올바른 호스트/포트로 연결.
+
+### 검증 절차
+```bash
+docker compose -f docker/compose.base.yml -f docker/compose.prod.yml down
+docker compose --env-file ../secret/.env.prod -f docker/compose.base.yml -f docker/compose.prod.yml up -d --build
+docker compose exec api env | grep -E 'ML_DB_URL|DB_APP_URL'
+# API 로그에 [ENV] Startup config 확인
+```
+
+## 2025-09-18 업데이트: API 인터페이스 명세 및 공통 클라이언트 추가
+
+### 추가 문서
+- `docs/apis/datasets_api.md`: Datasets REST API 명세 (Base URL/엔드포인트/요청/응답/예시)
+- `docs/apis/experiments_api.md`: Experiments REST API 명세
+- `docs/apis/frame_predictions_api.md`: Frame-Predictions REST API 명세
+- `docs/apis/detection_events_api.md`: Detection-Events REST API 명세
+
+### 공통 클라이언트
+- `Util/common_api.py`: 범용 REST API 클라이언트 (requests 기반)
+  - BASE_URL 자동 보정(/api/v1), GET/POST/PUT/PATCH/DELETE/HEAD/OPTIONS 편의 함수 제공
+  - 설치: `pip install requests`
+  - 예시: 본 프로젝트의 Datasets/Experiments/FramePredictions/DetectionEvents 호출 예시 포함
+
+### 목적/효과
+- 팀 내/외부 소비자가 API 스펙과 사용 예시를 즉시 확인 가능
+- 신규/외부 REST API에도 재사용 가능한 표준 클라이언트 확보

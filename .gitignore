@@ -39,6 +39,9 @@ pip-delete-this-directory.txt
 # Tr Data Generator Log
 AI/DL/fall_detection/train/log
 
+# Tr Data Generator Log
+AI/DL/fall_detection/train/log
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -212,6 +215,13 @@ __marimo__/
 
 # train data
 AI/DL/fall_detection/data/
+AI/DL/yolo_detection_and_pose/FY
+AI/DL/yolo_detection_and_pose/BY
+AI/DL/yolo_detection_and_pose/SY
+AI/DL/yolo_detection_and_pose/images
+
+# Video files in yolo_detection_and_pose directory
+AI/DL/yolo_detection_and_pose/**/*.mp4
 
 # =============================================================================
 # Server Environment Variables & Secrets

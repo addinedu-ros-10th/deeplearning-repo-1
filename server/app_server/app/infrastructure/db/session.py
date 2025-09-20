@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.engine import Engine
 from sqlalchemy import create_engine
 import logging
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -18,17 +19,32 @@ class DatabaseManager:
     def __init__(self):
         self.app_engine: Optional[Engine] = None
         self.legacy_engine: Optional[Engine] = None
+        self.ml_engine: Optional[Engine] = None
         self.app_async_engine = None
         self.legacy_async_engine = None
+        self.ml_async_engine = None
         self.app_session_factory = None
         self.legacy_session_factory = None
+        self.ml_session_factory = None
         
     async def initialize(self):
         """데이터베이스 엔진 초기화"""
         try:
+            def _mask_db_url(url: str) -> str:
+                try:
+                    parsed = urlparse(url.replace('postgresql+asyncpg://', 'postgresql://'))
+                    host = parsed.hostname or 'unknown-host'
+                    port = parsed.port or '5432'
+                    db = (parsed.path[1:] if parsed.path else '') or 'unknown-db'
+                    scheme = 'postgresql+asyncpg' if url.startswith('postgresql+asyncpg://') else 'postgresql'
+                    return f"{scheme}://***:***@{host}:{port}/{db}"
+                except Exception:
+                    return "(invalid url)"
+
             # 신규 스키마용 엔진 (앱 전용)
             app_url = os.getenv('DB_APP_URL')
             if app_url:
+                logger.info(f"[DB] Initializing APP engine with URL: {_mask_db_url(app_url)}")
                 self.app_async_engine = create_async_engine(
                     app_url,
                     pool_size=int(os.getenv('DATABASE_POOL_SIZE', '20')),
@@ -46,6 +62,7 @@ class DatabaseManager:
             # 레거시 스키마용 엔진 (읽기 전용)
             legacy_url = os.getenv('DB_LEGACY_URL')
             if legacy_url:
+                logger.info(f"[DB] Initializing LEGACY engine with URL: {_mask_db_url(legacy_url)}")
                 self.legacy_async_engine = create_async_engine(
                     legacy_url,
                     pool_size=int(os.getenv('DATABASE_POOL_SIZE', '20')),
@@ -59,6 +76,31 @@ class DatabaseManager:
                     expire_on_commit=False
                 )
                 logger.info("레거시 스키마 엔진 초기화 완료")
+            
+            # ML 스키마용 엔진 (ML 레지스트리 전용)
+            raw_ml_url = os.getenv('ML_DB_URL')
+            ml_url = raw_ml_url if raw_ml_url else app_url  # ML_DB_URL이 없으면 app_url 사용
+            if raw_ml_url:
+                logger.info(f"[DB] ML_DB_URL detected: {_mask_db_url(raw_ml_url)}")
+            else:
+                logger.info("[DB] ML_DB_URL not set; falling back to DB_APP_URL for ML engine")
+            if ml_url:
+                logger.info(f"[DB] Initializing ML engine with URL: {_mask_db_url(ml_url)}")
+                self.ml_async_engine = create_async_engine(
+                    ml_url,
+                    pool_size=int(os.getenv('DATABASE_POOL_SIZE', '20')),
+                    max_overflow=int(os.getenv('DATABASE_MAX_OVERFLOW', '30')),
+                    pool_pre_ping=True,
+                    echo=os.getenv('DEBUG', 'false').lower() == 'true'
+                )
+                self.ml_session_factory = async_sessionmaker(
+                    self.ml_async_engine,
+                    class_=AsyncSession,
+                    expire_on_commit=False
+                )
+                logger.info("ML 스키마 엔진 초기화 완료")
+            else:
+                logger.warning("[DB] ML engine not initialized (no ML_DB_URL/DB_APP_URL available)")
                 
         except Exception as e:
             logger.error(f"데이터베이스 엔진 초기화 실패: {e}")
@@ -70,6 +112,8 @@ class DatabaseManager:
             await self.app_async_engine.dispose()
         if self.legacy_async_engine:
             await self.legacy_async_engine.dispose()
+        if self.ml_async_engine:
+            await self.ml_async_engine.dispose()
         logger.info("데이터베이스 연결 종료 완료")
     
     def get_app_session(self) -> AsyncSession:
@@ -83,6 +127,12 @@ class DatabaseManager:
         if not self.legacy_session_factory:
             raise RuntimeError("레거시 스키마 엔진이 초기화되지 않았습니다.")
         return self.legacy_session_factory()
+    
+    def get_ml_session(self) -> AsyncSession:
+        """ML 스키마용 세션 반환 (ML 레지스트리 전용)"""
+        if not self.ml_session_factory:
+            raise RuntimeError("ML 스키마 엔진이 초기화되지 않았습니다.")
+        return self.ml_session_factory()
 
 # 전역 데이터베이스 매니저 인스턴스
 db_manager = DatabaseManager()
@@ -111,6 +161,18 @@ async def get_legacy_session() -> AsyncGenerator[AsyncSession, None]:
     finally:
         await session.close()
 
+async def get_ml_session() -> AsyncGenerator[AsyncSession, None]:
+    """ML 스키마용 세션 의존성 주입"""
+    session = db_manager.get_ml_session()
+    try:
+        yield session
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"ML 스키마 세션 오류: {e}")
+        raise
+    finally:
+        await session.close()
+
 # 편의 함수들
 async def get_app_engine():
     """신규 스키마 엔진 반환"""
@@ -119,6 +181,10 @@ async def get_app_engine():
 async def get_legacy_engine():
     """레거시 스키마 엔진 반환"""
     return db_manager.legacy_async_engine
+
+async def get_ml_engine():
+    """ML 스키마 엔진 반환"""
+    return db_manager.ml_async_engine
 
 def get_sync_engine():
     """동기 엔진 반환 (SQLAdmin용)"""
