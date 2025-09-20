@@ -28,7 +28,10 @@ mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 mp_drawing = mp.solutions.drawing_utils
 
-cap = cv2.VideoCapture(0)
+# cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture("http://100.65.221.86:3010/receiver?camera_id=cam2")
+# cap = cv2.VideoCapture("http://192.168.0.61:81/stream")
+# cap = cv2.VideoCapture("/home/dj/dev_ws/EDA/data/LSTM_test/test/test.mp4")
 """0번: 노트북 카메라, 1번~: 기타 카메라. 카메라 포트 확인 시에는 터미널에 "ls -l /dev/video*" 커맨드를 입력하여 확인. """
 
 model_path = "./data_511_380_yb_sdj_v1.0.pt" # 학습모델 적용하는 위치
@@ -36,6 +39,7 @@ model = torch.jit.load(model_path)
 model.eval()
 
 model_yolo = YOLO("yolo11n.pt")
+model_yolo.predict(classes = 0)
 
 labels_map = {0: "Normal", 1: "Warning", 2: "Fall"}
 
@@ -54,7 +58,7 @@ while cap.isOpened():
         print("Cannot open video or video is terminated")
         break
 
-    # frame = cv2.resize(frame, (1024, 768)) # 이미지 사이즈 조정
+    frame = cv2.resize(frame, (1024, 768)) # 이미지 사이즈 조정
 
     image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
