@@ -6,6 +6,7 @@ from ultralytics import YOLO # 객체인식용 모듈
 import ultralytics
 import gc
 import time
+import uuid
 from util import common_api
 
 ultralytics.checks()
@@ -47,8 +48,8 @@ model_yolo.predict(classes = 0)
 
 items = []
 
-session_id = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-# session_id = str(uuid.uuid4())
+# session_id = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+session_id = str(uuid.uuid4())
 experiment_id = "12bd0c67-a10c-4e01-adec-871010e49031"
 
 server_url = "http://ec2-43-201-96-23.ap-northeast-2.compute.amazonaws.com"
@@ -145,7 +146,7 @@ while cap.isOpened():
                 "warning": float(probabilities[0][1]),
                 "fall": float(probabilities[0][2]),
             },
-            "label_pred": predicted_label,
+            "label_pred": predicted_label.lower(),
             "ts_rel_ms": int(time.time()),
             "confidence": confidence,
             "passed": confidence_bool,
@@ -161,10 +162,11 @@ while cap.isOpened():
 
     if len(items) == 60:
         items_dict = {"items": items}
+        print(f"items_dict: {items_dict}")
         status, body = client.post("/frame-predictions/batch", json = items_dict)
         print(status, body)
         items = []
-        index_number = 0
+        # index_number = 0
 
     if yolo_activate_switch == True:
         result_yolo = model_yolo(frame)
