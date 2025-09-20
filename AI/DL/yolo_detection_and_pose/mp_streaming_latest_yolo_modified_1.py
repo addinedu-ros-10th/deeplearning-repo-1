@@ -31,10 +31,11 @@ mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 mp_drawing = mp.solutions.drawing_utils
 
-url = "http://192.168.0.61:81/stream"
+# url = "http://192.168.0.61:81/stream"
+url = "http://100.65.221.86:3010/receiver?camera_id=cam4"
 
 # cap = cv2.VideoCapture(0)
-# cap = cv2.VideoCapture("http://100.65.221.86:3010/receiver?camera_id=cam2")
+# cap = cv2.VideoCapture("http://100.65.221.86:3010/receiver?camera_id=cam4")
 cap = cv2.VideoCapture(url)
 # cap = cv2.VideoCapture("/home/dj/dev_ws/EDA/data/LSTM_test/test/test.mp4")
 """0번: 노트북 카메라, 1번~: 기타 카메라. 카메라 포트 확인 시에는 터미널에 "ls -l /dev/video*" 커맨드를 입력하여 확인. """
