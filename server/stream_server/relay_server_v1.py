@@ -1,10 +1,12 @@
 import asyncio
-import ssl
-import uuid
 from aiohttp import web
 import socketio
 from aiortc import RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.media import MediaRelay
+
+import ssl
+import uuid
+import time
 
 import cv2
 
@@ -14,12 +16,11 @@ app = web.Application()
 sio.attach(app)
 
 pcs = set()  # 전체 PeerConnection 관리
+pc_roles = {}  # pc 역할 관리 (sender/receiver)
+pc_owners = {}  # pc 소유자(sid) 관리
 relay = MediaRelay()
 
-# sender_tracks: { camera_id: [track1, track2, ...] }
 sender_tracks = {}
-
-# 9.18 추가
 sender_sources = {}
 pc_subs = {}
 
@@ -33,10 +34,9 @@ async def join(sid, data):
     if role == "sender":
         # sender는 tracks를 저장할 준비만
         sender_tracks[camera_id] = []
-        sender_tracks[camera_id] = [] # 9.18 추가
         await sio.enter_room(sid, f"sender:{camera_id}")
 
-    elif role == "receiver":
+    elif role == "receiver" and "receivers" not in sio.rooms(sid):
         await sio.enter_room(sid, "receivers")
 
     return {"camera_id": camera_id}
@@ -50,11 +50,13 @@ async def offer(sid, data):
 
     pc = RTCPeerConnection()
     pcs.add(pc)
+    pc_roles[pc] = role
+    pc_owners[pc] = sid
 
     @pc.on("iceconnectionstatechange")
     async def on_ice():
         print(f"[pc] ICE state={pc.iceConnectionState}")
-        if pc.iceConnectionState in ("failed", "disconnected", "closed"):
+        if pc.iceConnectionState in ("failed", "disconnected", "closed") and role != "sender":
             await cleanup_pc(pc)
 
     if role == "sender":
@@ -67,14 +69,20 @@ async def offer(sid, data):
                 for room in sio.rooms(sid):
                     if room.startswith("sender:"):
                         camera_id = room.split(":", 1)[1]
+                        sender_tracks.setdefault(camera_id, [])
                         sender_tracks[camera_id].append(relay.subscribe(track))
-                        # sender_sources.setdefault(camera_id, []).append(track) # 9.18 추가
                         d = sender_sources.setdefault(camera_id, {})
                         old = d.get(track.kind)
                         if old and hasattr(old, "stop"):
                             try: old.stop()
                             except: pass
                         d[track.kind] = track
+
+                        for p in list(pcs):
+                            if pc_roles.get(p) == "receiver":
+                                owner_sid = pc_owners.get(p)
+                                if owner_sid:
+                                    asyncio.create_task(sio.emit("need_offer", {"camera_id": camera_id}, room=owner_sid))
     # --- SDP 교환 ---
     offer = RTCSessionDescription(sdp=sdp, type=type_)
     await pc.setRemoteDescription(offer)
@@ -83,14 +91,15 @@ async def offer(sid, data):
         # receiver → 모든 sender_tracks를 붙여줌
         for camera_id, tracks in sender_tracks.items():
             for track in tracks:
+                print(f"track id in offer event: {track.id}")
                 pc.addTrack(track)
         
         subs = []
-        for camera_id, kinds in sender_sources.items():
-            for kind, orig in kinds.items():
-                sub = relay.subscribe(orig)
-                pc.addTrack(sub)
-                subs.append(sub)
+        # for camera_id, kinds in sender_sources.items():
+        #     for kind, orig in kinds.items():
+        #         sub = relay.subscribe(orig)
+        #         # pc.addTrack(sub)
+        #         subs.append(sub)
 
         pc_subs[pc] = subs
 
@@ -117,8 +126,35 @@ async def disconnect(sid):
     for room in list(sio.rooms(sid)):
         if room.startswith("sender:"):
             camera_id = room.split(":", 1)[1]
-            sender_tracks.pop(camera_id, None)
+            print(f"camera_id : {camera_id} and tracks : {sender_tracks.get(camera_id)[0].id}")
+            html_tag_id = sender_tracks.get(camera_id)[0].id
+            for i in sender_tracks.pop(camera_id, []):
+                try:
+                    i.stop()
+                except Exception:
+                    pass
+            # sender_tracks.pop(camera_id, None)
             sender_sources.pop(camera_id, None) # 9.18 추가
+            await sio.emit("sender_removed", {"camera_id": html_tag_id}, room="receivers")
+    
+    to_cleanup = [pc for pc, owner in pc_owners.items() if owner == sid]
+    for pc in to_cleanup:
+        await cleanup_pc(pc)
+
+# @sio.event
+# async def sender_left(sid, data):
+#     camera_id = data.get("camera_id")
+#     print(f"[sender_left] sid={sid}, camera_id={camera_id}")
+#     if not camera_id:
+#         return
+
+#     for i in sender_tracks.pop(camera_id, []):
+#         try:
+#             i.stop()
+#         except Exception:
+#             pass
+#     sender_sources.pop(camera_id, None) # 9.18 추가
+#     await sio.emit("sender_removed", {"camera_id": camera_id}, room="receivers")
 
 
 async def cleanup_pc(pc: RTCPeerConnection):
@@ -128,6 +164,8 @@ async def cleanup_pc(pc: RTCPeerConnection):
             except: pass
 
         pcs.discard(pc)
+        pc_roles.pop(pc, None)
+        pc_owners.pop(pc, None)
         await pc.close()
     except Exception as e:
         print("[cleanup_pc] error:", e)
@@ -141,72 +179,6 @@ async def metrics(request):
         "cameras": list(sender_tracks.keys())
     }
     return web.json_response(body)
-
-
-app.router.add_get("/metrics", metrics)
-
-# BOUNDARY = "frame"
-
-# async def mjpeg_receiver(request: web.Request):
-#     """
-#     GET /receiver?camera_id=cam2
-#     → multipart/x-mixed-replace로 MJPEG 스트림 전송
-#     """
-#     camera_id = request.query.get("camera_id")
-#     if not camera_id:
-#         return web.Response(text="camera_id query required", status=400)
-
-#     # 해당 카메라의 '원본' 비디오 트랙을 찾음
-#     sources = sender_sources.get(camera_id) or []
-#     vsrc = next((t for t in sources if getattr(t, "kind", "") == "video"), None)
-#     if not vsrc:
-#         return web.Response(text=f"no video track for camera_id={camera_id}", status=404)
-
-#     # 각 클라이언트마다 새 릴레이 구독(track)을 만들어줌
-#     local_track = relay.subscribe(vsrc)
-
-#     resp = web.StreamResponse(
-#         status=200,
-#         headers={
-#             "Cache-Control": "no-cache, no-store, must-revalidate",
-#             "Pragma": "no-cache",
-#             "Connection": "close",
-#             "Content-Type": f"multipart/x-mixed-replace; boundary={BOUNDARY}",
-#         },
-#     )
-#     await resp.prepare(request)
-
-#     try:
-#         while True:
-#             frame = await local_track.recv()                     # aiortc VideoFrame
-#             img = frame.to_ndarray(format="bgr24")               # → numpy BGR
-#             ok, jpg = cv2.imencode(".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
-#             if not ok:
-#                 continue
-#             data = jpg.tobytes()
-
-#             # multipart 파트 작성
-#             await resp.write(b"--" + BOUNDARY.encode() + b"\r\n")
-#             await resp.write(b"Content-Type: image/jpeg\r\n")
-#             await resp.write(b"Content-Length: " + str(len(data)).encode() + b"\r\n\r\n")
-#             await resp.write(data + b"\r\n")
-
-#             # 너무 빡세게 돌지 않게 살짝 양보 (원하면 FPS 제한 로직으로 교체)
-#             await asyncio.sleep(0.001)
-
-#     except (asyncio.CancelledError, ConnectionResetError, BrokenPipeError):
-#         pass
-#     finally:
-#         try: local_track.stop()
-#         except: pass
-#         try:
-#             await resp.write_eof()
-#         except Exception:
-#             pass
-#     return resp
-# 상단
-import time
-# import cv2
 
 BOUNDARY = "frame"
 
@@ -277,6 +249,7 @@ async def mjpeg_receiver(request):
 
 
 # 라우터 등록
+app.router.add_get("/metrics", metrics)
 app.router.add_get("/receiver", mjpeg_receiver)
 
 # --- 실행 ---
