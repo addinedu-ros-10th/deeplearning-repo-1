@@ -90,11 +90,17 @@ def create_app() -> FastAPI:
     from app.adapters.http.experiment_router import router as experiment_router
     from app.adapters.http.frame_prediction_router import router as frame_prediction_router
     from app.adapters.http.detection_event_router import router as detection_event_router
+    from app.adapters.http.notify_message_router import router as notify_message_router
+    from app.adapters.http.notify_delivery_router import router as notify_delivery_router
+    from app.adapters.http.notify_device_router import router as notify_device_router
     
     app.include_router(dataset_router)
     app.include_router(experiment_router)
     app.include_router(frame_prediction_router)
     app.include_router(detection_event_router)
+    app.include_router(notify_message_router)
+    app.include_router(notify_delivery_router)
+    app.include_router(notify_device_router)
     
     # 데이터베이스 초기화 이벤트 핸들러
     @app.on_event("startup")
