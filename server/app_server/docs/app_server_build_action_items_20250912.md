@@ -1264,3 +1264,46 @@ python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
 - SQLAdmin: 정상 마운트
 - Compose(prod): ENV 우선순위 정정 후 DB 연결 정상
 - Notify: Messages/Deliveries/Devices CRUD 동작, ENUM 불일치 오류 해결
+
+---
+
+## 2025-09-23 업데이트: Notify 기능 개발 계획 & 체크리스트(에드온)
+
+### 개발 목표
+- 실시간 알림 파이프라인의 최소 기능 확보: 메시지 생성→수신자 큐잉→(디스패처)전송→열람/ACK 상태 반영
+- 기존 기능 영향 최소화: 헥사고날 구조로 격리, Feature Flag로 점진 롤아웃
+
+### 단계별 계획(Phase)
+- Phase 1: 큐잉/상태 갱신 API
+  - POST `/api/v1/notify/queue` (메시지 생성 + recipients×channel 큐잉)
+  - POST `/api/v1/notify/deliveries/{id}/read`, `/ack` (상태 갱신)
+  - Repo 보강: `mark_sent|delivered|read|ack`
+- Phase 2: 실시간 전송(WS) 및 디스패처
+  - `ConnectionManager`, `WsNotifier`, `/ws` 엔드포인트
+  - APScheduler 디스패처 잡(queued→sent→delivered), 만료(expires_at) 가드
+  - Feature Flag: `NOTIFY_DISPATCH_ENABLE`, `NOTIFY_WS_ENABLE`
+- Phase 3: 테스트/문서화
+  - TDD: 유즈케이스, 리포, 디스패처 유닛/통합
+  - 수동 체크리스트 기반 시나리오 테스트
+  - 문서/런북 업데이트(운영 쿼리 포함)
+- Phase 4: 가시성/롤아웃
+  - 구조화 로깅, SQLAdmin 뷰/쿼리
+  - Staging canary→Prod 점진 적용
+
+### 액션 아이템 체크리스트
+- [ ] Phase1-API: DTO(Queue) 및 유즈케이스(CreateMessageAndQueue) 추가
+- [ ] Phase1-API: POST `/api/v1/notify/queue` 라우터 추가
+- [ ] Phase1-API: POST `/api/v1/notify/deliveries/{id}/read` 구현
+- [ ] Phase1-API: POST `/api/v1/notify/deliveries/{id}/ack` 구현
+- [ ] Phase1-Repo: Deliveries `mark_sent|delivered|read|ack` 구현
+- [ ] Phase2-WS: ConnectionManager/WsNotifier 추가 및 `/ws` 라우터
+- [ ] Phase2-Disp: APScheduler 디스패처 잡 추가(Feature Flag)
+- [ ] Phase3-Test: 유닛/통합/API/WebSocket 테스트 추가
+- [ ] Phase3-Docs: 운영/수동 테스트 가이드 및 쿼리 보강
+- [ ] Phase4-Obs: 구조화 로그/SQLAdmin 뷰
+- [ ] Phase4-Rollout: Flags로 Staging→Prod 전개
+
+### 운영/배포 메모(Nginx)
+- `/ws` 업그레이드 설정 추가: `proxy_http_version 1.1`, Upgrade/Connection 헤더, `proxy_read_timeout`
+- `/api/` 기존 프록시 유지, 헬스체크 `/healthz`로 확인
+- 멀티 인스턴스 시 sticky 또는 브로커 도입 검토
