@@ -1291,13 +1291,13 @@ python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
   - Staging canary→Prod 점진 적용
 
 ### 액션 아이템 체크리스트
-- [ ] Phase1-API: DTO(Queue) 및 유즈케이스(CreateMessageAndQueue) 추가
-- [ ] Phase1-API: POST `/api/v1/notify/queue` 라우터 추가
-- [ ] Phase1-API: POST `/api/v1/notify/deliveries/{id}/read` 구현
-- [ ] Phase1-API: POST `/api/v1/notify/deliveries/{id}/ack` 구현
-- [ ] Phase1-Repo: Deliveries `mark_sent|delivered|read|ack` 구현
-- [ ] Phase2-WS: ConnectionManager/WsNotifier 추가 및 `/ws` 라우터
-- [ ] Phase2-Disp: APScheduler 디스패처 잡 추가(Feature Flag)
+- [x] Phase1-API: DTO(Queue) 및 유즈케이스(CreateMessageAndQueue) 추가
+- [x] Phase1-API: POST `/api/v1/notify/queue` 라우터 추가
+- [x] Phase1-API: POST `/api/v1/notify/deliveries/{id}/read` 구현
+- [x] Phase1-API: POST `/api/v1/notify/deliveries/{id}/ack` 구현
+- [x] Phase1-Repo: Deliveries `mark_sent|delivered|read|ack` 구현
+- [x] Phase2-WS: ConnectionManager/WsNotifier 추가 및 `/ws` 라우터
+- [x] Phase2-Disp: APScheduler 디스패처 잡 추가(Feature Flag)
 - [ ] Phase3-Test: 유닛/통합/API/WebSocket 테스트 추가
 - [ ] Phase3-Docs: 운영/수동 테스트 가이드 및 쿼리 보강
 - [ ] Phase4-Obs: 구조화 로그/SQLAdmin 뷰
@@ -1307,3 +1307,23 @@ python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
 - `/ws` 업그레이드 설정 추가: `proxy_http_version 1.1`, Upgrade/Connection 헤더, `proxy_read_timeout`
 - `/api/` 기존 프록시 유지, 헬스체크 `/healthz`로 확인
 - 멀티 인스턴스 시 sticky 또는 브로커 도입 검토
+ 
+### 2025-09-23 에드온: Notify Phase 1+2 진행 현황
+- 구현 완료
+  - Queue API: `POST /api/v1/notify/queue`
+  - 상태 갱신: `POST /api/v1/notify/deliveries/{id}/read|ack`
+  - 리포 헬퍼: `mark_sent|delivered|read|ack`, `next_queued`
+  - WebSocket: `/ws?user_id=<uuid>`, ConnectionManager/WsNotifier
+  - Dispatcher: Feature flags (`NOTIFY_ENABLE`, `NOTIFY_DISPATCH_ENABLE`, `NOTIFY_WS_ENABLE`)
+- 환경 변수 예시(.env)
+  - `NOTIFY_ENABLE=true`
+  - `NOTIFY_DISPATCH_ENABLE=true`
+  - `NOTIFY_WS_ENABLE=true`
+- 수동 테스트 체크리스트
+  - [ ] 브라우저 `ws://<host>/ws?user_id=<UUID>` 연결
+  - [ ] `POST /api/v1/notify/queue` 로 recipients에 위 UUID 지정하여 큐잉
+  - [ ] 디스패처 ON 시 `queued→sent→delivered` 전이 확인(DB/로그)
+  - [ ] `read`/`ack` 호출로 상태·타임스탬프 반영 확인
+- 브로커 연동(추후)
+  - Redis Pub/Sub → Redis Streams → Kafka 단계 도입(요구 증가 시)
+  - 목적: 다중 인스턴스/내구성/재처리 보장
