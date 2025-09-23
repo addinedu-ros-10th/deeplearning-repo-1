@@ -93,6 +93,7 @@ def create_app() -> FastAPI:
     from app.adapters.http.notify_message_router import router as notify_message_router
     from app.adapters.http.notify_delivery_router import router as notify_delivery_router
     from app.adapters.http.notify_device_router import router as notify_device_router
+    from app.adapters.http.notify_queue_router import router as notify_queue_router
     
     app.include_router(dataset_router)
     app.include_router(experiment_router)
@@ -101,6 +102,7 @@ def create_app() -> FastAPI:
     app.include_router(notify_message_router)
     app.include_router(notify_delivery_router)
     app.include_router(notify_device_router)
+    app.include_router(notify_queue_router)
     
     # 데이터베이스 초기화 이벤트 핸들러
     @app.on_event("startup")
