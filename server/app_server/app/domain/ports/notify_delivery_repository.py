@@ -19,4 +19,20 @@ class NotifyDeliveryRepository(ABC):
     @abstractmethod
     async def delete(self, delivery_id: int) -> bool: ...
 
+    # status helpers
+    @abstractmethod
+    async def mark_sent(self, delivery_id: int) -> Optional[dict]: ...
+
+    @abstractmethod
+    async def mark_delivered(self, delivery_id: int) -> Optional[dict]: ...
+
+    @abstractmethod
+    async def mark_read(self, delivery_id: int) -> Optional[dict]: ...
+
+    @abstractmethod
+    async def mark_ack(self, delivery_id: int) -> Optional[dict]: ...
+
+    @abstractmethod
+    async def next_queued(self, limit: int = 100) -> List[dict]: ...
+
 
