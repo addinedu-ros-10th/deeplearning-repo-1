@@ -1327,3 +1327,11 @@ python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
 - 브로커 연동(추후)
   - Redis Pub/Sub → Redis Streams → Kafka 단계 도입(요구 증가 시)
   - 목적: 다중 인스턴스/내구성/재처리 보장
+
+### 2025-09-23 에드온: 테스트 진행 현황(Phase 3 시작)
+- 추가 테스트
+  - 라우트 존재 테스트: `tests/test_notify_api.py`
+  - WebSocket 연결 테스트: `tests/test_notify_ws.py`
+- 다음 테스트 계획
+  - Repo/UseCase 통합 테스트(세션 트랜잭션 롤백 기반)
+  - 디스패처 루프 단위 테스트(WS on/off 플래그별)
