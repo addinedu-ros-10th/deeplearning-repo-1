@@ -1220,3 +1220,47 @@ python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
 - **자동화 지원**: 스크립트 기반 API 호출로 CI/CD 파이프라인 구축 가능
 - **문서화 강화**: 실제 작동하는 예제 코드로 API 사용법 명확화
 - **품질 보증**: 모든 API 엔드포인트의 정상 작동 검증 완료
+
+---
+
+## 2025-09-19 업데이트: 프로젝트 종합 현황 & Notify Deliveries/Devices API 추가
+
+### 전체 현황 요약
+- 아키텍처: 헥사고날(Ports & Adapters), 레이어 분리(Domain → Application → Adapters → Infrastructure)
+- 실행/배포: Docker Compose(base/local/prod), Nginx 프록시, SQLAdmin 관리자 UI
+- DB: SQLAlchemy(Async) 멀티 엔진, ENV 기반 URL 파싱/로깅 강화, 진단 스크립트 제공
+- 스케줄러: APScheduler + DB(scheduled_jobs) 로더, 공개/내부 엔드포인트 분리
+
+### 주요 API 현황
+- Datasets `/api/v1/datasets` (CRUD)
+- Experiments `/api/v1/experiments` (CRUD)
+- Frame-Predictions `/api/v1/frame-predictions` (생성/조회/삭제, 배치 생성 포함)
+- Detection-Events `/api/v1/detection-events` (생성/조회/삭제)
+- Scheduler: 공개 `/api/v1/scheduled-jobs`(ORM), 내부 `/internal/*`(직접 연결)
+- Notify:
+  - Messages `/api/v1/notify/messages` (CRUD)
+  - Deliveries `/api/v1/notify/deliveries` (CRUD, 필터: user_id, status)
+  - Devices `/api/v1/notify/devices` (CRUD, 필터: user_id, channel, is_active)
+
+### 신규 작업(이번 업데이트)
+- Notify Deliveries/Devices API 추가
+  - DTO: `notify_delivery_dto.py`, `notify_device_dto.py`
+  - 포트: `notify_delivery_repository.py`, `notify_device_repository.py`
+  - 리포지토리: `notify_delivery_repository_impl.py`, `notify_device_repository_impl.py`
+  - 유즈케이스: `notify_delivery_use_cases.py`, `notify_device_use_cases.py`
+  - 라우터: `notify_delivery_router.py`, `notify_device_router.py`
+  - 앱 등록: `app/main.py`에 include
+- ENUM 매핑 안정화(Notify)
+  - 기존 PostgreSQL ENUM(`notify.kind_enum`, `notify.severity_enum`, `notify.channel_enum`, `notify.delivery_status_enum`)에 ORM 바인딩
+  - `create_type=False`, 스키마·타입명 명시로 중복 생성/불일치 방지
+
+### 운영/진단 관련 메모
+- ENV 주입: prod에서는 `compose.prod.yml`이 `env_file: ../secret/.env.prod`로 base를 덮어써야 함
+- ML/App DB URL: 시작 로그에 마스킹된 URL과 파싱된 host/port/db가 출력되므로 값 확인 가능
+- 내부 엔드포인트(`/internal/*`) 오류 시: SSH 터널 미기동/호스트 IP 불일치가 주원인 → 터널 활성화 또는 ORM 일원화 검토
+
+### 현재 상태 체크
+- 공개 API: 정상 동작 (/api/v1/*)
+- SQLAdmin: 정상 마운트
+- Compose(prod): ENV 우선순위 정정 후 DB 연결 정상
+- Notify: Messages/Deliveries/Devices CRUD 동작, ENUM 불일치 오류 해결
