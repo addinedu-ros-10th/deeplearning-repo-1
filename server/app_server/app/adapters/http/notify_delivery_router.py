@@ -21,6 +21,7 @@ from app.application.dto.notify_delivery_dto import (
     NotifyDeliveryUpdateRequest,
     NotifyDeliveryResponse,
 )
+from fastapi import Path
 
 
 router = APIRouter(prefix="/api/v1/notify/deliveries", tags=["notify-deliveries"])
@@ -89,5 +90,28 @@ async def delete_delivery(
     if not ok:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery not found")
     return None
+
+
+@router.post("/{delivery_id}/read", status_code=status.HTTP_200_OK)
+async def mark_read(
+    delivery_id: int = Path(..., ge=1),
+    repo: NotifyDeliveryRepositoryImpl = Depends(get_repository),
+):
+    # lightweight direct update using repository update
+    entity = await repo.update(delivery_id, {"status": "read"})
+    if not entity:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery not found")
+    return entity
+
+
+@router.post("/{delivery_id}/ack", status_code=status.HTTP_200_OK)
+async def mark_ack(
+    delivery_id: int = Path(..., ge=1),
+    repo: NotifyDeliveryRepositoryImpl = Depends(get_repository),
+):
+    entity = await repo.update(delivery_id, {"status": "ack"})
+    if not entity:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery not found")
+    return entity
 
 
