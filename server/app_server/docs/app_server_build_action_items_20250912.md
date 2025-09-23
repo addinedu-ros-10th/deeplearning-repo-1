@@ -1335,3 +1335,23 @@ python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
 - 다음 테스트 계획
   - Repo/UseCase 통합 테스트(세션 트랜잭션 롤백 기반)
   - 디스패처 루프 단위 테스트(WS on/off 플래그별)
+
+### 2025-09-24 에드온: 환경 변수/프록시 및 진행 상태 리포트
+- Compose 경고 설명
+  - `NOTIFY_ENABLE/DISPATCH_ENABLE/WS_ENABLE` 경고는 env 파일에서 해당 변수가 비어있어 발생 → `.env.local` 또는 `--env-file`에 값을 추가하면 해소됩니다.
+  - `version` 키는 Compose v2에서 obsolete 경고이며 동작에 영향은 없습니다(혼동 방지 위해 제거 권장).
+- 환경 변수(추가 제안)
+  - `NOTIFY_ENABLE=true`
+  - `NOTIFY_DISPATCH_ENABLE=true`
+  - `NOTIFY_WS_ENABLE=true`
+- 프록시 설정
+  - `docker/nginx/nginx.conf`에 `/ws` 업그레이드 경로 추가 완료
+  - BASE_URL: `http://localhost` (또는 `http://localhost:8080`/`http://localhost:8000`)
+- 테스트 페이지/문서
+  - 수동 페이지: `staging/tools/notify_ws_client.html`
+  - 가이드: `staging/notify_testing_guide.md`
+- 진행 현황(요약)
+  - Phase 1+2 구현 완료(큐잉/상태/WS/디스패처), Phase 3 테스트 진행 중(유닛/WS/플래그)
+  - 브로커 도입은 후속(스케일 요구 시)
+- 다음 단계
+  - 리포 통합 테스트, 운영 쿼리/가시성 보강, 플래그 기반 롤아웃 가이드 확정
