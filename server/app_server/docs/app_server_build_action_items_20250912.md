@@ -46,7 +46,14 @@
    - 이벤트 루프 충돌 문제 해결
    - 모든 ML Registry API 정상 작동 보장
 
-### 🔄 현재 상태 (2025-09-18 최종 업데이트)
+8. **WebSocket 기반 실시간 알림 시스템 구현 (2025-09-24)**
+   - Hexagonal Architecture 기반 알림 시스템 설계 및 구현
+   - PostgreSQL 알림 스키마 구축 (notify_message, notify_delivery, notify_device)
+   - WebSocket 연결 관리 및 실시간 메시지 전송
+   - 백그라운드 디스패처를 통한 비동기 알림 처리
+   - 현대적 UI/UX 디자인의 테스트 도구 완성
+
+### 🔄 현재 상태 (2025-09-24 최종 업데이트)
 - **API 서버**: ✅ 정상 동작 (http://localhost:8000) - Health Check 통과
 - **데이터베이스**: ✅ 연결 성공 (환경변수 기반) - 모든 스키마 정상 접근
 - **스케줄러**: ✅ 완전 정상 동작 - 환경변수 기반 DB 연결
@@ -59,6 +66,7 @@
 - **DB 연결 통합**: ✅ 모든 서비스가 환경변수 기반으로 통일된 DB 연결
 - **ML 스키마 초기화**: ✅ FastAPI startup 이벤트 기반 안정적 초기화
 - **운영 환경 호환성**: ✅ 운영 환경에서 모든 ML API 정상 작동
+- **알림 시스템**: ✅ WebSocket 기반 실시간 알림 완전 구현 - Hexagonal Architecture
 - **전체 시스템**: ✅ 완전 정상 작동 - 모든 기능 테스트 통과
 
 ### 🛠️ 해결된 주요 문제들 (2025-09-18)
@@ -1264,3 +1272,105 @@ python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
 - SQLAdmin: 정상 마운트
 - Compose(prod): ENV 우선순위 정정 후 DB 연결 정상
 - Notify: Messages/Deliveries/Devices CRUD 동작, ENUM 불일치 오류 해결
+
+---
+
+## 2025-09-23 업데이트: Notify 기능 개발 계획 & 체크리스트(에드온)
+
+### 개발 목표
+- 실시간 알림 파이프라인의 최소 기능 확보: 메시지 생성→수신자 큐잉→(디스패처)전송→열람/ACK 상태 반영
+- 기존 기능 영향 최소화: 헥사고날 구조로 격리, Feature Flag로 점진 롤아웃
+
+### 단계별 계획(Phase)
+- Phase 1: 큐잉/상태 갱신 API
+  - POST `/api/v1/notify/queue` (메시지 생성 + recipients×channel 큐잉)
+  - POST `/api/v1/notify/deliveries/{id}/read`, `/ack` (상태 갱신)
+  - Repo 보강: `mark_sent|delivered|read|ack`
+- Phase 2: 실시간 전송(WS) 및 디스패처
+  - `ConnectionManager`, `WsNotifier`, `/ws` 엔드포인트
+  - APScheduler 디스패처 잡(queued→sent→delivered), 만료(expires_at) 가드
+  - Feature Flag: `NOTIFY_DISPATCH_ENABLE`, `NOTIFY_WS_ENABLE`
+- Phase 3: 테스트/문서화
+  - TDD: 유즈케이스, 리포, 디스패처 유닛/통합
+  - 수동 체크리스트 기반 시나리오 테스트
+  - 문서/런북 업데이트(운영 쿼리 포함)
+- Phase 4: 가시성/롤아웃
+  - 구조화 로깅, SQLAdmin 뷰/쿼리
+  - Staging canary→Prod 점진 적용
+
+### 액션 아이템 체크리스트
+- [x] Phase1-API: DTO(Queue) 및 유즈케이스(CreateMessageAndQueue) 추가
+- [x] Phase1-API: POST `/api/v1/notify/queue` 라우터 추가
+- [x] Phase1-API: POST `/api/v1/notify/deliveries/{id}/read` 구현
+- [x] Phase1-API: POST `/api/v1/notify/deliveries/{id}/ack` 구현
+- [x] Phase1-Repo: Deliveries `mark_sent|delivered|read|ack` 구현
+- [x] Phase2-WS: ConnectionManager/WsNotifier 추가 및 `/ws` 라우터
+- [x] Phase2-Disp: APScheduler 디스패처 잡 추가(Feature Flag)
+- [ ] Phase3-Test: 유닛/통합/API/WebSocket 테스트 추가
+- [ ] Phase3-Docs: 운영/수동 테스트 가이드 및 쿼리 보강
+- [ ] Phase4-Obs: 구조화 로그/SQLAdmin 뷰
+- [ ] Phase4-Rollout: Flags로 Staging→Prod 전개
+
+### 운영/배포 메모(Nginx)
+- `/ws` 업그레이드 설정 추가: `proxy_http_version 1.1`, Upgrade/Connection 헤더, `proxy_read_timeout`
+- `/api/` 기존 프록시 유지, 헬스체크 `/healthz`로 확인
+- 멀티 인스턴스 시 sticky 또는 브로커 도입 검토
+ 
+### 2025-09-23 에드온: Notify Phase 1+2 진행 현황
+- 구현 완료
+  - Queue API: `POST /api/v1/notify/queue`
+  - 상태 갱신: `POST /api/v1/notify/deliveries/{id}/read|ack`
+  - 리포 헬퍼: `mark_sent|delivered|read|ack`, `next_queued`
+  - WebSocket: `/ws?user_id=<uuid>`, ConnectionManager/WsNotifier
+  - Dispatcher: Feature flags (`NOTIFY_ENABLE`, `NOTIFY_DISPATCH_ENABLE`, `NOTIFY_WS_ENABLE`)
+- 환경 변수 예시(.env)
+  - `NOTIFY_ENABLE=true`
+  - `NOTIFY_DISPATCH_ENABLE=true`
+  - `NOTIFY_WS_ENABLE=true`
+- 수동 테스트 체크리스트
+  - [ ] 브라우저 `ws://<host>/ws?user_id=<UUID>` 연결
+  - [ ] `POST /api/v1/notify/queue` 로 recipients에 위 UUID 지정하여 큐잉
+  - [ ] 디스패처 ON 시 `queued→sent→delivered` 전이 확인(DB/로그)
+  - [ ] `read`/`ack` 호출로 상태·타임스탬프 반영 확인
+- 브로커 연동(추후)
+  - Redis Pub/Sub → Redis Streams → Kafka 단계 도입(요구 증가 시)
+  - 목적: 다중 인스턴스/내구성/재처리 보장
+
+### 2025-09-23 에드온: 테스트 진행 현황(Phase 3 시작)
+- 추가 테스트
+  - 라우트 존재 테스트: `tests/test_notify_api.py`
+  - WebSocket 연결 테스트: `tests/test_notify_ws.py`
+- 다음 테스트 계획
+  - Repo/UseCase 통합 테스트(세션 트랜잭션 롤백 기반)
+  - 디스패처 루프 단위 테스트(WS on/off 플래그별)
+
+### 2025-09-24 에드온: 환경 변수/프록시 및 진행 상태 리포트
+- Compose 경고 설명
+  - `NOTIFY_ENABLE/DISPATCH_ENABLE/WS_ENABLE` 경고는 env 파일에서 해당 변수가 비어있어 발생 → `.env.local` 또는 `--env-file`에 값을 추가하면 해소됩니다.
+  - `version` 키는 Compose v2에서 obsolete 경고이며 동작에 영향은 없습니다(혼동 방지 위해 제거 권장).
+- 환경 변수(추가 제안)
+  - `NOTIFY_ENABLE=true`
+  - `NOTIFY_DISPATCH_ENABLE=true`
+  - `NOTIFY_WS_ENABLE=true`
+- 프록시 설정
+  - `docker/nginx/nginx.conf`에 `/ws` 업그레이드 경로 추가 완료
+  - BASE_URL: `http://localhost` (또는 `http://localhost:8080`/`http://localhost:8000`)
+- 테스트 페이지/문서
+  - 수동 페이지: `staging/tools/notify_ws_client.html`
+  - 가이드: `staging/notify_testing_guide.md`
+- 진행 현황(요약)
+  - Phase 1+2 구현 완료(큐잉/상태/WS/디스패처), Phase 3 테스트 진행 중(유닛/WS/플래그)
+  - 브로커 도입은 후속(스케일 요구 시)
+- 다음 단계
+  - 리포 통합 테스트, 운영 쿼리/가시성 보강, 플래그 기반 롤아웃 가이드 확정
+
+### 2025-09-24 에드온: Notify kind ENUM 정합성 및 클라이언트/문서 정리
+- 배경: DB `notify.kind_enum` 허용값은 `system|schedule|info|contact|marketing|inbound`. `warning/error`는 kind가 아닌 severity(노랑/빨강)로 표현해야 함.
+- 조치
+  - 문서 예시 수정: `docs/notification_system_usage_guide.md`, `docs/notification_system_testing_guide.md`의 kind를 허용값(`system`)으로 교정
+  - 클라이언트 예시 수정: `client/live_notification_test.py` 내 출력 예시 kind를 `system`으로 교정
+  - 가이드에 “경고/오류 레벨은 severity로 표현” 명시
+- 관련 산출물
+  - 테스트 가이드: `staging/notify_testing_guide.md`
+  - 수동 테스트 페이지: `staging/tools/notify_ws_client.html`
+  - 프록시/플래그: `/ws` 업그레이드(Nginx), `NOTIFY_ENABLE/NOTIFY_DISPATCH_ENABLE/NOTIFY_WS_ENABLE`
