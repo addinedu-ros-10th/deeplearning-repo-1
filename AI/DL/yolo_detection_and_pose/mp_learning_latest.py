@@ -44,7 +44,7 @@ def load_data(base_dir, categories, seg_len = 90):
 
     print(f"checking files in: {category_path}")
 
-    for i in range(1, 400):                                            # 반복 훈련 번호 지정
+    for i in range(1, 800):                                            # 반복 훈련 번호 지정
         file_path = os.path.join(category_path, f"keypoints_{i}.csv") # csv 접근 경로 생성
         print(i)
 
@@ -182,7 +182,7 @@ with torch.no_grad():
         y_true.extend(y_batch.numpy())
         y_pred.extend(preds.numpy())
 
-# print(classification_report(y_true, y_pred, target_names = list(labels_map.keys())))
+print(classification_report(y_true, y_pred, target_names = list(labels_map.keys())))
 
 scripted_model = torch.jit.script(model)
 

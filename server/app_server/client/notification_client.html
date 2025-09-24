@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔔 알림 클라이언트 테스트</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .section h2 {
+            color: #1f2937;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 5px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 5px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+        
+        .status-connected {
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        
+        .status-disconnected {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        
+        .log-container {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 20px;
+            border-radius: 12px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-top: 15px;
+            border: 2px solid #374151;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        
+        .log-info { color: #60a5fa; }
+        .log-success { color: #34d399; }
+        .log-warning { color: #fbbf24; }
+        .log-error { color: #f87171; }
+        
+        .notification-area {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 350px;
+            z-index: 1000;
+        }
+        
+        .notification {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            margin-bottom: 10px;
+            padding: 15px;
+            border-left: 4px solid #4f46e5;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .notification.info { border-left-color: #10b981; }
+        .notification.warning { border-left-color: #f59e0b; }
+        .notification.error { border-left-color: #ef4444; }
+        
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .notification-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6b7280;
+            font-size: 1.2rem;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            
+            .notification-area {
+                width: calc(100% - 40px);
+                left: 20px;
+                right: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-bell"></i> 알림 클라이언트 테스트</h1>
+            <p>JavaScript 기반 WebSocket 알림 시스템</p>
+        </div>
+        
+        <div class="content">
+            <!-- 연결 설정 섹션 -->
+            <div class="section">
+                <h2>
+                    <i class="fas fa-plug"></i>
+                    연결 설정
+                    <span id="connection-status" class="status-indicator status-disconnected">
+                        <i class="fas fa-wifi"></i> 연결 끊김
+                    </span>
+                </h2>
+                
+                <div class="form-group">
+                    <label class="form-label">서버 URL</label>
+                    <input type="text" id="server-url" class="form-input" value="ws://localhost" placeholder="ws://localhost">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">사용자 ID</label>
+                    <input type="text" id="user-id" class="form-input" placeholder="user-id-123">
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="connectClient()">
+                        <i class="fas fa-plug"></i> 연결
+                    </button>
+                    <button class="btn btn-secondary" onclick="disconnectClient()">
+                        <i class="fas fa-times"></i> 해제
+                    </button>
+                    <button class="btn btn-secondary" onclick="sendPing()">
+                        <i class="fas fa-paper-plane"></i> Ping
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 알림 전송 섹션 -->
+            <div class="section">
+                <h2><i class="fas fa-paper-plane"></i> 알림 전송</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">제목</label>
+                    <input type="text" id="notify-title" class="form-input" placeholder="알림 제목">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">내용</label>
+                    <input type="text" id="notify-body" class="form-input" placeholder="알림 내용">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">수신자 ID</label>
+                    <input type="text" id="recipient-id" class="form-input" placeholder="수신자 사용자 ID">
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="sendNotification('info')">
+                        <i class="fas fa-info-circle"></i> 정보
+                    </button>
+                    <button class="btn btn-warning" onclick="sendNotification('warning')">
+                        <i class="fas fa-exclamation-triangle"></i> 경고
+                    </button>
+                    <button class="btn btn-primary" onclick="sendNotification('error')" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                        <i class="fas fa-times-circle"></i> 오류
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 로그 섹션 -->
+        <div style="padding: 0 30px 30px;">
+            <div class="section">
+                <h2>
+                    <i class="fas fa-terminal"></i> 실시간 로그
+                    <button class="btn btn-secondary" onclick="clearLog()" style="margin-left: auto; font-size: 0.9rem; padding: 5px 15px;">
+                        <i class="fas fa-broom"></i> 초기화
+                    </button>
+                </h2>
+                <div id="log-container" class="log-container"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 알림 표시 영역 -->
+    <div id="notification-area" class="notification-area"></div>
+    
+    <!-- JavaScript 클라이언트 로드 -->
+    <script src="notification_client.js"></script>
+    
+    <script>
+        // 전역 변수들
+        let client = null;
+        let notificationCounter = 0;
+        
+        // DOM 로드 완료 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 알림 클라이언트 테스트 페이지 로드 완료', 'info');
+            
+            // 기본 사용자 ID 생성
+            if (!document.getElementById('user-id').value) {
+                document.getElementById('user-id').value = 'web-user-' + Math.random().toString(36).substr(2, 9);
+            }
+            
+            // 기본 수신자 ID 설정 (자기 자신)
+            document.getElementById('recipient-id').value = document.getElementById('user-id').value;
+            
+            // 사용자 ID 변경 시 수신자 ID도 동기화
+            document.getElementById('user-id').addEventListener('input', function() {
+                if (!document.getElementById('recipient-id').value || 
+                    document.getElementById('recipient-id').value.startsWith('web-user-')) {
+                    document.getElementById('recipient-id').value = this.value;
+                }
+            });
+        });
+        
+        // 로그 출력 함수
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.innerHTML = `<span style="color: #9ca3af;">[${timestamp}]</span> ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // 로그 초기화
+        function clearLog() {
+            document.getElementById('log-container').innerHTML = '';
+            log('🧹 로그가 초기화되었습니다', 'info');
+        }
+        
+        // 연결 상태 업데이트
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connection-status');
+            if (connected) {
+                statusEl.innerHTML = '<i class="fas fa-wifi"></i> 연결됨';
+                statusEl.className = 'status-indicator status-connected';
+            } else {
+                statusEl.innerHTML = '<i class="fas fa-wifi"></i> 연결 끊김';
+                statusEl.className = 'status-indicator status-disconnected';
+            }
+        }
+        
+        // 클라이언트 연결
+        function connectClient() {
+            const serverUrl = document.getElementById('server-url').value.trim();
+            const userId = document.getElementById('user-id').value.trim();
+            
+            if (!serverUrl || !userId) {
+                alert('서버 URL과 사용자 ID를 입력하세요.');
+                return;
+            }
+            
+            if (client) {
+                client.disconnect();
+            }
+            
+            log(`🔄 연결 시도: ${serverUrl} (사용자: ${userId})`, 'info');
+            
+            client = new NotificationClient(serverUrl, userId, {
+                enableLogging: false, // 우리가 직접 로그 관리
+                autoReconnect: true,
+                reconnectInterval: 3000
+            });
+            
+            // 이벤트 핸들러 등록
+            client.on('connect', () => {
+                log('✅ WebSocket 연결 성공!', 'success');
+                updateConnectionStatus(true);
+            });
+            
+            client.on('disconnect', () => {
+                log('🔌 WebSocket 연결 해제', 'warning');
+                updateConnectionStatus(false);
+            });
+            
+            client.on('error', (error) => {
+                log(`❌ 연결 오류: ${error}`, 'error');
+                updateConnectionStatus(false);
+            });
+            
+            client.on('message', (data) => {
+                if (typeof data === 'string') {
+                    log(`📨 텍스트 메시지: ${data}`, 'info');
+                } else {
+                    log(`📨 알림 수신: ${JSON.stringify(data)}`, 'success');
+                    showNotification(data);
+                }
+            });
+            
+            // 알림 타입별 핸들러
+            client.onNotification('info', (notification) => {
+                log(`ℹ️ 정보 알림: ${notification.title}`, 'info');
+            });
+            
+            client.onNotification('warning', (notification) => {
+                log(`⚠️ 경고 알림: ${notification.title}`, 'warning');
+            });
+            
+            client.onNotification('error', (notification) => {
+                log(`🚨 오류 알림: ${notification.title}`, 'error');
+            });
+            
+            // 연결 시작
+            client.connect();
+        }
+        
+        // 클라이언트 연결 해제
+        function disconnectClient() {
+            if (client) {
+                client.disconnect();
+                client = null;
+                log('👋 연결 해제 요청', 'warning');
+            } else {
+                log('❌ 연결된 클라이언트가 없습니다', 'error');
+            }
+        }
+        
+        // Ping 전송
+        function sendPing() {
+            if (client && client.isConnected()) {
+                client.ping();
+                log('📤 Ping 전송', 'info');
+            } else {
+                log('❌ 연결되지 않음 - Ping 전송 실패', 'error');
+            }
+        }
+        
+        // 알림 전송
+        async function sendNotification(kind) {
+            const title = document.getElementById('notify-title').value.trim();
+            const body = document.getElementById('notify-body').value.trim();
+            const recipientId = document.getElementById('recipient-id').value.trim();
+            
+            if (!title || !body || !recipientId) {
+                alert('제목, 내용, 수신자 ID를 모두 입력하세요.');
+                return;
+            }
+            
+            const severityMap = {
+                'info': 'green',
+                'warning': 'yellow',
+                'error': 'red'
+            };
+            
+            const payload = {
+                kind: kind,
+                severity: severityMap[kind],
+                title: title,
+                body: body,
+                recipients: [recipientId],
+                channel: 'websocket',
+                data: {
+                    sender: document.getElementById('user-id').value,
+                    timestamp: new Date().toISOString()
+                }
+            };
+            
+            log(`📤 ${kind.toUpperCase()} 알림 전송 시도...`, 'info');
+            
+            try {
+                const response = await fetch('http://localhost/api/v1/notify/queue', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    log(`✅ 알림 전송 성공: ${result.message_id}`, 'success');
+                } else {
+                    const error = await response.text();
+                    log(`❌ 알림 전송 실패: ${response.status} - ${error}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ 알림 전송 오류: ${error.message}`, 'error');
+            }
+        }
+        
+        // 화면에 알림 표시
+        function showNotification(notification) {
+            const notificationArea = document.getElementById('notification-area');
+            const notificationEl = document.createElement('div');
+            notificationEl.className = `notification ${notification.kind || 'info'}`;
+            notificationEl.innerHTML = `
+                <div class="notification-header">
+                    <div class="notification-title">${notification.title || '알림'}</div>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+                <div>${notification.body || ''}</div>
+                <small style="color: #6b7280; margin-top: 8px; display: block;">
+                    종류: ${notification.kind || 'info'} • 
+                    ${new Date().toLocaleTimeString()}
+                </small>
+            `;
+            
+            notificationArea.appendChild(notificationEl);
+            
+            // 5초 후 자동 제거
+            setTimeout(() => {
+                if (notificationEl.parentElement) {
+                    notificationEl.remove();
+                }
+            }, 5000);
+            
+            // 브라우저 알림도 표시 (권한이 있는 경우)
+            if (Notification.permission === 'granted') {
+                new Notification(notification.title || '알림', {
+                    body: notification.body,
+                    icon: '/favicon.ico'
+                });
+            }
+        }
+        
+        // 페이지 로드 시 브라우저 알림 권한 요청
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    </script>
+</body>
+</html>
