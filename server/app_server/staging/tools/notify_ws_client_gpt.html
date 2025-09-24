@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notify WS Manual Tester</title>
+
+  <!-- 
+    디자인 포인트 (기능은 동일)
+    1) CSS 변수 기반 라이트/다크 모드
+    2) 카드형 레이아웃 + 고정 헤더 영역
+    3) 상태 뱃지(연결/해제/에러), 접근성 라벨 강화
+    4) 로그 영역 aria-live로 스크린리더 친화
+    5) Enter 키로 Connect, Ctrl+Enter로 Ping
+    6) HTTPS -> WSS 안전 변환 (기존 'http' 단순치환 보완: 기능동등/안정성↑)
+    7) 로그 클리어/자동스크롤 토글(프론트만 영향)
+  -->
+
+  <style>
+    /* ------------------------------
+       CSS 변수: 라이트/다크 전환
+    -------------------------------*/
+    :root {
+      --bg: #f7f9fc;
+      --card: #ffffff;
+      --text: #0b1020;
+      --muted: #5b6478;
+      --border: #e6e8ef;
+      --accent: #4f46e5;  /* 인디고 */
+      --accent-2: #0ea5e9;/* 하늘 */
+      --ok: #0ea76b;
+      --err: #e11d48;
+      --warn: #f59e0b;
+      --code: #0b1020;
+      --code-bg: #eef2ff;
+      --log-bg: #0b1020;
+      --log-fg: #e6edf3;
+      --chip-bg: #eef2ff;
+      --chip-fg: #27326b;
+      --shadow: 0 8px 20px rgba(3,8,20,.06);
+      --radius: 14px;
+    }
+    .dark {
+      --bg: #0b1220;
+      --card: #0f172a;
+      --text: #e6edf3;
+      --muted: #9aa4b2;
+      --border: #1f2937;
+      --accent: #6366f1;
+      --accent-2:#38bdf8;
+      --ok: #22c55e;
+      --err: #f43f5e;
+      --warn: #fbbf24;
+      --code: #e6edf3;
+      --code-bg: #111827;
+      --log-bg: #0b0f19;
+      --log-fg: #d7dee7;
+      --chip-bg: #111827;
+      --chip-fg: #c7d2fe;
+      --shadow: 0 8px 24px rgba(0,0,0,.35);
+    }
+
+    /* ------------------------------
+       Reset + Layout
+    -------------------------------*/
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px;
+      display: grid;
+      gap: 24px;
+      grid-template-rows: auto 1fr;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; letter-spacing: .2px;
+    }
+    .chip {
+      background: var(--chip-bg); color: var(--chip-fg);
+      padding: 4px 10px; border-radius: 999px; font-size: 12px;
+    }
+    .controls {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .btn {
+      appearance: none; border: 1px solid var(--border);
+      background: var(--card); color: var(--text);
+      padding: 10px 14px; border-radius: 10px;
+      font-weight: 600; cursor: pointer; box-shadow: var(--shadow);
+      transition: transform .05s ease, border-color .2s ease;
+    }
+    .btn:hover { transform: translateY(-1px); border-color: var(--accent-2); }
+    .btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
+    .btn.ghost { background: transparent; }
+    .btn.warn { background: #fff7ed; color: #9a3412; border-color: #fdba74; }
+    .toggle {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: 999px; background: var(--card); box-shadow: var(--shadow);
+      cursor: pointer; user-select: none;
+    }
+    .toggle input { display: none; }
+    .kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: var(--chip-bg); color: var(--chip-fg);
+      padding: 2px 6px; border-radius: 6px; font-size: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .grid {
+      display: grid; gap: 24px;
+      grid-template-columns: 1.2fr 1fr;
+    }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card header {
+      padding: 16px 16px 0 16px; justify-content: flex-start;
+      gap: 12px;
+    }
+    .card .body { padding: 16px; }
+    .row { display: grid; gap: 6px; margin-bottom: 14px; }
+    .row.inline { grid-template-columns: 140px 1fr; align-items: center; }
+    label { font-size: 13px; color: var(--muted); }
+    input[type="text"] {
+      width: 100%; padding: 12px 14px; border-radius: 10px;
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); outline: none;
+    }
+    input[type="text"]:focus { border-color: var(--accent-2); }
+
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .status {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-radius: 999px; font-size: 12px;
+      border: 1px solid var(--border); background: var(--bg);
+    }
+    .dot { width: 9px; height: 9px; border-radius: 999px; background: var(--muted); }
+    .dot.ok { background: var(--ok); }
+    .dot.err { background: var(--err); }
+    .dot.warn { background: var(--warn); }
+
+    /* 로그 뷰 */
+    #log {
+      height: 320px; overflow: auto; background: var(--log-bg); color: var(--log-fg);
+      border-radius: 12px; border: 1px solid var(--border);
+      padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+    }
+    .logline { padding: 4px 0; white-space: pre-wrap; word-break: break-word; }
+    .ts { opacity: .7; margin-right: 8px; }
+    .ok { color: var(--ok); }
+    .err { color: var(--err); }
+    .warn { color: var(--warn); }
+
+    pre {
+      margin: 0;
+      background: var(--code-bg); color: var(--code);
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 12px; overflow: auto;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+    .hint {
+      color: var(--muted); font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span style="font-size:20px">🔔 Notify WS Manual Tester</span>
+      <span class="chip">UI/UX Refresh</span>
+      <span id="status" class="status" aria-live="polite" aria-atomic="true">
+        <span class="dot" id="statusDot"></span><span id="statusText">disconnected</span>
+      </span>
+    </div>
+    <div class="controls">
+      <label class="toggle" title="다크 모드">
+        <input id="themeToggle" type="checkbox" />
+        <span>🌗 다크 모드</span>
+      </label>
+      <span class="hint">단축키: <span class="kbd">Enter</span> Connect, <span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> Ping</span>
+    </div>
+  </header>
+
+  <main class="grid">
+    <!-- 좌: 연결/입력/액션 -->
+    <section class="card" aria-label="연결 설정">
+      <header><h3 style="margin:0">연결 설정</h3></header>
+      <div class="body">
+        <div class="row">
+          <label for="base">BASE_URL</label>
+          <input id="base" type="text" inputmode="url" placeholder="http://localhost"
+                 value="http://localhost" autocomplete="url" />
+        </div>
+        <div class="row">
+          <label for="user">user_id (UUID)</label>
+          <input id="user" type="text" placeholder="11111111-1111-1111-1111-111111111111" />
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="btnConnect" type="button">🔌 Connect</button>
+          <button class="btn" id="btnPing" type="button">📡 Send ping</button>
+          <button class="btn ghost" id="btnClear" type="button">🧹 Clear log</button>
+          <label class="toggle" title="로그 자동 스크롤">
+            <input id="autoScroll" type="checkbox" checked />
+            <span>자동 스크롤</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- 우: 로그 -->
+    <section class="card" aria-label="로그">
+      <header><h3 style="margin:0">실시간 로그</h3></header>
+      <div class="body">
+        <!-- 스크린리더가 새 로그를 읽을 수 있도록 aria-live -->
+        <div id="log" aria-live="polite" aria-atomic="false"></div>
+      </div>
+    </section>
+
+    <!-- 하단: 큐잉 API 예시 -->
+    <section class="card" style="grid-column: 1 / -1" aria-label="큐잉 API 예시">
+      <header><h3 style="margin:0">큐잉 API 예시 (curl)</h3></header>
+      <div class="body">
+        <p class="hint">
+          아래 예시에서 <code>recipients</code>에 위 <strong>user_id</strong>를 사용하세요.
+          환경 변수(디스패처/WS): <code>NOTIFY_ENABLE=true</code>,
+          <code>NOTIFY_DISPATCH_ENABLE=true</code>, <code>NOTIFY_WS_ENABLE=true</code>
+        </p>
+        <pre><code id="curlBlock">curl -X POST "$BASE_URL/api/v1/notify/queue" \
+ -H "Content-Type: application/json" \
+ -d '{"kind":"info","severity":"green","title":"Hello","body":"From curl","data":{"k":1},"recipients":["&lt;UUID&gt;"],"channel":"websocket"}'</code></pre>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // --------------------------------------------
+    // 상태 변수 (기능 동일: ws 연결, 메시지 전송, 로그)
+    // --------------------------------------------
+    let ws = null;
+    let isDark = false;
+
+    // 유틸: 상태 뱃지 업데이트
+    function setStatus(text, type) {
+      const sText = document.getElementById('statusText');
+      const sDot  = document.getElementById('statusDot');
+      sText.textContent = text;
+      sDot.className = 'dot' + (type ? ' ' + type : '');
+    }
+
+    // 유틸: 로그 출력 (접근성 고려: aria-live 영역에 div 추가)
+    function log(msg, cls) {
+      const el = document.getElementById('log');
+      const line = document.createElement('div');
+      line.className = 'logline' + (cls ? ' ' + cls : '');
+      const ts = document.createElement('span');
+      ts.className = 'ts';
+      ts.textContent = '[' + new Date().toLocaleTimeString() + ']';
+      line.appendChild(ts);
+      line.append(document.createTextNode(' ' + msg));
+      el.appendChild(line);
+
+      // 자동 스크롤 토글이 켜져 있을 때만 스크롤
+      const auto = document.getElementById('autoScroll');
+      if (auto && auto.checked) {
+        el.scrollTop = el.scrollHeight;
+      }
+    }
+
+    // 입력 검증(프론트만): 비어있으면 경고 (기능 영향 없음)
+    function validateInputs() {
+      const base = document.getElementById('base').value.trim();
+      const user = document.getElementById('user').value.trim();
+      if (!base || !user) {
+        alert('BASE_URL과 user_id를 입력하세요.');
+        return null;
+      }
+      return { base, user };
+    }
+
+    // HTTP(S) -> WS(S) 변환 (안정성 개선 / 기존 기능동등)
+    function toWsUrl(baseUrl) {
+      try {
+        const u = new URL(baseUrl.replace(/\/$/, '') + '/ws');
+        if (u.protocol === 'http:') u.protocol = 'ws:';
+        if (u.protocol === 'https:') u.protocol = 'wss:';
+        return u;
+      } catch (e) {
+        // 사용자가 단순 호스트만 입력했을 수 있음 → 보정
+        if (!/^https?:\/\//i.test(baseUrl)) {
+          return toWsUrl('http://' + baseUrl);
+        }
+        throw e;
+      }
+    }
+
+    // Connect
+    function connect() {
+      const v = validateInputs();
+      if (!v) return;
+
+      // 서버와의 계약은 그대로 유지: /ws?user_id=xxx
+      const wsUrl = toWsUrl(v.base);
+      wsUrl.searchParams.set('user_id', v.user);
+
+      // 기존 연결 정리
+      if (ws) { try { ws.close(); } catch(e) {} ws = null; }
+
+      ws = new WebSocket(wsUrl.toString());
+      ws.onopen = function() {
+        setStatus('connected', 'ok');
+        log('connected: ' + wsUrl.toString(), 'ok');
+      };
+      ws.onmessage = function(ev) {
+        log('recv: ' + ev.data);
+      };
+      ws.onerror = function(ev) {
+        // 표준 WebSocket 이벤트엔 message가 없을 수 있음
+        log('error: ' + (ev && ev.message ? ev.message : 'n/a'), 'err');
+        setStatus('error', 'err');
+      };
+      ws.onclose = function() {
+        log('closed');
+        setStatus('disconnected', '');
+      };
+    }
+
+    // Ping
+    function sendPing() {
+      if (!ws || ws.readyState !== 1) { // OPEN = 1
+        log('not connected', 'err');
+        return;
+      }
+      try {
+        ws.send('ping');
+        log('sent: ping', 'warn'); // 시각적 구분
+      } catch (e) {
+        log('send error: ' + e, 'err');
+      }
+    }
+
+    // 이벤트 바인딩
+    document.getElementById('btnConnect').addEventListener('click', connect);
+    document.getElementById('btnPing').addEventListener('click', sendPing);
+    document.getElementById('btnClear').addEventListener('click', () => {
+      document.getElementById('log').textContent = '';
+    });
+
+    // Enter → Connect, Ctrl+Enter → Ping (사용성 개선)
+    document.addEventListener('keydown', (e) => {
+      const tag = (e.target && e.target.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        if (e.key === 'Enter' && !e.ctrlKey) {
+          e.preventDefault();
+          connect();
+        } else if (e.key === 'Enter' && e.ctrlKey) {
+          e.preventDefault();
+          sendPing();
+        }
+      }
+    });
+
+    // 라이트/다크 토글
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.addEventListener('change', (e) => {
+      isDark = e.target.checked;
+      document.documentElement.classList.toggle('dark', isDark);
+    });
+
+    // 초깃값: 라이트 모드
+    setStatus('disconnected', '');
+  </script>
+</body>
+</html>
