@@ -114,7 +114,7 @@ curl -X POST "http://localhost/api/v1/notify/queue" \
 curl -X POST "http://localhost/api/v1/notify/queue" \
 -H "Content-Type: application/json" \
 -d '{
-  "kind": "warning", 
+  "kind": "system", 
   "severity": "yellow",
   "title": "⚠️ 시스템 경고",
   "body": "디스크 사용량이 높습니다.",
@@ -131,7 +131,7 @@ curl -X POST "http://localhost/api/v1/notify/queue" \
 curl -X POST "http://localhost/api/v1/notify/queue" \
 -H "Content-Type: application/json" \
 -d '{
-  "kind": "error",
+  "kind": "system",
   "severity": "red", 
   "title": "🚨 시스템 오류",
   "body": "데이터베이스 연결에 실패했습니다.",
