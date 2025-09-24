@@ -16,6 +16,7 @@ from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 import asyncpg
 import os
 from dotenv import load_dotenv
+from app.infrastructure.db.connection_utils import get_db_connection_params
 
 # 환경 변수 로딩
 load_dotenv('secret/.env.local')
@@ -92,13 +93,10 @@ class SchedulerService:
     async def _load_jobs_from_db(self):
         """데이터베이스에서 활성화된 작업들을 로드"""
         try:
-            conn = await asyncpg.connect(
-                host="host.docker.internal",
-                port=15432,
-                user="svc_dev",
-                password="IOT_dev_123!@#",
-                database="iot_care"
-            )
+            # 환경변수에서 DB 연결 정보 파싱
+            conn_params = get_db_connection_params('DB_APP_URL')
+            logger.info(f"[SCHED] Loading jobs with conn_params host={conn_params.get('host')} port={conn_params.get('port')} db={conn_params.get('database')} user={'***' if conn_params.get('user') else None}")
+            conn = await asyncpg.connect(**conn_params)
             
             # 활성화된 작업들 조회
             jobs = await conn.fetch("""
@@ -245,13 +243,10 @@ class SchedulerService:
     async def _update_job_status(self, job_id: str, status: str, result: Any = None):
         """작업 상태 업데이트"""
         try:
-            conn = await asyncpg.connect(
-                host="host.docker.internal",
-                port=15432,
-                user="svc_dev",
-                password="IOT_dev_123!@#",
-                database="iot_care"
-            )
+            # 환경변수에서 DB 연결 정보 파싱
+            conn_params = get_db_connection_params('DB_APP_URL')
+            logger.info(f"[SCHED] Update job status conn_params host={conn_params.get('host')} port={conn_params.get('port')} db={conn_params.get('database')} user={'***' if conn_params.get('user') else None}")
+            conn = await asyncpg.connect(**conn_params)
             
             now = datetime.now(timezone.utc)
             

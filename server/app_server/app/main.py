@@ -18,34 +18,53 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 from urllib.parse import unquote, urlparse
 
-# 환경 변수 로딩
-load_dotenv('secret/.env.local')
+def _mask_url(url: str) -> str:
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(url.replace('postgresql+asyncpg://', 'postgresql://'))
+        host = parsed.hostname or 'unknown-host'
+        port = parsed.port or '5432'
+        db = (parsed.path[1:] if parsed.path else '') or 'unknown-db'
+        scheme = 'postgresql+asyncpg' if url.startswith('postgresql+asyncpg://') else 'postgresql'
+        return f"{scheme}://***:***@{host}:{port}/{db}"
+    except Exception:
+        return '(invalid url)'
+
+def _load_env():
+    env_file = None
+    app_env = os.getenv('APP_ENV', '').lower()
+    if app_env == 'local':
+        env_file = 'secret/.env.local'
+    elif app_env in ('prod', 'production'):
+        env_file = 'secret/.env.prod'
+    if env_file and os.path.exists(env_file):
+        load_dotenv(env_file)
+        print(f"[ENV] Loaded dotenv file: {env_file}")
+    else:
+        print("[ENV] Skipping dotenv load (using process environment)")
+
+def _log_startup_env():
+    vars_to_log = ['APP_ENV','DB_MODE','DB_APP_URL','ML_DB_URL','DB_LEGACY_URL','DEBUG']
+    masked = {}
+    for k in vars_to_log:
+        v = os.getenv(k)
+        if not v:
+            masked[k] = None
+        elif k.endswith('_URL'):
+            masked[k] = _mask_url(v)
+        else:
+            masked[k] = v
+    print(f"[ENV] Startup config: {masked}")
 
 def create_app() -> FastAPI:
     """통합된 FastAPI 애플리케이션 팩토리 함수"""
     
-    # 데이터베이스 매니저 초기화
-    from app.infrastructure.db.session import db_manager
-    import asyncio
-    
-    # 비동기 초기화를 동기적으로 실행
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # 이미 실행 중인 이벤트 루프가 있는 경우
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, db_manager.initialize())
-                future.result()
-        else:
-            asyncio.run(db_manager.initialize())
-        print("✅ 데이터베이스 매니저 초기화 완료")
-    except Exception as e:
-        print(f"⚠️ 데이터베이스 매니저 초기화 실패: {e}")
-    
+    _load_env()
+    _log_startup_env()
+
     app = FastAPI(
         title="App Server API with Scheduler & Admin",
-        description="IoT Care App Server with APScheduler, SQLAdmin, and Hexagonal Architecture",
+        description="Deep Learning/IoT Care App Server with APScheduler, SQLAdmin, and Hexagonal Architecture",
         version="1.0.0",
         docs_url="/docs",
         redoc_url="/redoc"
@@ -71,11 +90,32 @@ def create_app() -> FastAPI:
     from app.adapters.http.experiment_router import router as experiment_router
     from app.adapters.http.frame_prediction_router import router as frame_prediction_router
     from app.adapters.http.detection_event_router import router as detection_event_router
+    from app.adapters.http.notify_message_router import router as notify_message_router
+    from app.adapters.http.notify_delivery_router import router as notify_delivery_router
+    from app.adapters.http.notify_device_router import router as notify_device_router
+    from app.adapters.http.notify_queue_router import router as notify_queue_router
+    from app.adapters.http.ws_router import router as ws_router
     
     app.include_router(dataset_router)
     app.include_router(experiment_router)
     app.include_router(frame_prediction_router)
     app.include_router(detection_event_router)
+    app.include_router(notify_message_router)
+    app.include_router(notify_delivery_router)
+    app.include_router(notify_device_router)
+    app.include_router(notify_queue_router)
+    app.include_router(ws_router)
+    
+    # 데이터베이스 초기화 이벤트 핸들러
+    @app.on_event("startup")
+    async def startup_db():
+        """데이터베이스 매니저 초기화"""
+        from app.infrastructure.db.session import db_manager
+        try:
+            await db_manager.initialize()
+            print("✅ 데이터베이스 매니저 초기화 완료")
+        except Exception as e:
+            print(f"⚠️ 데이터베이스 매니저 초기화 실패: {e}")
     
     # 스케줄러 이벤트 핸들러 포함
     app.add_event_handler("startup", startup_event)
@@ -83,7 +123,13 @@ def create_app() -> FastAPI:
 
     # SQLAdmin 관리자 패널 설정
     _setup_admin_panel(app)
-    
+    # Notify dispatcher startup (feature-flagged)
+    @app.on_event("startup")
+    async def _start_notify_dispatcher():
+        import asyncio
+        from app.services.notify_dispatcher import dispatcher_loop
+        asyncio.create_task(dispatcher_loop())
+
     # 추가 API 엔드포인트 설정 (한 번만 실행)
     if not hasattr(app, '_endpoints_configured'):
         _setup_additional_endpoints(app)
@@ -265,30 +311,11 @@ def _setup_additional_endpoints(app: FastAPI) -> None:
 
 async def _get_db_connection():
     """데이터베이스 연결 생성"""
-    # 환경변수에서 데이터베이스 연결 정보 파싱
-    db_url = os.getenv("DB_APP_URL", "postgresql://svc_dev:IOT_dev_123%21%40%23@host.docker.internal:15432/iot_care")
+    from app.infrastructure.db.connection_utils import get_db_connection_params
     
-    # URL 디코딩 - postgresql+asyncpg:// 형식도 처리
-    if db_url.startswith("postgresql+asyncpg://"):
-        db_url = db_url.replace("postgresql+asyncpg://", "")
-    elif db_url.startswith("postgresql://"):
-        db_url = db_url.replace("postgresql://", "")
-    
-    # URL 파싱
-    parsed = urlparse(f"postgresql://{db_url}")
-    
-    # Docker 컨테이너에서 host.docker.internal 대신 직접 IP 사용
-    host = parsed.hostname or "host.docker.internal"
-    if host == "host.docker.internal":
-        host = "172.17.0.1"  # Docker 호스트의 실제 IP
-    
-    return await asyncpg.connect(
-        host=host,
-        port=parsed.port or 15432,
-        user=unquote(parsed.username) if parsed.username else "svc_dev",
-        password=unquote(parsed.password) if parsed.password else "IOT_dev_123!@#",
-        database=parsed.path[1:] if parsed.path else "iot_care"
-    )
+    # 환경변수에서 DB 연결 정보 파싱
+    conn_params = get_db_connection_params('DB_APP_URL')
+    return await asyncpg.connect(**conn_params)
 
 
 # Docker Compose에서 사용할 수 있도록 직접 실행 가능

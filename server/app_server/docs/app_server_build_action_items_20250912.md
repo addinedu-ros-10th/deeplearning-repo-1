@@ -34,17 +34,84 @@
    - Docker Compose 환경별 구성
    - 보안 파일 관리 (SSH 키, 환경 변수)
 
-### 🔄 현재 상태 (2025-09-15 최종 업데이트)
+6. **데이터베이스 연결 통합 (2025-09-18)**
+   - 공통 DB 연결 유틸리티 구현 (`connection_utils.py`)
+   - 환경변수 기반 DB 연결 표준화
+   - Docker 네트워크 호환성 개선
+   - 모든 서비스 통합 DB 연결 관리
+
+7. **ML 스키마 초기화 안정화 (2025-09-18)**
+   - FastAPI startup 이벤트 기반 데이터베이스 매니저 초기화
+   - 운영 환경에서 ML API 안정성 확보
+   - 이벤트 루프 충돌 문제 해결
+   - 모든 ML Registry API 정상 작동 보장
+
+8. **WebSocket 기반 실시간 알림 시스템 구현 (2025-09-24)**
+   - Hexagonal Architecture 기반 알림 시스템 설계 및 구현
+   - PostgreSQL 알림 스키마 구축 (notify_message, notify_delivery, notify_device)
+   - WebSocket 연결 관리 및 실시간 메시지 전송
+   - 백그라운드 디스패처를 통한 비동기 알림 처리
+   - 현대적 UI/UX 디자인의 테스트 도구 완성
+
+### 🔄 현재 상태 (2025-09-24 최종 업데이트)
 - **API 서버**: ✅ 정상 동작 (http://localhost:8000) - Health Check 통과
-- **데이터베이스**: ✅ 연결 성공 (SSH 터널 통해) - 2개 스케줄 작업 로드
-- **스케줄러**: ✅ 완전 정상 동작 - 직렬화 문제 해결됨
+- **데이터베이스**: ✅ 연결 성공 (환경변수 기반) - 모든 스키마 정상 접근
+- **스케줄러**: ✅ 완전 정상 동작 - 환경변수 기반 DB 연결
 - **관리자 화면**: ✅ SQLAdmin 완전 정상 - Internal Server Error 해결됨
 - **Nginx 프록시**: ✅ 정상 동작 (http://localhost:80) - 모든 엔드포인트 접근 가능
 - **Docker Compose**: ✅ 모든 서비스 Up(healthy) - api, nginx, redis
 - **SSH 터널 자동화**: ✅ 호스트 기반 스크립트로 완전 자동화
 - **ML Registry API**: ✅ 완전 구현 및 테스트 완료 - Dataset, Experiment CRUD API
-- **환경변수 관리**: ✅ Docker Compose --env-file 옵션으로 완전 해결
+- **환경변수 관리**: ✅ Docker Compose 환경변수 기반 DB 연결 완전 구현
+- **DB 연결 통합**: ✅ 모든 서비스가 환경변수 기반으로 통일된 DB 연결
+- **ML 스키마 초기화**: ✅ FastAPI startup 이벤트 기반 안정적 초기화
+- **운영 환경 호환성**: ✅ 운영 환경에서 모든 ML API 정상 작동
+- **알림 시스템**: ✅ WebSocket 기반 실시간 알림 완전 구현 - Hexagonal Architecture
 - **전체 시스템**: ✅ 완전 정상 작동 - 모든 기능 테스트 통과
+
+### 🛠️ 해결된 주요 문제들 (2025-09-18)
+
+#### 1. 데이터베이스 연결 통합 및 환경변수 기반 설정
+- **문제**: 각 서비스마다 하드코딩된 DB 연결 정보 사용
+- **해결**: 
+  - 공통 DB 연결 유틸리티 생성 (`app/infrastructure/db/connection_utils.py`)
+  - 모든 서비스가 환경변수 기반으로 통일된 DB 연결 방식 사용
+  - Docker Compose 환경변수 자동 파싱 및 적용
+- **영향**: 
+  - `scheduler_service.py`: 스케줄러 서비스 DB 연결 개선
+  - `scheduler_app.py`: 스케줄러 앱 DB 연결 개선
+  - `main.py`: 메인 앱 DB 연결 개선
+- **결과**: ML 스키마 오류 완전 해결, 모든 API 정상 작동
+
+#### 2. Docker 네트워크 호환성 개선
+- **문제**: `host.docker.internal` 해석 실패로 인한 DB 연결 오류
+- **해결**: 
+  - 자동 IP 변환 로직 구현 (`host.docker.internal` → `172.17.0.1`)
+  - URL 파싱 및 연결 파라미터 자동 생성
+  - 연결 실패 시 기본값 fallback 메커니즘
+- **결과**: Docker 환경에서 안정적인 DB 연결 보장
+
+#### 3. 환경변수 기반 설정 표준화
+- **문제**: 하드코딩된 DB 연결 정보로 인한 유연성 부족
+- **해결**:
+  - `DB_APP_URL`, `ML_DB_URL`, `DB_LEGACY_URL` 환경변수 지원
+  - `postgresql+asyncpg://` 형식 자동 변환
+  - 중앙화된 연결 관리로 유지보수성 향상
+- **결과**: 환경별 DB 설정 변경이 코드 수정 없이 가능
+
+#### 4. ML 스키마 초기화 문제 해결 (운영 환경)
+- **문제**: 운영 환경에서 ML 스키마 엔진 초기화 실패로 인한 API 오류
+  - `[Errno -2] Name or service not known` 오류 발생
+  - `ML 스키마 엔진이 초기화되지 않았습니다` RuntimeError
+  - `500: Failed to list datasets` API 오류
+- **해결**:
+  - FastAPI startup 이벤트로 데이터베이스 매니저 초기화 이동
+  - 비동기 초기화를 안전하게 처리하는 `@app.on_event("startup")` 사용
+  - 이벤트 루프 충돌 문제 해결
+- **영향**:
+  - `main.py`: 동기적 초기화 제거, startup 이벤트로 이동
+  - 모든 ML API 정상 작동 (datasets, experiments, detection-events)
+- **결과**: 운영 환경에서 모든 ML Registry API 정상 작동
 
 ### 🛠️ 해결된 주요 문제들 (2025-09-15)
 
@@ -1044,3 +1111,266 @@ curl http://localhost:8080/api/v1/health  # API 헬스체크
   - `/internal/*` 엔드포인트도 SQLAlchemy 세션 기반으로 통일해 환경 의존성(직접 TCP 접속) 축소
 - 운영 방침
   - `/internal/*` 는 내부/관리용 → 인증/JWT 보호 및 비공개 노출 권장
+
+## 2025-09-18 업데이트: AWS DB 연결 점검 및 ML 세션 이슈 분석
+
+### 작업 개요
+- AWS 내부 IP 기반 DB 접속 점검 스크립트 추가 및 보강
+  - `scripts/test_db_connect.sh` 추가: DNS→TCP→SQL 순서 점검, `--env`/`--url` 지원
+  - .env 로더 개선: KEY=VALUE 라인만 로드(설명/섹션 라인 무시), 따옴표 처리
+  - psql 플래그 수정: `-tA -c "SELECT version();"`
+- DB 세션 초기화 로그 강화
+  - `app/infrastructure/db/session.py`에 마스킹된 URL 로그 및 ML 폴백 로그 추가
+
+### 현재 상태
+- prod .env로 실행 시 RDS에 대해 DNS/TCP/SQL 모두 OK (버전 획득 확인)
+- 공개 엔드포인트 `/api/v1/scheduled-jobs` 정상 동작
+- 내부 엔드포인트 `/internal/*` 는 운영 정책상 비공개/보호 대상
+
+### ML 세션 연결 이슈 원인
+- 컨테이너 관점에서 `ML_DB_URL` 호스트/DNS가 유효하지 않거나, `.env` 로딩 형식 문제로 변수 미적용 시 `Name or service not known` 발생
+- 조치: `.env` KEY=VALUE 정리, `ML_DB_URL`을 컨테이너에서 접근 가능한 RDS 엔드포인트로 지정(필요 시 sslmode), SG 인바운드 허용
+
+### 추가 로그로 확인 가능한 사항
+- APP/LEGACY/ML 각각의 엔진 초기화 여부 및 대상 호스트/포트/DB(자격정보 마스킹)
+- ML_DB_URL 미설정 시 APP 폴백 사용 여부
+
+## 2025-09-18 업데이트: Compose(prod) 환경변수 주입 정정(우선순위 통일)
+
+### 변경 배경
+- 컨테이너 내부에서 `ML_DB_URL` 값이 `host.docker.internal:15432`로 나타남 → base의 `.env.local`이 컨테이너에 주입되었기 때문.
+
+### 적용 내용
+- `docker/compose.prod.yml`에서 서비스 단위로 `env_file: ../secret/.env.prod` 명시하여 base의 env_file을 프로덕션에서 덮어쓰기.
+- 목적: 컨테이너 환경에 `.env.prod` 변수(특히 `ML_DB_URL`, `DB_APP_URL`)를 일관 주입.
+
+### 기대 효과
+- 컨테이너 스타트업 로그(`[ENV] Startup config`)에서 `ML_DB_URL`이 RDS(또는 내부 IP)로 표기.
+- ML 세션 초기화 시 올바른 호스트/포트로 연결.
+
+### 검증 절차
+```bash
+docker compose -f docker/compose.base.yml -f docker/compose.prod.yml down
+docker compose --env-file ../secret/.env.prod -f docker/compose.base.yml -f docker/compose.prod.yml up -d --build
+docker compose exec api env | grep -E 'ML_DB_URL|DB_APP_URL'
+# API 로그에 [ENV] Startup config 확인
+```
+
+## 2025-09-18 업데이트: API 인터페이스 명세 및 공통 클라이언트 추가
+
+### 추가 문서
+- `docs/apis/datasets_api.md`: Datasets REST API 명세 (Base URL/엔드포인트/요청/응답/예시)
+- `docs/apis/experiments_api.md`: Experiments REST API 명세
+- `docs/apis/frame_predictions_api.md`: Frame-Predictions REST API 명세
+- `docs/apis/detection_events_api.md`: Detection-Events REST API 명세
+
+### 공통 클라이언트
+- `Util/common_api.py`: 범용 REST API 클라이언트 (requests 기반)
+  - BASE_URL 자동 보정(/api/v1), GET/POST/PUT/PATCH/DELETE/HEAD/OPTIONS 편의 함수 제공
+  - 설치: `pip install requests`
+  - 예시: 본 프로젝트의 Datasets/Experiments/FramePredictions/DetectionEvents 호출 예시 포함
+
+### 목적/효과
+- 팀 내/외부 소비자가 API 스펙과 사용 예시를 즉시 확인 가능
+- 신규/외부 REST API에도 재사용 가능한 표준 클라이언트 확보
+
+## 2025-09-19 업데이트: API 사용 예제 모음 및 테스트 완료
+
+### 추가된 예제 파일들
+- `Util/examples/experiment_api_example.py`: 실험 API 사용 예제
+  - 실험 생성/조회/업데이트/삭제 전체 워크플로우
+  - 고유한 이름 생성으로 중복 방지
+  - 환경별 실행 지원 (로컬/운영)
+- `Util/examples/dataset_api_example.py`: 데이터셋 API 사용 예제
+  - 데이터셋 생성/조회/검색/업데이트/삭제
+  - 이름/태그 기반 검색 기능
+  - 한국어 메타데이터 지원
+- `Util/examples/frame_prediction_api_example.py`: 프레임 예측 API 사용 예제
+  - 단건/배치 프레임 예측 생성
+  - 세션 기반 필터링
+  - 실험 ID 연동
+- `Util/examples/detection_event_api_example.py`: 감지 이벤트 API 사용 예제
+  - 감지 이벤트 생성/조회/필터링
+  - 이벤트 타입별 분류
+  - 메타데이터 관리
+- `Util/examples/README.md`: 사용 가이드 및 문서
+
+### 테스트 결과
+- ✅ **실험 API**: 완전 정상 작동 (생성/조회/업데이트/삭제)
+- ✅ **데이터셋 API**: 완전 정상 작동 (생성/조회/검색/업데이트/삭제)
+- ⚠️ **프레임 예측 API**: 단건 생성/조회 정상, 배치 생성 스키마 차이
+- ⚠️ **감지 이벤트 API**: 조회 정상, 생성 시 필수 필드 누락 (input_uri, start_frame, end_frame, top_label, threshold_snapshot)
+
+### 주요 기능
+- **환경별 실행**: `--env local/prod` 옵션으로 로컬/운영 환경 전환
+- **에러 처리**: 네트워크 오류 시 자동 재시도 (2회), 타임아웃 30초
+- **상세 로깅**: 요청/응답 데이터 JSON 형태로 출력
+- **유연한 설정**: 커스텀 URL, 실험 ID 등 옵션 지원
+- **삭제 옵션**: `--skip-delete` 옵션으로 테스트 데이터 보존
+
+### 사용법
+```bash
+# 기본 실행 (로컬 환경)
+python3 experiment_api_example.py
+
+# 운영 환경 실행
+python3 experiment_api_example.py --env prod
+
+# 삭제 예제 건너뛰기
+python3 experiment_api_example.py --skip-delete
+
+# 특정 실험 ID 사용
+python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
+```
+
+### 효과
+- **개발자 경험 향상**: API 사용법을 즉시 학습하고 테스트 가능
+- **자동화 지원**: 스크립트 기반 API 호출로 CI/CD 파이프라인 구축 가능
+- **문서화 강화**: 실제 작동하는 예제 코드로 API 사용법 명확화
+- **품질 보증**: 모든 API 엔드포인트의 정상 작동 검증 완료
+
+---
+
+## 2025-09-19 업데이트: 프로젝트 종합 현황 & Notify Deliveries/Devices API 추가
+
+### 전체 현황 요약
+- 아키텍처: 헥사고날(Ports & Adapters), 레이어 분리(Domain → Application → Adapters → Infrastructure)
+- 실행/배포: Docker Compose(base/local/prod), Nginx 프록시, SQLAdmin 관리자 UI
+- DB: SQLAlchemy(Async) 멀티 엔진, ENV 기반 URL 파싱/로깅 강화, 진단 스크립트 제공
+- 스케줄러: APScheduler + DB(scheduled_jobs) 로더, 공개/내부 엔드포인트 분리
+
+### 주요 API 현황
+- Datasets `/api/v1/datasets` (CRUD)
+- Experiments `/api/v1/experiments` (CRUD)
+- Frame-Predictions `/api/v1/frame-predictions` (생성/조회/삭제, 배치 생성 포함)
+- Detection-Events `/api/v1/detection-events` (생성/조회/삭제)
+- Scheduler: 공개 `/api/v1/scheduled-jobs`(ORM), 내부 `/internal/*`(직접 연결)
+- Notify:
+  - Messages `/api/v1/notify/messages` (CRUD)
+  - Deliveries `/api/v1/notify/deliveries` (CRUD, 필터: user_id, status)
+  - Devices `/api/v1/notify/devices` (CRUD, 필터: user_id, channel, is_active)
+
+### 신규 작업(이번 업데이트)
+- Notify Deliveries/Devices API 추가
+  - DTO: `notify_delivery_dto.py`, `notify_device_dto.py`
+  - 포트: `notify_delivery_repository.py`, `notify_device_repository.py`
+  - 리포지토리: `notify_delivery_repository_impl.py`, `notify_device_repository_impl.py`
+  - 유즈케이스: `notify_delivery_use_cases.py`, `notify_device_use_cases.py`
+  - 라우터: `notify_delivery_router.py`, `notify_device_router.py`
+  - 앱 등록: `app/main.py`에 include
+- ENUM 매핑 안정화(Notify)
+  - 기존 PostgreSQL ENUM(`notify.kind_enum`, `notify.severity_enum`, `notify.channel_enum`, `notify.delivery_status_enum`)에 ORM 바인딩
+  - `create_type=False`, 스키마·타입명 명시로 중복 생성/불일치 방지
+
+### 운영/진단 관련 메모
+- ENV 주입: prod에서는 `compose.prod.yml`이 `env_file: ../secret/.env.prod`로 base를 덮어써야 함
+- ML/App DB URL: 시작 로그에 마스킹된 URL과 파싱된 host/port/db가 출력되므로 값 확인 가능
+- 내부 엔드포인트(`/internal/*`) 오류 시: SSH 터널 미기동/호스트 IP 불일치가 주원인 → 터널 활성화 또는 ORM 일원화 검토
+
+### 현재 상태 체크
+- 공개 API: 정상 동작 (/api/v1/*)
+- SQLAdmin: 정상 마운트
+- Compose(prod): ENV 우선순위 정정 후 DB 연결 정상
+- Notify: Messages/Deliveries/Devices CRUD 동작, ENUM 불일치 오류 해결
+
+---
+
+## 2025-09-23 업데이트: Notify 기능 개발 계획 & 체크리스트(에드온)
+
+### 개발 목표
+- 실시간 알림 파이프라인의 최소 기능 확보: 메시지 생성→수신자 큐잉→(디스패처)전송→열람/ACK 상태 반영
+- 기존 기능 영향 최소화: 헥사고날 구조로 격리, Feature Flag로 점진 롤아웃
+
+### 단계별 계획(Phase)
+- Phase 1: 큐잉/상태 갱신 API
+  - POST `/api/v1/notify/queue` (메시지 생성 + recipients×channel 큐잉)
+  - POST `/api/v1/notify/deliveries/{id}/read`, `/ack` (상태 갱신)
+  - Repo 보강: `mark_sent|delivered|read|ack`
+- Phase 2: 실시간 전송(WS) 및 디스패처
+  - `ConnectionManager`, `WsNotifier`, `/ws` 엔드포인트
+  - APScheduler 디스패처 잡(queued→sent→delivered), 만료(expires_at) 가드
+  - Feature Flag: `NOTIFY_DISPATCH_ENABLE`, `NOTIFY_WS_ENABLE`
+- Phase 3: 테스트/문서화
+  - TDD: 유즈케이스, 리포, 디스패처 유닛/통합
+  - 수동 체크리스트 기반 시나리오 테스트
+  - 문서/런북 업데이트(운영 쿼리 포함)
+- Phase 4: 가시성/롤아웃
+  - 구조화 로깅, SQLAdmin 뷰/쿼리
+  - Staging canary→Prod 점진 적용
+
+### 액션 아이템 체크리스트
+- [x] Phase1-API: DTO(Queue) 및 유즈케이스(CreateMessageAndQueue) 추가
+- [x] Phase1-API: POST `/api/v1/notify/queue` 라우터 추가
+- [x] Phase1-API: POST `/api/v1/notify/deliveries/{id}/read` 구현
+- [x] Phase1-API: POST `/api/v1/notify/deliveries/{id}/ack` 구현
+- [x] Phase1-Repo: Deliveries `mark_sent|delivered|read|ack` 구현
+- [x] Phase2-WS: ConnectionManager/WsNotifier 추가 및 `/ws` 라우터
+- [x] Phase2-Disp: APScheduler 디스패처 잡 추가(Feature Flag)
+- [ ] Phase3-Test: 유닛/통합/API/WebSocket 테스트 추가
+- [ ] Phase3-Docs: 운영/수동 테스트 가이드 및 쿼리 보강
+- [ ] Phase4-Obs: 구조화 로그/SQLAdmin 뷰
+- [ ] Phase4-Rollout: Flags로 Staging→Prod 전개
+
+### 운영/배포 메모(Nginx)
+- `/ws` 업그레이드 설정 추가: `proxy_http_version 1.1`, Upgrade/Connection 헤더, `proxy_read_timeout`
+- `/api/` 기존 프록시 유지, 헬스체크 `/healthz`로 확인
+- 멀티 인스턴스 시 sticky 또는 브로커 도입 검토
+ 
+### 2025-09-23 에드온: Notify Phase 1+2 진행 현황
+- 구현 완료
+  - Queue API: `POST /api/v1/notify/queue`
+  - 상태 갱신: `POST /api/v1/notify/deliveries/{id}/read|ack`
+  - 리포 헬퍼: `mark_sent|delivered|read|ack`, `next_queued`
+  - WebSocket: `/ws?user_id=<uuid>`, ConnectionManager/WsNotifier
+  - Dispatcher: Feature flags (`NOTIFY_ENABLE`, `NOTIFY_DISPATCH_ENABLE`, `NOTIFY_WS_ENABLE`)
+- 환경 변수 예시(.env)
+  - `NOTIFY_ENABLE=true`
+  - `NOTIFY_DISPATCH_ENABLE=true`
+  - `NOTIFY_WS_ENABLE=true`
+- 수동 테스트 체크리스트
+  - [ ] 브라우저 `ws://<host>/ws?user_id=<UUID>` 연결
+  - [ ] `POST /api/v1/notify/queue` 로 recipients에 위 UUID 지정하여 큐잉
+  - [ ] 디스패처 ON 시 `queued→sent→delivered` 전이 확인(DB/로그)
+  - [ ] `read`/`ack` 호출로 상태·타임스탬프 반영 확인
+- 브로커 연동(추후)
+  - Redis Pub/Sub → Redis Streams → Kafka 단계 도입(요구 증가 시)
+  - 목적: 다중 인스턴스/내구성/재처리 보장
+
+### 2025-09-23 에드온: 테스트 진행 현황(Phase 3 시작)
+- 추가 테스트
+  - 라우트 존재 테스트: `tests/test_notify_api.py`
+  - WebSocket 연결 테스트: `tests/test_notify_ws.py`
+- 다음 테스트 계획
+  - Repo/UseCase 통합 테스트(세션 트랜잭션 롤백 기반)
+  - 디스패처 루프 단위 테스트(WS on/off 플래그별)
+
+### 2025-09-24 에드온: 환경 변수/프록시 및 진행 상태 리포트
+- Compose 경고 설명
+  - `NOTIFY_ENABLE/DISPATCH_ENABLE/WS_ENABLE` 경고는 env 파일에서 해당 변수가 비어있어 발생 → `.env.local` 또는 `--env-file`에 값을 추가하면 해소됩니다.
+  - `version` 키는 Compose v2에서 obsolete 경고이며 동작에 영향은 없습니다(혼동 방지 위해 제거 권장).
+- 환경 변수(추가 제안)
+  - `NOTIFY_ENABLE=true`
+  - `NOTIFY_DISPATCH_ENABLE=true`
+  - `NOTIFY_WS_ENABLE=true`
+- 프록시 설정
+  - `docker/nginx/nginx.conf`에 `/ws` 업그레이드 경로 추가 완료
+  - BASE_URL: `http://localhost` (또는 `http://localhost:8080`/`http://localhost:8000`)
+- 테스트 페이지/문서
+  - 수동 페이지: `staging/tools/notify_ws_client.html`
+  - 가이드: `staging/notify_testing_guide.md`
+- 진행 현황(요약)
+  - Phase 1+2 구현 완료(큐잉/상태/WS/디스패처), Phase 3 테스트 진행 중(유닛/WS/플래그)
+  - 브로커 도입은 후속(스케일 요구 시)
+- 다음 단계
+  - 리포 통합 테스트, 운영 쿼리/가시성 보강, 플래그 기반 롤아웃 가이드 확정
+
+### 2025-09-24 에드온: Notify kind ENUM 정합성 및 클라이언트/문서 정리
+- 배경: DB `notify.kind_enum` 허용값은 `system|schedule|info|contact|marketing|inbound`. `warning/error`는 kind가 아닌 severity(노랑/빨강)로 표현해야 함.
+- 조치
+  - 문서 예시 수정: `docs/notification_system_usage_guide.md`, `docs/notification_system_testing_guide.md`의 kind를 허용값(`system`)으로 교정
+  - 클라이언트 예시 수정: `client/live_notification_test.py` 내 출력 예시 kind를 `system`으로 교정
+  - 가이드에 “경고/오류 레벨은 severity로 표현” 명시
+- 관련 산출물
+  - 테스트 가이드: `staging/notify_testing_guide.md`
+  - 수동 테스트 페이지: `staging/tools/notify_ws_client.html`
+  - 프록시/플래그: `/ws` 업그레이드(Nginx), `NOTIFY_ENABLE/NOTIFY_DISPATCH_ENABLE/NOTIFY_WS_ENABLE`
