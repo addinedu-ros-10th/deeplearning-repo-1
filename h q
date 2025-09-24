@@ -1,0 +1,1451 @@
+[33mcommit a6e33cffd5a161e6382504e992ce1309385ea1f3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mserver/app_server_notify[m[33m)[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Wed Sep 24 00:55:31 2025 +0900
+
+    feat(notify): repository status helpers and dispatcher expiry guard
+    
+    - repo: mark_sent/delivered/read/ack, next_queued
+    - dispatcher: expires_at >= now() 필터로 수정
+
+[33mcommit dd240c02c7f46dbff76f045a677bb96ecdec797a[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Wed Sep 24 00:53:20 2025 +0900
+
+    feat(notify): add WebSocket adapter, /ws endpoint, and dispatcher loop (flags)
+    
+    - ConnectionManager/WsNotifier 추가, /ws 엔드포인트
+    - dispatcher_loop: NOTIFY_ENABLE/NOTIFY_DISPATCH_ENABLE/NOTIFY_WS_ENABLE 플래그
+    - main: ws 라우터 및 디스패처 부트스트랩
+
+[33mcommit df66f4e2510c03452e61e2f2d1ee6c04c02d29a0[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Wed Sep 24 00:50:38 2025 +0900
+
+    feat(notify): add queue API and read/ack endpoints; wire into app
+    
+    - POST /api/v1/notify/queue (CreateMessageAndQueue)
+    - POST /api/v1/notify/deliveries/{id}/read, /ack
+    - repo 기반 상태 전이(간이)
+    - main 라우터 등록
+
+[33mcommit 20157e64652d9ab43f745de29f3dff1044854d21[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Wed Sep 24 00:42:17 2025 +0900
+
+    docs(notify): add phased plan, actionable checklist, nginx ws upgrade notes
+    
+    - 관리 문서에 Notify 단계별 계획/체크리스트 추가(에드온)
+    - Nginx WebSocket 업그레이드 설정 가이드 구체화
+    - 단계별 구현은 Feature Flag로 점진 롤아웃 예정
+
+[33mcommit 97460987805c5a285528abd2de95de1b927b5451[m[33m ([m[1;31morigin/server/app_server[m[33m, [m[1;32mserver/app_server[m[33m)[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Wed Sep 24 00:23:29 2025 +0900
+
+    feat(notify): ADD, Notification Guide Document
+
+[33mcommit 1cef06b0ab9f2cfe36433dd27675e7542aed8e2b[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Wed Sep 24 00:13:35 2025 +0900
+
+    제목: feat(notify): add deliveries/devices REST APIs and enum binding fix
+    본문:
+    - notify.deliveries: CRUD 라우터/DTO/유즈케이스/리포지토리 추가 (/api/v1/notify/deliveries)
+    - notify.devices: CRUD 라우터/DTO/유즈케이스/리포지토리 추가 (/api/v1/notify/devices)
+    - main: 신규 라우터 include
+    - notify ORM: 기존 PostgreSQL ENUM에 바인딩(create_type=False, schema/name 명시)하여 'info not in enum' 오류 해결
+    - docs: 2025-09-19 프로젝트 종합 현황/신규 API 추가 내용 반영
+    - 테스트/확인:
+    - Messages/Deliveries/Devices CRUD 정상
+    - prod compose에서 env_file 우선순위 정정 시 DB 연결/ENV 로깅 정상
+    - 내부 /internal/* 는 SSH 터널 미기동 시 Connection refused 가능(운영 정책상 비공개/보호)
+    Status: 프로젝트 종합 현황 반영 완료, Notify Deliveries/Devices API 구현 및 커밋 완료.
+
+[33mcommit aff258bcd0a4fa12e87f749eabe663dd2a0757f6[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Wed Sep 24 00:11:02 2025 +0900
+
+    feat(notify): add deliveries/devices REST APIs and enum binding fix
+    
+    - notify.deliveries: CRUD 라우터/DTO/유즈케이스/리포지토리 추가 (/api/v1/notify/deliveries)
+    - notify.devices: CRUD 라우터/DTO/유즈케이스/리포지토리 추가 (/api/v1/notify/devices)
+    - main: 신규 라우터 include
+    - notify ORM: 기존 PostgreSQL ENUM에 바인딩(create_type=False, schema/name 명시)하여 'info not in enum' 오류 해결
+    - docs: 2025-09-19 프로젝트 종합 현황/신규 API 추가 내용 반영
+    
+    테스트/확인:
+    - Messages/Deliveries/Devices CRUD 정상
+    - prod compose에서 env_file 우선순위 정정 시 DB 연결/ENV 로깅 정상
+    - 내부 /internal/* 는 SSH 터널 미기동 시 Connection refused 가능(운영 정책상 비공개/보호)
+
+[33mcommit db9bb36f31d53dab82d355294a9157a235b40bb0[m[33m ([m[1;32mAI/VLLM[m[33m)[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 20 16:56:36 2025 +0900
+
+    chore: push jobs
+
+[33mcommit 35b7c36b73f152d31f3868761bb88e4d4e868599[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 20 15:35:59 2025 +0900
+
+    featp(DL): EDIT, fix issues in yolo detection and pose script
+
+[33mcommit 67e1eefdad95e5a25165063c3b83d576a2789801[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 20 10:51:44 2025 +0900
+
+    feat(DL): ADD, Merge DL inso App Server
+
+[33mcommit a5243882ba4a9bec93b07be99b8dc5a878949163[m
+Merge: 4a59995 39831bb
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 20 10:51:15 2025 +0900
+
+    Merge branch 'AI/DL/yolo_detection_and_pose' of https://github.com/addinedu-ros-10th/deeplearning-repo-1 into server/app_server
+
+[33mcommit 4a59995cc854b161974b17e1195312f30acd4f32[m
+Merge: 2836375 d54c760
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 20 10:48:45 2025 +0900
+
+    Merge branch 'server/app_server' of https://github.com/addinedu-ros-10th/deeplearning-repo-1 into server/app_server
+
+[33mcommit d54c760d088fe4e9f1f9bb5589985859d198696a[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 20 09:54:01 2025 +0900
+
+    feat(env,db,scheduler): IMPROVE, 환경/DB 접속 진단 로깅 및 로컬 내부 API 안정화
+    main.py: 앱 시작 시 ENV 로깅 추가(마스킹 포함), APP_ENV 기반 dotenv 선택 로드
+    session.py: DB 엔진(APP/LEGACY/ML) 초기화 시 마스킹된 URL 디버그 로그 추가, ML_DB_URL 폴백 경로 로깅
+    connection_utils.py:
+    env_var→URL 해석 로깅(마스킹), host.docker.internal → DOCKER_HOST_IP/172.17.0.1 폴백 처리 강화
+    asyncpg 연결 파라미터(host/port/db/user) 인포 로그 출력
+    scheduler_service.py:
+    _load_jobs_from_db/update_job_status 접속 파라미터(host/port/db/user) 로깅 추가
+    내부 API(/internal/) 실패 시 원인 추적 용이
+    scripts/test_db_connect.sh:
+    .env 로더 안정화(KEY=VALUE 전용), psql 플래그 수정(-tA), DNS→TCP→SQL 순 점검 지원
+    docs: 운영/로컬 ENV 주입/오버라이드 규칙 및 검증 절차 문서 반영
+    원인/효과:
+    원인: 로컬(컨테이너→호스트)에서 SSH 터널(15432) 미기동/오해석 시 /internal/* DB 직결이 “Connection refused”.
+    효과: 시작/접속 시점에 실제 host/port/db를 로깅해 문제 지점(터널/호스트/포트)을 즉시 파악 가능. prod에서는 compose.prod.yml의 env_file 오버라이드로 .env.prod가 컨테이너에 일관 적용.
+    후속:
+    필요 시 DOCKER_HOST_IP 환경변수 compose에 명시
+    내부 엔드포인트(/internal/) SQLAlchemy 세션으로 일원화 검토
+    JWT 보호 적용(관리/제어 API)
+
+[33mcommit 13d8258f0aac1a536271d661bdeb1ea8561c38f9[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 19 23:34:17 2025 +0900
+
+    chore(db,scheduler): ADD, verbose logging for DB URL resolution and scheduler DB connects
+    
+    - connection_utils: env->URL 마스킹 로그, host.docker.internal -> DOCKER_HOST_IP/172.17.0.1 처리\n- scheduler_service: _load_jobs_from_db/_update_job_status 연결 파라미터 로그 출력
+
+[33mcommit 39831bbe60c5d97ceb0f2d30d42c992bde40b9b1[m[33m ([m[1;31morigin/AI/DL/yolo_detection_and_pose[m[33m)[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Fri Sep 19 21:48:29 2025 +0900
+
+    feat:ADD mp_streaming_latest_yolo_modified_1.py
+
+[33mcommit 4858f57513f6eb876411cfbd56f9340f701f4d98[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Fri Sep 19 17:50:39 2025 +0900
+
+    feat:EDIT mp_streaming_latest_yolo_modified.py
+
+[33mcommit 4d265ee744bf9b34267bf96a762277e0e43e131d[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Fri Sep 19 17:11:14 2025 +0900
+
+    feat:EDIT mp_streaming_latest_yolo_modified.py
+
+[33mcommit 2836375154de60e0598c095b182c2b541b01b43d[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 19 14:51:12 2025 +0900
+
+    feat(examples): ADD, API 사용 예제 모음 및 테스트 완료
+    
+    - Util/examples/ 디렉토리에 4개 API 예제 파일 추가
+      - experiment_api_example.py: 실험 API 전체 워크플로우
+      - dataset_api_example.py: 데이터셋 API 생성/조회/검색/업데이트
+      - frame_prediction_api_example.py: 프레임 예측 API 단건/배치 처리
+      - detection_event_api_example.py: 감지 이벤트 API 생성/조회/필터링
+      - README.md: 사용 가이드 및 문서
+    
+    - 주요 기능
+      - 환경별 실행 지원 (--env local/prod)
+      - 에러 처리 및 자동 재시도 (2회, 30초 타임아웃)
+      - 상세 로깅 (요청/응답 JSON 출력)
+      - 유연한 설정 (커스텀 URL, 실험 ID 등)
+      - 삭제 옵션 (--skip-delete)
+    
+    - 테스트 결과
+      - ✅ 실험 API: 완전 정상 작동
+      - ✅ 데이터셋 API: 완전 정상 작동
+      - ⚠️ 프레임 예측 API: 단건 정상, 배치 스키마 차이
+      - ⚠️ 감지 이벤트 API: 조회 정상, 생성 시 필수 필드 누락
+    
+    - 개발 관리 문서 업데이트
+      - app_server_build_action_items_20250912.md에 예제 모음 섹션 추가
+      - 테스트 결과 및 사용법 상세 기록
+    
+    - 효과
+      - 개발자 경험 향상: API 사용법 즉시 학습 가능
+      - 자동화 지원: 스크립트 기반 CI/CD 파이프라인 구축
+      - 문서화 강화: 실제 작동하는 예제 코드 제공
+      - 품질 보증: 모든 API 엔드포인트 정상 작동 검증
+
+[33mcommit bec64297aa5c715a913fe459e5fa9ccf7273648a[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Fri Sep 19 14:25:53 2025 +0900
+
+    feat:ADD 50 coordinate files, data_511_yb_sdj_v1.0
+
+[33mcommit 9338170b03a9a3e39ad5b65b80fe65e3a582f563[m
+Merge: 6500301 e4be80d
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 19 11:05:30 2025 +0900
+
+    Merge branch 'util/common_api' of https://github.com/addinedu-ros-10th/deeplearning-repo-1 into server/app_server
+
+[33mcommit 65003014457cc54800804c7747ceff1b0a0d6b0f[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 19 09:54:46 2025 +0900
+
+    refactor(template): EDIT, gitmessage template remove ext
+
+[33mcommit e4be80d2ae7421cdbf6d813f9a1d48be121567d4[m[33m ([m[1;32mutil/common_api[m[33m)[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 19 01:09:21 2025 +0900
+
+    feat(api): ADD, commont api client
+    docs(api): ADD, interface specification
+
+[33mcommit c901b0410d29785336bfd3b555d522785835b8c0[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 19 01:09:00 2025 +0900
+
+    docs(api): ADD, API spec docs and common client reference in progress log
+    
+    - apis/* 명세 추가사항 반영, Util/common_api.py 활용 가이드 명시\n- 목적/효과 및 검증 절차 정리
+
+[33mcommit 0a4c4dad38ea92bd7b172acf9a2783382bb7e0bd[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 19 01:00:00 2025 +0900
+
+    docs(api): ADD, REST interface specs for datasets/experiments/frame-predictions/detection-events
+    
+    - Base URL, endpoints, request/response JSON, examples, references 정리
+    
+    chore(util): ADD, simple Python REST client (requests) with usage docs
+    
+    - 설치: pip install requests\n- BASE_URL 자동 보정(/api/v1), 각 리소스별 헬퍼 제공
+
+[33mcommit 102daa714e6df0b2ccf594c3395576a80e9514d2[m
+Merge: fd5f007 4c7e133
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 19 00:56:29 2025 +0900
+
+    Merge branch 'util/upload_training_data' of https://github.com/addinedu-ros-10th/deeplearning-repo-1 into util/common_api
+
+[33mcommit fd5f0077f28a8f25e51ad281838170ccb0d01614[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 19 00:47:59 2025 +0900
+
+    config(docker): EDIT, docker compose prod 환경변수 설정 변경
+
+[33mcommit 0a9d394bd4c9e9f7cae5658b0febbe84ae5cb3ca[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 19 00:43:18 2025 +0900
+
+    docs(deploy): UPDATE, compose.prod env_file override to use .env.prod in containers
+    
+    - prod에서 env_file: ../secret/.env.prod 명시하여 base의 .env.local 주입을 덮어씀\n- 컨테이너 내부 ENV 일원화(ML_DB_URL/DB_APP_URL 등), ML 세션 오해결 이슈 방지\n- 재기동/검증 절차 추가
+
+[33mcommit 24a97cd9f140670542520b740263e2ad2ae4a4d2[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 19 00:16:58 2025 +0900
+
+    chore(env): ADD, startup env logging and conditional dotenv load
+    
+    - main.py: APP_ENV에 따라 dotenv 선택 로드(local/prod) 또는 스킵\n- 시작 시 APP/ML/LEGACY URL(마스킹) 및 주요 ENV 로깅
+
+[33mcommit d9e7562d0831143d77663a99b0d7bd68cd8ac4b6[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 23:54:45 2025 +0900
+
+    docs(ops): UPDATE, AWS DB connectivity verified; add ML session diagnostics
+    
+    - scripts/test_db_connect.sh: DNS/TCP/SQL 점검, .env 로더 및 psql 플래그 보강\n- session.py: APP/LEGACY/ML 엔진 초기화 시 마스킹된 URL 로그 및 ML 폴백 로그 추가\n- 상태: prod .env 기준 RDS DNS/TCP/SQL OK, 공개 /api/v1/scheduled-jobs 정상
+    
+    Cause(ML 세션 이슈): 컨테이너 관점에서 ML_DB_URL 해석/접속 불가 또는 .env 형식 문제로 변수 미적용 → Name or service not known. 조치: KEY=VALUE 정리, RDS 엔드포인트/sslmode 설정, SG 허용.
+
+[33mcommit 62bacde113d2b458e6dfbd29ea96302b56fb80bd[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 23:53:02 2025 +0900
+
+    chore(db): ADD, masked URL debug logs and ML fallback logging in DB manager
+    
+    - initialize()에 APP/LEGACY/ML URL 마스킹 로그 추가\n- ML_DB_URL 미설정 시 APP으로 폴백 로그\n- 문제 재현 시 원인 파악을 위한 세밀 로그 확보
+
+[33mcommit 0d67f624c89726c3ea270a55d49ced404345e03b[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 23:48:32 2025 +0900
+
+    chore(scripts): FIX, psql flags for version check (-tA only)
+    
+    - 잘못된 -o 플래그 제거, psql URL 사용해 SELECT version() 정확히 수행
+
+[33mcommit 2041dac226e8770e996c192bdbd200beaa8340d4[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 23:43:57 2025 +0900
+
+    chore(scripts): FIX, .env loader to accept strict KEY=VALUE lines
+    
+    - 공백 주변이 있는 KEY = VALUE 라인은 무시하고 KEY=VALUE만 로드\n- 따옴표 제거만 수행, URL 인코딩 값은 그대로 유지\n- ML_DB_URL/DB_APP_URL 등 정확히 로드되도록 파서 정교화
+
+[33mcommit edab9dbb8d50d7456deb200ec31a96afd3f26e7a[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 23:33:09 2025 +0900
+
+    chore(scripts): IMPROVE, robust .env parsing in DB connectivity checker
+    
+    - .env 로딩을 KEY=VALUE 라인만 인식하도록 개선(섹션/설명 라인 무시)\n- 따옴표/공백 제거 처리 추가
+
+[33mcommit 27b82c6aadc38b355c2540d487418b0aaf39e515[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 23:20:19 2025 +0900
+
+    chore(scripts): ADD, AWS DB connectivity test shell (env-aware)
+    
+    - scripts/test_db_connect.sh 추가: --env 로 prod 파일 로드, ML_DB_URL/DB_APP_URL 자동 선택\n- DNS(getent/nslookup), TCP(nc/\u003c/dev/tcp\u003e), psql 쿼리 테스트 지원\n- postgresql+asyncpg 스킴 보정 및 URL 기반 파싱
+
+[33mcommit 1aae07cb9362d7d4040b7635fcc05cb98ff7be48[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Thu Sep 18 21:50:49 2025 +0900
+
+    feat:ADD mp_streaming_6.py
+
+[33mcommit 847560680f42c563355bbe3234bc1d4de54ea128[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 21:49:41 2025 +0900
+
+    fix: ML 스키마 초기화 문제 해결 및 운영 환경 안정성 확보
+    
+    ### 주요 변경사항
+    
+    #### 🐛 ML 스키마 초기화 문제 해결
+    - **문제**: 운영 환경에서 ML 스키마 엔진 초기화 실패
+      -  오류 발생
+      -  RuntimeError
+      -  API 오류
+    - **해결**: FastAPI startup 이벤트로 데이터베이스 매니저 초기화 이동
+      -  데코레이터 사용
+      - 비동기 초기화를 안전하게 처리
+      - 이벤트 루프 충돌 문제 해결
+    
+    #### 🔧 main.py 개선
+    - **기존**: 동기적 데이터베이스 매니저 초기화 (실패)
+    - **개선**: FastAPI startup 이벤트 기반 비동기 초기화
+    - **결과**: 운영 환경에서 안정적인 ML 스키마 엔진 초기화
+    
+    #### ✅ 운영 환경 호환성 확보
+    - **ML Registry API**: 모든 엔드포인트 정상 작동
+      -  → 3개 데이터셋 정상 조회
+      -  → 3개 실험 정상 조회
+      -  → 빈 배열 정상 반환
+    - **오류 해결**: 모든 ML 스키마 관련 오류 완전 해결
+    
+    #### 📚 문서화 업데이트
+    - **개발 현황 문서**: ML 스키마 초기화 안정화 섹션 추가
+    - **해결된 문제**: 운영 환경 ML API 오류 해결 과정 상세 기록
+    - **완료된 작업**: ML 스키마 초기화 안정화 작업 추가
+    
+    ### 기술적 개선사항
+    - **안정성**: FastAPI 생명주기에 맞춘 안전한 초기화
+    - **호환성**: 로컬/운영 환경 모두에서 정상 작동
+    - **오류 처리**: 초기화 실패 시 적절한 로깅 및 예외 처리
+    - **성능**: 이벤트 루프 충돌 없이 효율적인 초기화
+    
+    ### 테스트 결과
+    - ✅ 로컬 환경: 모든 ML API 정상 작동
+    - ✅ 운영 환경: ML 스키마 오류 완전 해결
+    - ✅ 데이터베이스: 모든 스키마(app, legacy, ml) 정상 접근
+    - ✅ API 응답: 정상적인 JSON 데이터 반환
+    
+    ### 영향 범위
+    - **main.py**: 데이터베이스 초기화 로직 개선
+    - **ML Registry API**: 모든 엔드포인트 안정성 확보
+    - **운영 환경**: 프로덕션 배포 시 안정성 향상
+    - **개발자 경험**: ML API 사용 시 오류 없는 안정적 서비스
+
+[33mcommit bfaa64e3d3126cf8e2a3e5bef8a24e27c192e277[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 21:27:38 2025 +0900
+
+    feat: Docker Compose 환경변수 기반 DB 연결 통합 및 ML 스키마 오류 해결
+    
+    ### 주요 변경사항
+    
+    #### 🔧 데이터베이스 연결 통합
+    - **공통 유틸리티 생성**:
+      - 환경변수 기반 DB 연결 파라미터 자동 생성
+      - , ,  지원
+      - Docker 네트워크 호환성 ( → )
+    
+    #### 🛠️ 서비스별 DB 연결 개선
+    - **scheduler_service.py**: 하드코딩된 DB 연결 → 환경변수 기반
+    - **scheduler_app.py**: 복잡한 URL 파싱 로직 → 공통 유틸리티 사용
+    - **main.py**: 기존 로직 → 통합된 연결 방식 적용
+    
+    #### 🐛 ML 스키마 오류 해결
+    - **문제**: RDS 연결 실패로 인한 ML API 500 오류
+    - **해결**: 환경변수 기반 안정적인 DB 연결
+    - **결과**: 모든 ML API 정상 작동 (experiments, detection-events)
+    
+    #### 🚀 Docker Compose 호환성 개선
+    - **자동 URL 파싱**:  →  변환
+    - **네트워크 해석**: Docker 내부 네트워크 주소 자동 변환
+    - **오류 복구**: 연결 실패 시 기본값 fallback
+    
+    #### 📚 문서화 업데이트
+    - **개발 현황 문서**: 2025-09-18 최신 상태 반영
+    - **해결된 문제**: DB 연결 통합 및 환경변수 기반 설정 추가
+    - **완료된 작업**: 데이터베이스 연결 통합 섹션 추가
+    
+    ### 기술적 개선사항
+    - **중앙화된 연결 관리**: 모든 서비스가 일관된 방식으로 DB 연결
+    - **환경별 유연성**: Docker Compose 환경변수만 변경으로 DB 전환 가능
+    - **유지보수성 향상**: 하드코딩 제거 및 공통 로직 통합
+    - **오류 처리 강화**: 연결 실패 시 안정적인 fallback 메커니즘
+    
+    ### 테스트 결과
+    - ✅ 스케줄러 서비스: 정상 시작 및 DB 연결
+    - ✅ ML Registry API: experiments, detection-events 정상 작동
+    - ✅ 헬스체크: 모든 서비스 상태 정상
+    - ✅ Docker Compose: 모든 컨테이너 healthy 상태
+
+[33mcommit d96ec9b822181fbc0ed5b45e82ba21b6ba0331b5[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 20:46:55 2025 +0900
+
+    feat(api): EDIT, comment main env load
+
+[33mcommit e9df96c6bb1abc1d71b096244d8fc67de62f3d45[m
+Merge: 34cd665 cf95960
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 19:34:17 2025 +0900
+
+    Merge branch 'dev' of https://github.com/addinedu-ros-10th/deeplearning-repo-1 into server/app_server
+
+[33mcommit 34cd6650dc42ef0090cfed07b39a8c5ea474676f[m
+Merge: 5a7bfa5 e5e5f51
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 19:30:06 2025 +0900
+
+    Merge branch 'server/app_server' of https://github.com/addinedu-ros-10th/deeplearning-repo-1 into server/app_server
+
+[33mcommit 5a7bfa55e7874abc3ecd46c07b18ede7ca5190fb[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 19:20:00 2025 +0900
+
+    chore: BFG Repo-Cleaner로 대용량 미디어 파일 완전 제거
+    
+    ### 주요 변경사항
+    
+    #### 🗑️ 대용량 파일 완전 제거
+    - BFG Repo-Cleaner를 사용하여 git 히스토리에서 대용량 파일 완전 제거
+    - 10MB 이상 파일들을 git 히스토리에서 제거
+    - 총 187개 mp4 파일과 2,547개 jpg 파일 제거
+    
+    #### 📊 저장소 최적화 결과
+    - **저장소 크기**: 3GB → 276MB (약 90% 감소)
+    - **객체 크기**: 2,990MB → 814MB (약 73% 감소)
+    - **git 추적 파일**: 0개 (모든 미디어 파일 제거)
+    
+    #### �� 제거된 파일 유형
+    - **비디오 파일**: 187개 mp4 파일 (총 12.8GB)
+    - **이미지 파일**: 2,547개 jpg 파일 (총 152MB)
+    - **학습 데이터**: AI/DL/yolo_detection_and_pose/ 경로의 모든 미디어 파일
+    
+    #### ✅ 성능 개선 효과
+    - **git clone 속도**: 대폭 향상
+    - **git push/pull**: 안정적 실행 가능
+    - **저장소 용량**: GitHub 저장소 용량 대폭 절약
+    - **협업 효율성**: 팀원들의 로컬 환경 부담 감소
+    
+    ### 기술적 세부사항
+    - BFG Repo-Cleaner 1.14.0 사용
+    - git reflog expire 및 aggressive garbage collection 실행
+    - 로컬 파일은 유지하되 git 추적에서만 제거
+    - .gitignore 규칙으로 향후 재추적 방지
+
+[33mcommit 2198a5ab660bf663a48feb40c14295d6020f9229[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 16:09:42 2025 +0900
+
+    chore: AI/DL/yolo_detection_and_pose 경로의 모든 이미지 파일을 gitignore에 추가
+    
+    - AI/DL/yolo_detection_and_pose/images/ 경로의 모든 이미지 파일 제거
+    - AI/DL/yolo_detection_and_pose/FY, BY, SY, images 디렉토리 gitignore 적용
+    - 총 2,547개의 이미지 파일을 git 추적에서 제거
+    - 비디오 파일(186개)과 이미지 파일(2,547개) 모두 git에서 제외
+    - 저장소 크기 대폭 최적화 및 성능 개선
+    - 로컬에서는 파일 유지하되 git에는 포함하지 않음
+    
+    
+    Former-commit-id: e6b79046ae32f187b8b4e449d748f956b12200b0
+    Former-commit-id: 0609324cb8c3010dbd7c83b2d18002a5e0dd4287
+
+[33mcommit 18b8fb449a829e95a757899fce49fcd8bba35c8b[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 15:57:01 2025 +0900
+
+    chore: AI/DL/yolo_detection_and_pose 경로의 모든 mp4 파일을 gitignore에 추가
+    
+    - AI/DL/yolo_detection_and_pose/**/*.mp4 패턴 추가
+    - 기존에 추적되던 186개 mp4 파일들을 git에서 제거
+    - 비디오 파일들은 로컬에서만 유지하고 git에는 포함하지 않음
+    - 저장소 크기 최적화 및 성능 개선
+    
+    
+    Former-commit-id: 7235b5f6ae523973f95367242ac12dab5736985a
+    Former-commit-id: 75a8dcf8b11c46f7189271c44b7b655b745be83f
+
+[33mcommit 9d145ace04ad449d6ea4b20cf9ef377bf29c218b[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 15:48:25 2025 +0900
+
+    chore(api): EDIT, RESOLVE MERGE CONFLICT
+    
+    
+    Former-commit-id: bab538b495bef397cdc71d92bbd06bebba8e9d97
+    Former-commit-id: 10908d27a7246199d75c512e392962a5aea3ed89
+
+[33mcommit e5e5f5179645bc58c5911260200518d3b514bbc6[m
+Merge: b914637 47632e9
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 14:00:50 2025 +0900
+
+    Merge branch 'AI/DL/yolo_detection_and_pose' of https://github.com/addinedu-ros-10th/deeplearning-repo-1 into server/app_server
+
+[33mcommit 35d8f6235f424b5417b513326bf4dca21f1cd1d2[m
+Merge: 10a33cd fe7465e
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 14:00:50 2025 +0900
+
+    Merge branch 'AI/DL/yolo_detection_and_pose' of https://github.com/addinedu-ros-10th/deeplearning-repo-1 into server/app_server
+    
+    
+    Former-commit-id: e5e5f5179645bc58c5911260200518d3b514bbc6
+    Former-commit-id: a17ce5fef998de41531ea37043e52c88b08a5dd5
+
+[33mcommit b914637f46efbc2025f90f1e08017a8a0376aef1[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 01:31:50 2025 +0900
+
+    docs(api): UPDATE, Scheduler API 표준화 및 내부 엔드포인트 특이사항/조치
+    
+    - 공개 엔드포인트 표준화\n  - /api/v1/scheduled-jobs: SQLAlchemy 세션 기반으로 일원화(정상 동작 확인)\n- 내부 엔드포인트 분리\n  - scheduler_app의 관리/메타 엔드포인트를 /internal/* 로 이동(중복/충돌 제거)\n\n[특이사항]\n- /internal/scheduled-jobs 호출 시 "Connection refused" 발생 가능\n  - 원인: 컨테이너/호스트 조합에서 DB 호스트(DNS/포트) 미열림 또는 해석 실패\n  - 공개 /api/v1/scheduled-jobs 는 SQLAlchemy 세션을 사용하므로 정상\n\n[조치 가능 방안]\n- 환경변수 보정(택1)\n  - 로컬(컨테이너 외부 실행): DB_APP_URL=postgresql+asyncpg://...@127.0.0.1:15432/...\n  - 컨테이너 실행: DB_APP_URL 호스트를 실제 접속 가능한 서비스/엔드포인트로 지정(db, RDS 등)\n  - 컨테이너→호스트 접속 시: DOCKER_HOST_IP를 실제 호스트 IP로 설정(기본 172.17.0.1)\n- 코드 정렬(권장)\n  - /internal/* 엔드포인트도 SQLAlchemy 세션 기반으로 통일해 환경 의존성(직접 TCP 접속) 축소\n- 운영 방침\n  - /internal/* 는 내부/관리용 → 인증/JWT 보호 및 비공개 노출 권장\n\nBreaking Changes: 없음\nRefs: refactor(api) scheduler endpoints normalization, DB host fallback; /api/v1/scheduled-jobs 정상화
+
+[33mcommit 10a33cd91b0d9863d94dea531c6d697e2ec9a983[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 01:31:50 2025 +0900
+
+    docs(api): UPDATE, Scheduler API 표준화 및 내부 엔드포인트 특이사항/조치
+    
+    - 공개 엔드포인트 표준화\n  - /api/v1/scheduled-jobs: SQLAlchemy 세션 기반으로 일원화(정상 동작 확인)\n- 내부 엔드포인트 분리\n  - scheduler_app의 관리/메타 엔드포인트를 /internal/* 로 이동(중복/충돌 제거)\n\n[특이사항]\n- /internal/scheduled-jobs 호출 시 "Connection refused" 발생 가능\n  - 원인: 컨테이너/호스트 조합에서 DB 호스트(DNS/포트) 미열림 또는 해석 실패\n  - 공개 /api/v1/scheduled-jobs 는 SQLAlchemy 세션을 사용하므로 정상\n\n[조치 가능 방안]\n- 환경변수 보정(택1)\n  - 로컬(컨테이너 외부 실행): DB_APP_URL=postgresql+asyncpg://...@127.0.0.1:15432/...\n  - 컨테이너 실행: DB_APP_URL 호스트를 실제 접속 가능한 서비스/엔드포인트로 지정(db, RDS 등)\n  - 컨테이너→호스트 접속 시: DOCKER_HOST_IP를 실제 호스트 IP로 설정(기본 172.17.0.1)\n- 코드 정렬(권장)\n  - /internal/* 엔드포인트도 SQLAlchemy 세션 기반으로 통일해 환경 의존성(직접 TCP 접속) 축소\n- 운영 방침\n  - /internal/* 는 내부/관리용 → 인증/JWT 보호 및 비공개 노출 권장\n\nBreaking Changes: 없음\nRefs: refactor(api) scheduler endpoints normalization, DB host fallback; /api/v1/scheduled-jobs 정상화
+    
+    
+    Former-commit-id: b914637f46efbc2025f90f1e08017a8a0376aef1
+    Former-commit-id: 4104969c29b7837eb52ddf1acce910042b0aa415
+
+[33mcommit fb18e6af894675347f9a6417e68d298837b9b68f[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 01:22:43 2025 +0900
+
+    refactor(api): REFACTOR, Normalize scheduler endpoints and fix DB host fallback
+    
+    - scheduler_app: /api/v1/* 엔드포인트를 /internal/* 로 이동하여 중복/충돌 제거\n- 공통 DB 연결 헬퍼 추가: postgresql+asyncpg 스킴 보정 및 host.docker.internal 미해석 시 DOCKER_HOST_IP/172.17.0.1 폴백\n- /api/v1/scheduled-jobs 는 SQLAlchemy 기반(main.py)으로 일원화\n\n영향: /api/v1/scheduled-jobs 정상화, 컨테이너 내 DNS 해석 오류 제거\n후속: DI 기반 ScheduledJobController 적용 및 인증/JWT 보호 추가 예정
+
+[33mcommit 633e736a005229ac2e98931bcf99e55f80e7e396[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 01:22:43 2025 +0900
+
+    refactor(api): REFACTOR, Normalize scheduler endpoints and fix DB host fallback
+    
+    - scheduler_app: /api/v1/* 엔드포인트를 /internal/* 로 이동하여 중복/충돌 제거\n- 공통 DB 연결 헬퍼 추가: postgresql+asyncpg 스킴 보정 및 host.docker.internal 미해석 시 DOCKER_HOST_IP/172.17.0.1 폴백\n- /api/v1/scheduled-jobs 는 SQLAlchemy 기반(main.py)으로 일원화\n\n영향: /api/v1/scheduled-jobs 정상화, 컨테이너 내 DNS 해석 오류 제거\n후속: DI 기반 ScheduledJobController 적용 및 인증/JWT 보호 추가 예정
+    
+    
+    Former-commit-id: fb18e6af894675347f9a6417e68d298837b9b68f
+    Former-commit-id: ab4c99bde0f7ffa180a02ee66d87835274bdf26a
+
+[33mcommit a5266497bfeb758916f11902a1243368a9736b9e[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 01:09:14 2025 +0900
+
+    feat(api): ADD, ML frame_prediction/detection_event models and REST APIs
+    
+    - SQLAlchemy 모델 추가: FramePredictionModel, DetectionEventModel (ml 스키마)
+    
+    - 도메인 엔티티 및 리포지토리 포트 구현
+    
+    - 프레임/이벤트 DTO 및 유즈케이스 추가
+    
+    - AsyncSession 기반 리포지토리 구현
+    
+    - FastAPI 라우터 추가:
+    
+      - /api/v1/frame-predictions (POST, POST /batch, GET, GET/{id}, DELETE/{id})
+    
+      - /api/v1/detection-events (POST, GET, GET/{id}, DELETE/{id})
+    
+    - app/main.py에 라우터 등록
+    
+    - 문서 업데이트: 액션 아이템 및 스테이징 작업 로그
+    
+    Breaking Changes: 없음
+    
+    Refs: docs(app): UPDATE, API 인벤토리/작업 로그 2025-09-17
+
+[33mcommit 53b6913ca21742d8df1f5b9c1f9c54ad011af6e5[m
+Author: guehojung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 18 01:09:14 2025 +0900
+
+    feat(api): ADD, ML frame_prediction/detection_event models and REST APIs
+    
+    - SQLAlchemy 모델 추가: FramePredictionModel, DetectionEventModel (ml 스키마)
+    
+    - 도메인 엔티티 및 리포지토리 포트 구현
+    
+    - 프레임/이벤트 DTO 및 유즈케이스 추가
+    
+    - AsyncSession 기반 리포지토리 구현
+    
+    - FastAPI 라우터 추가:
+    
+      - /api/v1/frame-predictions (POST, POST /batch, GET, GET/{id}, DELETE/{id})
+    
+      - /api/v1/detection-events (POST, GET, GET/{id}, DELETE/{id})
+    
+    - app/main.py에 라우터 등록
+    
+    - 문서 업데이트: 액션 아이템 및 스테이징 작업 로그
+    
+    Breaking Changes: 없음
+    
+    Refs: docs(app): UPDATE, API 인벤토리/작업 로그 2025-09-17
+    
+    Former-commit-id: a5266497bfeb758916f11902a1243368a9736b9e
+    Former-commit-id: 8eccf449359cd396afd83ae0303728615f04168e
+
+[33mcommit 66baef4c8886683c67b4e727dbd44998226bbd60[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Wed Sep 17 21:45:37 2025 +0900
+
+    feat: ML 레지스트리 API 구현 및 아키텍처 리팩토링
+    
+    ### 주요 변경사항
+    
+    #### 🏗️ 아키텍처 개선
+    - 헥사고날 아키텍처 기반 ML 레지스트리 API 구현
+    - 의존성 주입 컨테이너(MLContainer) 도입
+    - 도메인 중심 설계로 비즈니스 로직 분리
+    
+    #### 📊 도메인 레이어 구현
+    - Dataset, Experiment 엔티티 및 값 객체 정의
+    - DatasetId, ExperimentId, ModelPath 값 객체 구현
+    - 도메인 포트 인터페이스 정의 (DatasetRepository, ExperimentRepository)
+    
+    #### 🔧 인프라 레이어 구현
+    - SQLAlchemy 기반 리포지토리 구현체 작성
+    - 데이터베이스 모델과 도메인 엔티티 간 매핑 로직
+    - 비동기 데이터베이스 세션 관리
+    
+    #### 🚀 API 엔드포인트 추가
+    - 데이터셋 CRUD API (생성, 조회, 수정, 삭제)
+    - 실험 CRUD API (생성, 조회, 수정, 삭제)
+    - 페이징 및 필터링 지원
+    
+    #### 🧹 코드 정리
+    - 레거시 파일들을 legacy/ 디렉토리로 이동
+    - 중복된 main 파일들 정리 및 통합
+    - 테스트 코드 업데이트
+    
+    #### 📚 문서화
+    - ML 레지스트리 API 개발 계획서 업데이트
+    - 아키텍처 정보 API 엔드포인트 추가
+    
+    ### 삭제된 파일
+    - app/main_versions/ (legacy로 이동)
+    - app/main_with_admin.py (legacy로 이동)
+    - app/simple_admin_app.py (legacy로 이동)
+    - app/simple_main.py (legacy로 이동)
+    - test_app_with_db.py
+    
+    ### 수정된 파일
+    - app/main.py: 통합된 메인 애플리케이션으로 리팩토링
+    - app/domain/ports/*: 도메인 포트 인터페이스 정의
+    - app/domain/value_objects/*: 값 객체 구현
+    - app/adapters/repositories/*: 리포지토리 구현체
+    - app/infrastructure/di/ml_container.py: 의존성 주입 컨테이너
+    - tests/*: 테스트 코드 업데이트
+
+[33mcommit 3e35e5c5bf81259cf4f1b1a7449f6bcd3e2a3d1c[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Wed Sep 17 21:45:37 2025 +0900
+
+    feat: ML 레지스트리 API 구현 및 아키텍처 리팩토링
+    
+    ### 주요 변경사항
+    
+    #### 🏗️ 아키텍처 개선
+    - 헥사고날 아키텍처 기반 ML 레지스트리 API 구현
+    - 의존성 주입 컨테이너(MLContainer) 도입
+    - 도메인 중심 설계로 비즈니스 로직 분리
+    
+    #### 📊 도메인 레이어 구현
+    - Dataset, Experiment 엔티티 및 값 객체 정의
+    - DatasetId, ExperimentId, ModelPath 값 객체 구현
+    - 도메인 포트 인터페이스 정의 (DatasetRepository, ExperimentRepository)
+    
+    #### 🔧 인프라 레이어 구현
+    - SQLAlchemy 기반 리포지토리 구현체 작성
+    - 데이터베이스 모델과 도메인 엔티티 간 매핑 로직
+    - 비동기 데이터베이스 세션 관리
+    
+    #### 🚀 API 엔드포인트 추가
+    - 데이터셋 CRUD API (생성, 조회, 수정, 삭제)
+    - 실험 CRUD API (생성, 조회, 수정, 삭제)
+    - 페이징 및 필터링 지원
+    
+    #### 🧹 코드 정리
+    - 레거시 파일들을 legacy/ 디렉토리로 이동
+    - 중복된 main 파일들 정리 및 통합
+    - 테스트 코드 업데이트
+    
+    #### 📚 문서화
+    - ML 레지스트리 API 개발 계획서 업데이트
+    - 아키텍처 정보 API 엔드포인트 추가
+    
+    ### 삭제된 파일
+    - app/main_versions/ (legacy로 이동)
+    - app/main_with_admin.py (legacy로 이동)
+    - app/simple_admin_app.py (legacy로 이동)
+    - app/simple_main.py (legacy로 이동)
+    - test_app_with_db.py
+    
+    ### 수정된 파일
+    - app/main.py: 통합된 메인 애플리케이션으로 리팩토링
+    - app/domain/ports/*: 도메인 포트 인터페이스 정의
+    - app/domain/value_objects/*: 값 객체 구현
+    - app/adapters/repositories/*: 리포지토리 구현체
+    - app/infrastructure/di/ml_container.py: 의존성 주입 컨테이너
+    - tests/*: 테스트 코드 업데이트
+    
+    
+    Former-commit-id: 66baef4c8886683c67b4e727dbd44998226bbd60
+    Former-commit-id: 0cdb9b079880885f27aac0697188b67346c775d4
+
+[33mcommit 47632e945df47f16e2904e68d10a46d454a8f270[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Wed Sep 17 19:36:12 2025 +0900
+
+    feat:ADD mp_learning_latest.py, mp_streaming_latest.py / DELETE mp_learning_latest.ipynb, mp_streaming_latest.ipynb
+
+[33mcommit fe7465e8631828b84b8ce2f929855e7bd8467eb9[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Wed Sep 17 19:36:12 2025 +0900
+
+    feat:ADD mp_learning_latest.py, mp_streaming_latest.py / DELETE mp_learning_latest.ipynb, mp_streaming_latest.ipynb
+    
+    Former-commit-id: 47632e945df47f16e2904e68d10a46d454a8f270
+    Former-commit-id: 0070dc69690a65e78a0bd93bd90b2abd55063155
+
+[33mcommit cf9596008c2ef7b1fbd2fde8a2dee2b7940b71cb[m
+Merge: 664782e 9021445
+Author: 정규호 <emotionalmachine88@gmail.com>
+Date:   Mon Sep 15 20:41:39 2025 +0900
+
+    Merge pull request #7 from addinedu-ros-10th/server/app_server
+    
+    Server/app server
+
+[33mcommit 902144571445143a57877dc7005811f60556d4f9[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Mon Sep 15 20:37:51 2025 +0900
+
+    config(docker): EDIT, --env-file 설정 변경
+    임시 값 지정
+
+[33mcommit 402677bf5cee4e019b4a1839985be9bc8b55dd7c[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Mon Sep 15 20:37:51 2025 +0900
+
+    config(docker): EDIT, --env-file 설정 변경
+    임시 값 지정
+    
+    
+    Former-commit-id: 902144571445143a57877dc7005811f60556d4f9
+    Former-commit-id: 7b13fc7b4447dc2c8e7e6e87a5f8cfda305eeb3b
+
+[33mcommit 37ed736b8fa3512bf120d02fe7d0555b8e186432[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Mon Sep 15 20:32:59 2025 +0900
+
+    feat(api): ML Registry API 구현 및 Docker Compose 환경 개선
+    
+    - ML Registry API 완전 구현 (Dataset, Experiment CRUD)
+      * 헥사고날 아키텍처 기반 도메인/어플리케이션/어댑터 계층 구현
+      * SQLAlchemy 모델, Pydantic DTO, RESTful API 엔드포인트 추가
+      * 의존성 주입 컨테이너 및 통합 테스트 구현
+    
+    - 데이터베이스 연결 개선
+      * ML 스키마용 별도 엔진 및 세션 팩토리 추가
+      * host.docker.internal을 통한 Docker 컨테이너 호스트 접근 지원
+    
+    - Docker Compose 환경 개선
+      * secrets-data 볼륨을 통한 환경변수 파일 관리
+      * docker-compose-manager.sh 스크립트로 환경별 실행 자동화
+      * --env-file 옵션을 통한 환경변수 로드 문제 해결
+    
+    - 프로젝트 문서화 업데이트
+      * README.md 프로젝트 전체 현황 및 구조 업데이트
+      * 개발 관리 문서에 Docker Compose 실행 방법 추가
+      * ML Registry API 개발 계획서 작성
+    
+    - 기타 개선사항
+      * Pydantic V2 호환성 수정 (@validator → @field_validator)
+      * SQLAdmin 초기화 문제 해결
+      * 스케줄러 서비스 데이터베이스 연결 안정화
+
+[33mcommit 82d435ccfb7fdc8d2075370ae63ce382ea8baa5e[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Mon Sep 15 20:32:59 2025 +0900
+
+    feat(api): ML Registry API 구현 및 Docker Compose 환경 개선
+    
+    - ML Registry API 완전 구현 (Dataset, Experiment CRUD)
+      * 헥사고날 아키텍처 기반 도메인/어플리케이션/어댑터 계층 구현
+      * SQLAlchemy 모델, Pydantic DTO, RESTful API 엔드포인트 추가
+      * 의존성 주입 컨테이너 및 통합 테스트 구현
+    
+    - 데이터베이스 연결 개선
+      * ML 스키마용 별도 엔진 및 세션 팩토리 추가
+      * host.docker.internal을 통한 Docker 컨테이너 호스트 접근 지원
+    
+    - Docker Compose 환경 개선
+      * secrets-data 볼륨을 통한 환경변수 파일 관리
+      * docker-compose-manager.sh 스크립트로 환경별 실행 자동화
+      * --env-file 옵션을 통한 환경변수 로드 문제 해결
+    
+    - 프로젝트 문서화 업데이트
+      * README.md 프로젝트 전체 현황 및 구조 업데이트
+      * 개발 관리 문서에 Docker Compose 실행 방법 추가
+      * ML Registry API 개발 계획서 작성
+    
+    - 기타 개선사항
+      * Pydantic V2 호환성 수정 (@validator → @field_validator)
+      * SQLAdmin 초기화 문제 해결
+      * 스케줄러 서비스 데이터베이스 연결 안정화
+    
+    
+    Former-commit-id: 37ed736b8fa3512bf120d02fe7d0555b8e186432
+    Former-commit-id: 18a4b9def4552e645be5964a188ac3edf9039152
+
+[33mcommit e36287224d727a87ac69bd65d3ed8ef538ace6d1[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Mon Sep 15 19:44:28 2025 +0900
+
+    feat: EDIT mp_streaming_latest.ipynb
+
+[33mcommit ae7ce4b9e989dc3f1923900959a6307f681748ac[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Mon Sep 15 19:44:28 2025 +0900
+
+    feat: EDIT mp_streaming_latest.ipynb
+    
+    Former-commit-id: e36287224d727a87ac69bd65d3ed8ef538ace6d1
+    Former-commit-id: 7e59e57ecdf6c51160c2df60f987139750d8cbc9
+
+[33mcommit b4a9306647a9df00dba13ccb8d551e17907f1f34[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Mon Sep 15 16:32:06 2025 +0900
+
+    feat:EDIT mp_streaming_latest.ipynb
+
+[33mcommit 43e29057a72d15922fb35aca48373611470d87b1[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Mon Sep 15 16:32:06 2025 +0900
+
+    feat:EDIT mp_streaming_latest.ipynb
+    
+    Former-commit-id: b4a9306647a9df00dba13ccb8d551e17907f1f34
+    Former-commit-id: 6b03a4db63790c23c80de75899da3912c01c44c4
+
+[33mcommit 6c9c7fbed6b299a3cb235a7cab6f3c4b82d9e1bd[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Mon Sep 15 16:05:52 2025 +0900
+
+    feat:ADD mp_streaming_latest, lstm_model_scripted.pt / EDIT mp_learning_latest.ipynb
+
+[33mcommit 7a4dd1f94c691e1cf9236444b16192ed07261981[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Mon Sep 15 16:05:52 2025 +0900
+
+    feat:ADD mp_streaming_latest, lstm_model_scripted.pt / EDIT mp_learning_latest.ipynb
+    
+    Former-commit-id: 6c9c7fbed6b299a3cb235a7cab6f3c4b82d9e1bd
+    Former-commit-id: 14c59aeaf0513a66ab139f342f7ed9c52c31e29c
+
+[33mcommit 664782e08c273916bde0ed4327aac6404f6f7c76[m
+Merge: 62eec71 7837677
+Author: 정규호 <emotionalmachine88@gmail.com>
+Date:   Mon Sep 15 15:02:56 2025 +0900
+
+    Merge pull request #5 from addinedu-ros-10th/AI/DL/yolo_detection_and_pose
+    
+    Ai/dl/yolo detection and pose
+
+[33mcommit 7837677304977a7ff4ddf09a03c76ec80352e05b[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Mon Sep 15 13:31:17 2025 +0900
+
+    feat:ADD mp_learning_latest.ipynb
+
+[33mcommit 636f1190f1e70ea37372784472518f55afaf4f80[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Mon Sep 15 13:31:17 2025 +0900
+
+    feat:ADD mp_learning_latest.ipynb
+    
+    Former-commit-id: 7837677304977a7ff4ddf09a03c76ec80352e05b
+    Former-commit-id: 332d0884ee04f99f4f063f481a88240928f291f3
+
+[33mcommit 62eec71dae6535fc6a476fea378bc39413240d47[m
+Merge: 122ab49 79cba15
+Author: 정규호 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:22:16 2025 +0900
+
+    Merge pull request #3 from addinedu-ros-10th/server/app_server
+    
+    Server/app server
+
+[33mcommit 79cba158334b009eafba08285cabda826603c6eb[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:20:19 2025 +0900
+
+    feat(config): ADD, gitmessage template 추가
+
+[33mcommit 7064047f9bb9e377c9e1a46aaafb767c05420232[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:20:19 2025 +0900
+
+    feat(config): ADD, gitmessage template 추가
+    
+    
+    Former-commit-id: 79cba158334b009eafba08285cabda826603c6eb
+    Former-commit-id: 97849fba02e372b4bbac4f119d7e30d69e1febb3
+
+[33mcommit 0ed116640843b33ead280ed88af014228c1b1be9[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:15:02 2025 +0900
+
+    chore(scripts): DELETE, Test File Cleanup
+
+[33mcommit 0c683b35393b6a01926cf335d5efb4c5f9593b96[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:15:02 2025 +0900
+
+    chore(scripts): DELETE, Test File Cleanup
+    
+    
+    Former-commit-id: 0ed116640843b33ead280ed88af014228c1b1be9
+    Former-commit-id: 2a9d869160e363c5939a598c2bd579a4996e6090
+
+[33mcommit a44aac4bb253933634d8995520e636373b066de8[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:14:48 2025 +0900
+
+    test(scripts): ADD, Git Template Test with All Comments
+
+[33mcommit 9448241c6933765fa8bcb82165345f1bc6cd2a73[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:14:48 2025 +0900
+
+    test(scripts): ADD, Git Template Test with All Comments
+    
+    
+    Former-commit-id: a44aac4bb253933634d8995520e636373b066de8
+    Former-commit-id: 0760cce1fa8ab5f20da4c42e248eccef52760d09
+
+[33mcommit 9a1799f08ad107f1390125bae3427de6a8d59db5[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:08:41 2025 +0900
+
+    chore(scripts): DELETE, Test File Cleanup
+
+[33mcommit bcd99a15cc974d2ba8c1d502124adfe82966b391[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:08:41 2025 +0900
+
+    chore(scripts): DELETE, Test File Cleanup
+    
+    
+    Former-commit-id: 9a1799f08ad107f1390125bae3427de6a8d59db5
+    Former-commit-id: 77866d45b89fa8aaa727f8c703173d5347176f96
+
+[33mcommit 2d4ca2886d81c404e1c8055e6cc34f10461df6c7[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:08:32 2025 +0900
+
+    test(scripts): ADD, Git Template Test with Comments
+
+[33mcommit 22810cf7b63c86e00daae692b932c8688ca2fb0a[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:08:32 2025 +0900
+
+    test(scripts): ADD, Git Template Test with Comments
+    
+    
+    Former-commit-id: 2d4ca2886d81c404e1c8055e6cc34f10461df6c7
+    Former-commit-id: cca65a231e8439514ae666983ec4d1688e51d6c3
+
+[33mcommit 1a3c0aa45b92260e169962c3bde5aa770fce2c15[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:04:18 2025 +0900
+
+    chore(scripts): DELETE, Test File Cleanup
+
+[33mcommit 24080bcda980c3994c65a320f7dfcb7f380e1fe6[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:04:18 2025 +0900
+
+    chore(scripts): DELETE, Test File Cleanup
+    
+    
+    Former-commit-id: 1a3c0aa45b92260e169962c3bde5aa770fce2c15
+    Former-commit-id: fff8a655adcb812635323f89b1b27725b8675fd1
+
+[33mcommit 7dec565bc2bc871547ec43dca6da87e6e2186dd6[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:04:04 2025 +0900
+
+    test(scripts): ADD, Git Template Test
+
+[33mcommit 8c5866a1f3282e40c68f8d06a02f4b3d6ef05414[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 16:04:04 2025 +0900
+
+    test(scripts): ADD, Git Template Test
+    
+    
+    Former-commit-id: 7dec565bc2bc871547ec43dca6da87e6e2186dd6
+    Former-commit-id: 35ecb1c01e774ed2e7f62bb6abf65766197026d2
+
+[33mcommit fc80c74bdfaab8c5dda57143a0d4b592e9080711[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 15:22:06 2025 +0900
+
+    feat: EDIT, FastAPI Default Settings for Local dev env done
+
+[33mcommit 56bcc0fea16e642aa57b4e1fe1d3b0063ba1e993[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 15:22:06 2025 +0900
+
+    feat: EDIT, FastAPI Default Settings for Local dev env done
+    
+    Former-commit-id: fc80c74bdfaab8c5dda57143a0d4b592e9080711
+    Former-commit-id: ee929952983e463a76609d8975b0931b205df9ab
+
+[33mcommit 304f905b517b3fc43f0d436a59adf1d8a8b9b6a3[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 15:17:07 2025 +0900
+
+    feat: EDIT, Schedule, Admin Build
+
+[33mcommit 7ef4c7a8864f6d399d00bd890b6b0258e9ed685f[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 15:17:07 2025 +0900
+
+    feat: EDIT, Schedule, Admin Build
+    
+    Former-commit-id: 304f905b517b3fc43f0d436a59adf1d8a8b9b6a3
+    Former-commit-id: c2d2d8b1b880bba8b94138866c77a2e0da0f062b
+
+[33mcommit e5ac7bfeb96f7f81217f3fd52422688aa3a88a26[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 14:49:23 2025 +0900
+
+    feat: EDIT, Docker Compose 기동 관련 문제 해결 - Docker compose volume, Nginx config
+
+[33mcommit 735a447988bd73d297096e51aaf8775f21309a8c[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Sat Sep 13 14:49:23 2025 +0900
+
+    feat: EDIT, Docker Compose 기동 관련 문제 해결 - Docker compose volume, Nginx config
+    
+    Former-commit-id: e5ac7bfeb96f7f81217f3fd52422688aa3a88a26
+    Former-commit-id: b07a6b7664c7d4a3bce83f17c743c7b63affa452
+
+[33mcommit f7d5d549fa9e0d86d63e9f5ccce51266714fe9b5[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 12 21:50:43 2025 +0900
+
+    SERVER INIT
+
+[33mcommit ee026fae5e8109834f49e965442f5d4a24e538e8[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 12 21:50:43 2025 +0900
+
+    SERVER INIT
+    
+    
+    Former-commit-id: f7d5d549fa9e0d86d63e9f5ccce51266714fe9b5
+    Former-commit-id: f58de9e3ccc7017e2be8ca06bea47997b79ed5d9
+
+[33mcommit 6c7264c275b9e3bfe4ba767bf50b4f24307688ad[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 12 21:49:27 2025 +0900
+
+    feat: ADD, Build Server INIT
+
+[33mcommit 2a432d3a74d9867c3ead76115e9f501a0c0254f1[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 12 21:49:27 2025 +0900
+
+    feat: ADD, Build Server INIT
+    
+    Former-commit-id: 6c7264c275b9e3bfe4ba767bf50b4f24307688ad
+    Former-commit-id: 965779aab3d7682ab579163619edf5c9ac366ae4
+
+[33mcommit 4857c9e112da4f0f33009fb0b7d3439366c739b3[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Fri Sep 12 17:31:09 2025 +0900
+
+    feat:EDIT mp_pose_extractor_dl_project_latest.py
+
+[33mcommit 569f340890e9f9f3e6dd15867ddd62278c840392[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Fri Sep 12 17:31:09 2025 +0900
+
+    feat:EDIT mp_pose_extractor_dl_project_latest.py
+    
+    Former-commit-id: 4857c9e112da4f0f33009fb0b7d3439366c739b3
+    Former-commit-id: 2b94e24eb8b9b8dd042e77063c4765d94120217e
+
+[33mcommit 40efa420bb8fcf936a0951d7829c65b3f9b114b2[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Fri Sep 12 17:07:07 2025 +0900
+
+    feat:EDIT mp_pose_extractor_dl_project_latest.py
+
+[33mcommit 36a0f822741ab02b51769b7d1f3c8940c95f2415[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Fri Sep 12 17:07:07 2025 +0900
+
+    feat:EDIT mp_pose_extractor_dl_project_latest.py
+    
+    Former-commit-id: 40efa420bb8fcf936a0951d7829c65b3f9b114b2
+    Former-commit-id: 0076702fb15af3edf3aefd1222ce1ba2d1a6b606
+
+[33mcommit 27da9579565a55723e799b4c5a67df4cf235c4d7[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Fri Sep 12 15:06:47 2025 +0900
+
+    feat:EDIT mp_pose_extractor_dl_project_latest.py and requirements.txt
+
+[33mcommit 3e85270cd53ea0f7ec7cd9a4b10e7bc88ff90309[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Fri Sep 12 15:06:47 2025 +0900
+
+    feat:EDIT mp_pose_extractor_dl_project_latest.py and requirements.txt
+    
+    Former-commit-id: 27da9579565a55723e799b4c5a67df4cf235c4d7
+    Former-commit-id: ede322a7902575bf7d746fec6fbfaae4577766fc
+
+[33mcommit 889e7fa3f55aae0190b2e4e1de25d893f69dab9b[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Fri Sep 12 12:00:09 2025 +0900
+
+    feat:ADD mp_pose_extractor_dl_project_latest.py
+
+[33mcommit ec558907ba6278598e1c6265f7ad3e7b9bc66845[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Fri Sep 12 12:00:09 2025 +0900
+
+    feat:ADD mp_pose_extractor_dl_project_latest.py
+    
+    Former-commit-id: 889e7fa3f55aae0190b2e4e1de25d893f69dab9b
+    Former-commit-id: c4674285e346086afd7de72b0cc47df3b3fcf813
+
+[33mcommit b264f2039ba2f32ee0295f95d637304efbb7f37f[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Thu Sep 11 12:15:54 2025 +0900
+
+    feat:EDIT mediapipe_dl_project.py, requirements.txt , DELETE kbo_highlight_kt_vs_sl.mp4, requirement.txt, ytn_news_solitare_elder.mp4
+
+[33mcommit 52b0f62fa4e0b734aa4c635ebce8be587c3780d3[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Thu Sep 11 12:15:54 2025 +0900
+
+    feat:EDIT mediapipe_dl_project.py, requirements.txt , DELETE kbo_highlight_kt_vs_sl.mp4, requirement.txt, ytn_news_solitare_elder.mp4
+    
+    Former-commit-id: b264f2039ba2f32ee0295f95d637304efbb7f37f
+    Former-commit-id: 13efcd599535c41c22c3d97da074358491ce143d
+
+[33mcommit 94379f1fa39b8b60cf6cc6ad08f1f5a2b798fdf6[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Thu Sep 11 10:01:12 2025 +0900
+
+    feat:EDIT, mediapipe_dl_project.py, requirement.txt
+
+[33mcommit 0e3d8d53b9d15959bdb9ac10abe8f5de3eccb21a[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Thu Sep 11 10:01:12 2025 +0900
+
+    feat:EDIT, mediapipe_dl_project.py, requirement.txt
+    
+    Former-commit-id: 94379f1fa39b8b60cf6cc6ad08f1f5a2b798fdf6
+    Former-commit-id: e36d71d826a7bd17b5c7de049d95af05bd0cd8f0
+
+[33mcommit 8543150fd2c8da8d0703212c1e8ed705844f396e[m[33m ([m[1;32mAI/DL/yolo_detection_and_pose[m[33m)[m
+Merge: 3f7a661 260567e
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Wed Sep 10 20:58:25 2025 +0900
+
+    feat:DELETE, requirement.txt
+
+[33mcommit 83b1c909c61bde3d6826c27570e7e357d9d3deae[m
+Merge: 0d7b8f9 8998900
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Wed Sep 10 20:58:25 2025 +0900
+
+    feat:DELETE, requirement.txt
+    
+    Former-commit-id: 8543150fd2c8da8d0703212c1e8ed705844f396e
+    Former-commit-id: 17d013e15a421f22ecbb976d8f4ad1767cadd7a7
+
+[33mcommit 3f7a661db1c1b709da2fda7afac50d3373da9853[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Wed Sep 10 20:53:42 2025 +0900
+
+    feat:ADD, requirement.txt, mediapipe_dl_proect.py
+
+[33mcommit 0d7b8f9ada7da7b74b354c1d2d7370f8adffbe57[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Wed Sep 10 20:53:42 2025 +0900
+
+    feat:ADD, requirement.txt, mediapipe_dl_proect.py
+    
+    Former-commit-id: 3f7a661db1c1b709da2fda7afac50d3373da9853
+    Former-commit-id: 5f91c3d911bf813e390cd449fd2ad2dc4ca96823
+
+[33mcommit 260567e4e2a4fdd70ad204161a11997fa4eccd57[m
+Author: 신동진 <baksa1993@gmail.com>
+Date:   Tue Sep 9 17:43:20 2025 +0900
+
+    Delete AI/DL/yolo_detection_and_pose/txt
+
+[33mcommit 89989004aa8b366cf2ef61d0853562ff0405703c[m
+Author: 신동진 <baksa1993@gmail.com>
+Date:   Tue Sep 9 17:43:20 2025 +0900
+
+    Delete AI/DL/yolo_detection_and_pose/txt
+    
+    Former-commit-id: 260567e4e2a4fdd70ad204161a11997fa4eccd57
+    Former-commit-id: c66fa6a7f9c9b8245b2e8c9f6824d1ba68c1131d
+
+[33mcommit 6bd0b2e6006eb0d1a2debeea54352652920abcad[m
+Author: 신동진 <baksa1993@gmail.com>
+Date:   Tue Sep 9 17:42:37 2025 +0900
+
+    Delete requirements.txt
+    
+    old ver. requireents deleted
+
+[33mcommit e081d003895ac737ec4b2f5f814662e8679ba261[m
+Author: 신동진 <baksa1993@gmail.com>
+Date:   Tue Sep 9 17:42:37 2025 +0900
+
+    Delete requirements.txt
+    
+    old ver. requireents deleted
+    
+    Former-commit-id: 6bd0b2e6006eb0d1a2debeea54352652920abcad
+    Former-commit-id: a1fbf1133c78196f236f07655b566c89e9ab1c45
+
+[33mcommit 36a487ac8087fac8a61a3ed62e069d500b33f38c[m
+Author: 신동진 <baksa1993@gmail.com>
+Date:   Tue Sep 9 17:40:57 2025 +0900
+
+    Delete src directory
+    
+    src -> /AI/DL/yolo_detection_and_pose
+
+[33mcommit d789e774caa401abd161b1d63949666bdcd04b21[m
+Author: 신동진 <baksa1993@gmail.com>
+Date:   Tue Sep 9 17:40:57 2025 +0900
+
+    Delete src directory
+    
+    src -> /AI/DL/yolo_detection_and_pose
+    
+    Former-commit-id: 36a487ac8087fac8a61a3ed62e069d500b33f38c
+    Former-commit-id: 364ab7f25fbf76d50ba88156aec3aa312351e8d7
+
+[33mcommit 096757b333a0c96d31f19be8eb177d20d2f1a9cf[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Tue Sep 9 17:35:21 2025 +0900
+
+    requirements updated
+
+[33mcommit 2fef1c0239e46ced9abe6b4a85736917b245b56b[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Tue Sep 9 17:35:21 2025 +0900
+
+    requirements updated
+    
+    
+    Former-commit-id: 096757b333a0c96d31f19be8eb177d20d2f1a9cf
+    Former-commit-id: a24511406ccfae48f956d50e70c3c816baee861b
+
+[33mcommit 763e0f63e5fd9635584f106be0251e28b4ea924a[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Tue Sep 9 17:34:10 2025 +0900
+
+    dir changed
+
+[33mcommit bbe8f112255c4b217232b5602e7bfdaf4a6203bc[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Tue Sep 9 17:34:10 2025 +0900
+
+    dir changed
+    
+    
+    Former-commit-id: 763e0f63e5fd9635584f106be0251e28b4ea924a
+    Former-commit-id: c7a913d2c5c49fea7d4876f32512875fe9ac01b1
+
+[33mcommit 79d2f35818865b08f7c820d3592942334a386311[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Tue Sep 9 17:13:06 2025 +0900
+
+    upload yolo prototype
+
+[33mcommit b9890bb53f25fb02d66b1a8c64489058252fbbe1[m
+Author: windhover207 <baksa1993@gmail.com>
+Date:   Tue Sep 9 17:13:06 2025 +0900
+
+    upload yolo prototype
+    
+    
+    Former-commit-id: 79d2f35818865b08f7c820d3592942334a386311
+    Former-commit-id: ddd975e85ebcbff13e05586f94a523d0c1bbc0dd
+
+[33mcommit a536b910070ff98ae50844d651cd73d2877ae378[m
+Author: 박수현 <74720252+dev-psh@users.noreply.github.com>
+Date:   Tue Sep 9 11:31:19 2025 +0900
+
+    Update README.md
+
+[33mcommit 8c8dd0badec0dceaa52fb0e679311a8f304e3829[m
+Author: 박수현 <74720252+dev-psh@users.noreply.github.com>
+Date:   Tue Sep 9 11:31:19 2025 +0900
+
+    Update README.md
+    
+    Former-commit-id: a536b910070ff98ae50844d651cd73d2877ae378
+
+[33mcommit 4c7e133686f2a4e94878afcf1306bb499e8f87e1[m[33m ([m[1;31morigin/util/upload_training_data[m[33m)[m
+Author: dev-psh <bshyun1199@gmail.com>
+Date:   Fri Sep 5 20:07:52 2025 +0900
+
+    config:ADD, add Google Drive file upload utility
+    - Util/upload_file2drive.py: PyDrive2와 tqdm을 이용한 구글 드라이브 파일 업로드 스크립트 추가
+    - tqdm 기반 업로드 진행률 표시 및 폴더 ID 지정 지원
+    - 모노레포 내 공용 유틸리티 폴더(Util) 신규 생성
+
+[33mcommit 122ab4918399eeaf801ff1420c017732e4c56a0e[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 5 19:19:00 2025 +0900
+
+    config:EDIT, gitignore add tr data generate log dir
+
+[33mcommit f50e90c12f2c14c11748d9abec9e5ae39af1a822[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 5 19:19:00 2025 +0900
+
+    config:EDIT, gitignore add tr data generate log dir
+    
+    Former-commit-id: 122ab4918399eeaf801ff1420c017732e4c56a0e
+
+[33mcommit 351ade0a3dbb406e075fafae6768be46ed4286be[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 5 18:52:07 2025 +0900
+
+    refactor:EDIT, apply branch naming strategy
+
+[33mcommit adccdd1118185b0c6b39925b2ae36c3b4b3f9868[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 5 18:52:07 2025 +0900
+
+    refactor:EDIT, apply branch naming strategy
+    
+    Former-commit-id: 351ade0a3dbb406e075fafae6768be46ed4286be
+
+[33mcommit 722c1f337e1f43e5318c8854121f06a6af8e8ffe[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 5 18:42:25 2025 +0900
+
+    refactor:EDIT, Repository Project Category, Project Structure
+
+[33mcommit fd011bdd8670868157a76e3a4107f1e4b3cc092c[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 5 18:42:25 2025 +0900
+
+    refactor:EDIT, Repository Project Category, Project Structure
+    
+    Former-commit-id: 722c1f337e1f43e5318c8854121f06a6af8e8ffe
+
+[33mcommit 6cf1992018513fe2d169184b0da9125cab174695[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 5 14:37:28 2025 +0900
+
+    test
+
+[33mcommit 5e74137b56a9f9768f1823f786fa9dfcb7631d4e[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Fri Sep 5 14:37:28 2025 +0900
+
+    test
+    
+    
+    Former-commit-id: 6cf1992018513fe2d169184b0da9125cab174695
+
+[33mcommit bceb18014147f620dcfb7fdd72d9381519e06e65[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 4 21:51:13 2025 +0900
+
+    AI Pjt first commit
+
+[33mcommit c9ab5511b6045afdea961d16b20a1312277a1c49[m
+Author: GueHoJung88 <emotionalmachine88@gmail.com>
+Date:   Thu Sep 4 21:51:13 2025 +0900
+
+    AI Pjt first commit
+    
+    
+    Former-commit-id: bceb18014147f620dcfb7fdd72d9381519e06e65
+
+[33mcommit f479dfe5c00a63f41505b2b5adcd77550b4253af[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m
+Author: nomaefg <37690094+deMerui@users.noreply.github.com>
+Date:   Tue Sep 2 15:21:02 2025 +0900
+
+    Update README.md
+
+[33mcommit 396b7cfbb4d15af75479e3120c3488fff70f1241[m
+Author: nomaefg <37690094+deMerui@users.noreply.github.com>
+Date:   Tue Sep 2 14:23:04 2025 +0900
+
+    Initial commit
