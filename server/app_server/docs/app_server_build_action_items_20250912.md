@@ -1363,3 +1363,14 @@ python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
   - 브로커 도입은 후속(스케일 요구 시)
 - 다음 단계
   - 리포 통합 테스트, 운영 쿼리/가시성 보강, 플래그 기반 롤아웃 가이드 확정
+
+### 2025-09-24 에드온: Notify kind ENUM 정합성 및 클라이언트/문서 정리
+- 배경: DB `notify.kind_enum` 허용값은 `system|schedule|info|contact|marketing|inbound`. `warning/error`는 kind가 아닌 severity(노랑/빨강)로 표현해야 함.
+- 조치
+  - 문서 예시 수정: `docs/notification_system_usage_guide.md`, `docs/notification_system_testing_guide.md`의 kind를 허용값(`system`)으로 교정
+  - 클라이언트 예시 수정: `client/live_notification_test.py` 내 출력 예시 kind를 `system`으로 교정
+  - 가이드에 “경고/오류 레벨은 severity로 표현” 명시
+- 관련 산출물
+  - 테스트 가이드: `staging/notify_testing_guide.md`
+  - 수동 테스트 페이지: `staging/tools/notify_ws_client.html`
+  - 프록시/플래그: `/ws` 업그레이드(Nginx), `NOTIFY_ENABLE/NOTIFY_DISPATCH_ENABLE/NOTIFY_WS_ENABLE`
