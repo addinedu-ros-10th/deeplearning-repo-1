@@ -3,64 +3,491 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Notify WS Manual Tester</title>
+  <title>🔔 Notify WebSocket Tester</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 20px; }
-    input, button { padding: 8px; font-size: 14px; }
-    #log { border: 1px solid #ddd; padding: 10px; height: 280px; overflow: auto; background: #fafafa; }
-    .row { margin-bottom: 8px; }
-    .ok { color: #0a7; }
-    .err { color: #c00; }
-    code { background: #eee; padding: 2px 4px; border-radius: 3px; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+    
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+    
+    .content {
+      padding: 40px;
+    }
+    
+    .section {
+      margin-bottom: 40px;
+    }
+    
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-label {
+      display: block;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      background: #f9fafb;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #4f46e5;
+      background: white;
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 120px;
+      justify-content: center;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+    }
+    
+    .btn:active {
+      transform: translateY(0);
+    }
+    
+    #log {
+      background: #1f2937;
+      color: #f9fafb;
+      padding: 20px;
+      height: 350px;
+      overflow-y: auto;
+      border-radius: 12px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      border: 2px solid #374151;
+    }
+    
+    .log-entry {
+      margin-bottom: 8px;
+      padding: 4px 0;
+    }
+    
+    .ok {
+      color: #10b981;
+      font-weight: 500;
+    }
+    
+    .err {
+      color: #ef4444;
+      font-weight: 500;
+    }
+    
+    .info-card {
+      background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+      border: 2px solid #0ea5e9;
+      border-radius: 16px;
+      padding: 25px;
+      margin-top: 30px;
+    }
+    
+    .info-card h3 {
+      color: #0c4a6e;
+      font-size: 1.3rem;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .code-block {
+      background: #1f2937;
+      color: #f9fafb;
+      padding: 20px;
+      border-radius: 12px;
+      overflow-x: auto;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      margin: 15px 0;
+      border: 2px solid #374151;
+    }
+    
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-left: 10px;
+    }
+    
+    .status-disconnected {
+      background: rgba(239, 68, 68, 0.1);
+      color: #dc2626;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    
+    .status-connected {
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    
+    .env-vars {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .env-var {
+      background: rgba(79, 70, 229, 0.1);
+      color: #4f46e5;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.8rem;
+      border: 1px solid rgba(79, 70, 229, 0.2);
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        margin: 10px;
+        border-radius: 16px;
+      }
+      
+      .content {
+        padding: 25px;
+      }
+      
+      .header {
+        padding: 25px;
+      }
+      
+      .header h1 {
+        font-size: 2rem;
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .button-group {
+        flex-direction: column;
+      }
+      
+      .btn {
+        width: 100%;
+      }
+    }
+    
+    /* Scrollbar styling */
+    #log::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    #log::-webkit-scrollbar-track {
+      background: #374151;
+      border-radius: 4px;
+    }
+    
+    #log::-webkit-scrollbar-thumb {
+      background: #6b7280;
+      border-radius: 4px;
+    }
+    
+    #log::-webkit-scrollbar-thumb:hover {
+      background: #9ca3af;
+    }
   </style>
   <script>
     let ws = null;
+    
+    function updateConnectionStatus(connected) {
+      const statusEl = document.getElementById('connection-status');
+      if (connected) {
+        statusEl.innerHTML = '<i class="fas fa-wifi"></i> 연결됨';
+        statusEl.className = 'status-indicator status-connected';
+      } else {
+        statusEl.innerHTML = '<i class="fas fa-wifi"></i> 연결 끊김';
+        statusEl.className = 'status-indicator status-disconnected';
+      }
+    }
+    
     function log(msg, cls) {
       const el = document.getElementById('log');
       const p = document.createElement('div');
-      if (cls) p.className = cls;
-      p.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+      p.className = 'log-entry' + (cls ? ' ' + cls : '');
+      
+      const timestamp = new Date().toLocaleTimeString('ko-KR', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+      });
+      
+      p.innerHTML = `<span style="color: #9ca3af;">[${timestamp}]</span> ${msg}`;
       el.appendChild(p);
       el.scrollTop = el.scrollHeight;
     }
+    
     function connect() {
       const base = document.getElementById('base').value.trim();
       const user = document.getElementById('user').value.trim();
-      if (!base || !user) { alert('BASE_URL과 user_id를 입력하세요.'); return; }
+      
+      if (!base || !user) { 
+        alert('🚨 BASE_URL과 user_id를 모두 입력해주세요!'); 
+        return; 
+      }
+      
       const url = base.replace(/\/$/, '') + '/ws?user_id=' + encodeURIComponent(user);
-      if (ws) { try { ws.close(); } catch (e) {} ws = null; }
+      
+      if (ws) { 
+        try { ws.close(); } catch (e) {} 
+        ws = null; 
+      }
+      
+      log('🔄 연결 시도 중...', 'info');
       ws = new WebSocket(url.replace('http', 'ws'));
-      ws.onopen = function() { log('connected: ' + url, 'ok'); };
-      ws.onmessage = function(ev) { log('recv: ' + ev.data); };
-      ws.onerror = function(ev) { log('error: ' + (ev && ev.message ? ev.message : 'n/a'), 'err'); };
-      ws.onclose = function() { log('closed'); };
+      
+      ws.onopen = function() { 
+        log('✅ <strong>연결 성공!</strong> ' + url, 'ok'); 
+        updateConnectionStatus(true);
+      };
+      
+      ws.onmessage = function(ev) { 
+        log('📨 <strong>수신:</strong> ' + ev.data, 'ok'); 
+      };
+      
+      ws.onerror = function(ev) { 
+        log('❌ <strong>오류:</strong> ' + (ev && ev.message ? ev.message : '연결 실패'), 'err'); 
+        updateConnectionStatus(false);
+      };
+      
+      ws.onclose = function() { 
+        log('🔌 <strong>연결 종료</strong>', 'info'); 
+        updateConnectionStatus(false);
+      };
     }
+    
     function sendPing() {
-      if (!ws) { log('not connected', 'err'); return; }
-      try { ws.send('ping'); log('sent: ping'); } catch (e) { log('send error: ' + e, 'err'); }
+      if (!ws || ws.readyState !== WebSocket.OPEN) { 
+        log('❌ <strong>연결되지 않음</strong> - 먼저 Connect 버튼을 클릭하세요', 'err'); 
+        return; 
+      }
+      
+      try { 
+        ws.send('ping'); 
+        log('📤 <strong>전송:</strong> ping', 'info'); 
+      } catch (e) { 
+        log('❌ <strong>전송 오류:</strong> ' + e, 'err'); 
+      }
     }
+    
+    function clearLog() {
+      document.getElementById('log').innerHTML = '';
+      log('🧹 로그가 초기화되었습니다', 'info');
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      updateConnectionStatus(false);
+      log('🚀 WebSocket 테스터가 준비되었습니다', 'info');
+    });
   </script>
   </head>
   <body>
-    <h2>Notify WebSocket 수동 테스트</h2>
-    <div class="row">
-      <label>BASE_URL: <input id="base" size="40" value="http://localhost" /></label>
-    </div>
-    <div class="row">
-      <label>user_id(UUID): <input id="user" size="40" placeholder="11111111-1111-1111-1111-111111111111" /></label>
-    </div>
-    <div class="row">
-      <button onclick="connect()">Connect</button>
-      <button onclick="sendPing()">Send ping</button>
-    </div>
-    <div id="log"></div>
-    <hr />
-    <h3>큐잉 API 예시(curl)</h3>
-    <p>아래 예시에서 <code>recipients</code>에 위 user_id를 사용하세요.</p>
-    <pre><code>curl -X POST "$BASE_URL/api/v1/notify/queue" \
+    <div class="container">
+      <div class="header">
+        <h1>
+          <i class="fas fa-bell"></i>
+          Notify WebSocket Tester
+        </h1>
+        <p>실시간 알림 시스템 테스트 도구</p>
+      </div>
+      
+      <div class="content">
+        <!-- Connection Section -->
+        <div class="section">
+          <h2 class="section-title">
+            <i class="fas fa-plug"></i>
+            연결 설정
+            <span id="connection-status" class="status-indicator status-disconnected">
+              <i class="fas fa-wifi"></i> 연결 끊김
+            </span>
+          </h2>
+          
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fas fa-server"></i> BASE URL
+            </label>
+            <input 
+              id="base" 
+              class="form-input" 
+              value="http://localhost" 
+              placeholder="http://localhost 또는 http://localhost:8000"
+            />
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fas fa-user"></i> User ID (UUID)
+            </label>
+            <input 
+              id="user" 
+              class="form-input" 
+              placeholder="11111111-1111-1111-1111-111111111111"
+            />
+          </div>
+          
+          <div class="button-group">
+            <button class="btn btn-primary" onclick="connect()">
+              <i class="fas fa-plug"></i>
+              Connect
+            </button>
+            <button class="btn btn-secondary" onclick="sendPing()">
+              <i class="fas fa-paper-plane"></i>
+              Send Ping
+            </button>
+            <button class="btn btn-secondary" onclick="clearLog()" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+              <i class="fas fa-broom"></i>
+              Clear Log
+            </button>
+          </div>
+        </div>
+        
+        <!-- Log Section -->
+        <div class="section">
+          <h2 class="section-title">
+            <i class="fas fa-terminal"></i>
+            실시간 로그
+          </h2>
+          <div id="log"></div>
+        </div>
+        
+        <!-- API Guide Section -->
+        <div class="info-card">
+          <h3>
+            <i class="fas fa-code"></i>
+            큐잉 API 사용 예시
+          </h3>
+          <p style="margin-bottom: 15px; color: #0c4a6e;">
+            아래 curl 명령어에서 <strong>&lt;UUID&gt;</strong>를 위에 입력한 User ID로 교체하세요.
+          </p>
+          
+          <div class="code-block">curl -X POST "$BASE_URL/api/v1/notify/queue" \
 -H "Content-Type: application/json" \
--d '{"kind":"info","severity":"green","title":"Hello","body":"From curl","data":{"k":1},"recipients":["<UUID>"],"channel":"websocket"}'
-</code></pre>
-    <p>환경 변수(디스패처/WS): <code>NOTIFY_ENABLE=true</code>, <code>NOTIFY_DISPATCH_ENABLE=true</code>, <code>NOTIFY_WS_ENABLE=true</code></p>
+-d '{
+  "kind": "info",
+  "severity": "green", 
+  "title": "테스트 알림",
+  "body": "WebSocket 테스트 메시지입니다",
+  "data": {"test": true},
+  "recipients": ["&lt;UUID&gt;"],
+  "channel": "websocket"
+}'</div>
+          
+          <h4 style="margin-top: 20px; margin-bottom: 10px; color: #0c4a6e;">
+            <i class="fas fa-cog"></i>
+            필수 환경 변수
+          </h4>
+          <div class="env-vars">
+            <span class="env-var">NOTIFY_ENABLE=true</span>
+            <span class="env-var">NOTIFY_DISPATCH_ENABLE=true</span>
+            <span class="env-var">NOTIFY_WS_ENABLE=true</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
