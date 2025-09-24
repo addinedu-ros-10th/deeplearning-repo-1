@@ -127,7 +127,7 @@ curl -X POST "http://localhost/api/v1/notify/queue" \
 curl -X POST "http://localhost/api/v1/notify/queue" \
 -H "Content-Type: application/json" \
 -d '{
-  "kind": "warning",
+  "kind": "system",
   "severity": "yellow", 
   "title": "시스템 경고",
   "body": "디스크 사용량이 80%를 초과했습니다.",
