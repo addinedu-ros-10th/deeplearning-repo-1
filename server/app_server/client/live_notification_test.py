@@ -18,7 +18,10 @@ from notification_client import NotificationClient, NotificationSender
 class LiveNotificationTester:
     def __init__(self):
         self.client = None
-        self.sender = NotificationSender('http://localhost')
+        # WebSocket URL 설정 (환경에 맞게 변경 가능)
+        self.ws_base_url = 'ws://ec2-43-201-96-23.ap-northeast-2.compute.amazonaws.com'
+        # WebSocket URL에서 자동으로 HTTP API URL 생성
+        self.sender = NotificationSender(self.ws_base_url)
         self.user_id = 'live-test-user-' + str(int(datetime.now().timestamp()))
         self.running = True
         
@@ -29,7 +32,7 @@ class LiveNotificationTester:
         print("=" * 60)
         
         self.client = NotificationClient(
-            base_url='ws://localhost',
+            base_url=self.ws_base_url,
             user_id=self.user_id,
             auto_reconnect=True,
             reconnect_interval=3.0,
@@ -82,13 +85,23 @@ class LiveNotificationTester:
         async def handle_info(notification):
             print(f"ℹ️  정보 알림 처리 완료: {notification.get('title')}")
         
-        @self.client.on_notification('warning')
-        async def handle_warning(notification):
-            print(f"⚠️  경고 알림 처리 완료: {notification.get('title')}")
+        @self.client.on_notification('system')
+        async def handle_system(notification):
+            severity = notification.get('severity', 'unknown')
+            if severity == 'yellow':
+                print(f"⚠️  시스템 경고 알림 처리 완료: {notification.get('title')}")
+            elif severity == 'red':
+                print(f"🚨 시스템 오류 알림 처리 완료: {notification.get('title')}")
+            else:
+                print(f"🔧 시스템 알림 처리 완료: {notification.get('title')}")
         
-        @self.client.on_notification('error')
-        async def handle_error(notification):
-            print(f"🚨 오류 알림 처리 완료: {notification.get('title')}")
+        @self.client.on_notification('schedule')
+        async def handle_schedule(notification):
+            print(f"📅 일정 알림 처리 완료: {notification.get('title')}")
+        
+        @self.client.on_notification('contact')
+        async def handle_contact(notification):
+            print(f"📞 연락 요청 알림 처리 완료: {notification.get('title')}")
         
         # 핸들러 등록
         self.client.on('connect', on_connect)
@@ -103,7 +116,9 @@ class LiveNotificationTester:
         print("1️⃣ 새 터미널을 열고 다음 명령어를 실행하세요:")
         print()
         print("# 정보 알림 전송")
-        print(f"curl -X POST 'http://localhost/api/v1/notify/queue' \\")
+        # WebSocket URL에서 API URL 동적 생성
+        api_url = self.sender.api_url
+        print(f"curl -X POST '{api_url}' \\")
         print(f"-H 'Content-Type: application/json' \\")
         print(f"-d '{{")
         print(f'  "kind": "info",')
@@ -115,7 +130,7 @@ class LiveNotificationTester:
         print(f"}}'")
         print()
         print("# 경고 알림 전송")
-        print(f"curl -X POST 'http://localhost/api/v1/notify/queue' \\")
+        print(f"curl -X POST 'http://ec2-43-201-96-23.ap-northeast-2.compute.amazonaws.com/api/v1/notify/queue' \\")
         print(f"-H 'Content-Type: application/json' \\")
         print(f"-d '{{")
         print(f'  "kind": "system",')
@@ -128,7 +143,7 @@ class LiveNotificationTester:
         print(f"}}'")
         print()
         print("# 오류 알림 전송")
-        print(f"curl -X POST 'http://localhost/api/v1/notify/queue' \\")
+        print(f"curl -X POST 'http://ec2-43-201-96-23.ap-northeast-2.compute.amazonaws.com/api/v1/notify/queue' \\")
         print(f"-H 'Content-Type: application/json' \\")
         print(f"-d '{{")
         print(f'  "kind": "system",')
