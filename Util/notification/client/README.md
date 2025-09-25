@@ -2,18 +2,64 @@
 
 이 디렉토리에는 WebSocket 기반 실시간 알림 시스템과 상호작용할 수 있는 다양한 클라이언트 프로그램들이 포함되어 있습니다.
 
+## ✨ 주요 특징
+
+- **🔄 동적 URL 변환**: WebSocket URL에서 HTTP API URL 자동 생성
+- **📡 실시간 알림 수신**: WebSocket을 통한 실시간 알림 처리
+- **📤 REST API 전송**: HTTP API를 통한 알림 전송
+- **🎯 올바른 enum 값**: DB 스키마에 맞는 kind/severity 값 사용
+- **🔌 자동 재연결**: 연결 끊김 시 자동 재연결 기능
+- **🌐 다중 플랫폼**: Python, JavaScript, HTML 지원
+
 ---
 
 ## 📁 파일 구조
 
 ```
 client/
-├── notification_client.js       # JavaScript/Node.js 클라이언트 라이브러리
-├── notification_client.py       # Python 클라이언트 라이브러리
-├── notification_client.html     # 브라우저용 테스트 클라이언트
+├── notification_client.js       # JavaScript/Node.js 클라이언트 라이브러리 (수신)
+├── notification_client.py       # Python 클라이언트 & 전송자 라이브러리 (수신+전송)
+├── notification_client.html     # 브라우저용 완전한 테스트 도구
 ├── test_js_client.js            # JavaScript 클라이언트 테스트 스크립트
 ├── test_python_client.py        # Python 클라이언트 테스트 스크립트
-└── README.md                    # 이 파일
+├── live_notification_test.py    # 실시간 알림 테스트 도구
+├── final_test.py               # 최종 통합 테스트
+└── README.md                   # 이 파일
+```
+
+## 🎯 알림 타입 및 enum 값
+
+### 올바른 kind 값 (DB enum)
+- `system`: 시스템 알림 (경고/오류 포함)
+- `schedule`: 일정 알림 (복약, 진료 등)
+- `info`: 정보성 알림
+- `contact`: 연락 요청
+- `marketing`: 마케팅 알림
+- `inbound`: 사용자 기원 메시지
+
+### 올바른 severity 값 (DB enum)
+- `green`: 정상/성공
+- `blue`: 권고/일반
+- `yellow`: 주의/경고
+- `orange`: 고위험
+- `red`: 위급/오류
+
+### 권장 조합
+```json
+// 시스템 정상
+{"kind": "system", "severity": "green"}
+
+// 시스템 경고 (예: 디스크 사용량 높음)
+{"kind": "system", "severity": "yellow"}
+
+// 시스템 오류 (예: 서비스 장애)
+{"kind": "system", "severity": "red"}
+
+// 일정 알림
+{"kind": "schedule", "severity": "blue"}
+
+// 긴급 연락
+{"kind": "contact", "severity": "orange"}
 ```
 
 ---
@@ -24,6 +70,19 @@ client/
 
 - **서버 실행**: 알림 시스템 서버가 실행 중이어야 합니다
 - **환경 변수**: `NOTIFY_ENABLE=true`, `NOTIFY_DISPATCH_ENABLE=true`, `NOTIFY_WS_ENABLE=true`
+
+### 🔄 동적 URL 변환 기능
+
+모든 클라이언트는 WebSocket URL을 입력하면 HTTP API URL을 자동으로 생성합니다:
+
+| 입력 URL | WebSocket URL | HTTP API URL |
+|----------|---------------|--------------|
+| `ws://localhost` | `ws://localhost/ws` | `http://localhost/api/v1/notify/queue` |
+| `wss://example.com` | `wss://example.com/ws` | `https://example.com/api/v1/notify/queue` |
+| `ws://server.com:8080/ws` | `ws://server.com:8080/ws` | `http://server.com:8080/api/v1/notify/queue` |
+| `http://api-server.com` | `ws://api-server.com/ws` | `http://api-server.com/api/v1/notify/queue` |
+
+**장점**: 서버 URL 하나만 설정하면 WebSocket 연결과 REST API 호출이 모두 올바른 주소로 전송됩니다.
 
 ### 2️⃣ 서버 상태 확인
 
@@ -327,3 +386,4 @@ docker compose logs api
 *Last Updated: 2025-09-24*
 *Version: 1.0.0*
 *Status: ✅ Production Ready*
+
