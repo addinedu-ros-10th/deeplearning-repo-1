@@ -167,7 +167,7 @@ services:
         condition: service_healthy
     volumes:
       - ../static:/var/www/static:ro
-      - /home/guehojung/Documents/Project/DEEP_LEARNING/deeplearning-repo-1/Util/notification:/var/www/notification:ro  # Notification client files
+      - ../../../Util/notification:/var/www/notification:ro  # Notification client files
     ports:
       - "80:80"
       - "443:443"

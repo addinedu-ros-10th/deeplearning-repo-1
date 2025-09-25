@@ -1,0 +1,483 @@
+ubuntu@ip-172-31-40-44:~/development/deeplearning-repo-1/server/app_server/docker$ docker compose -f compose.base.yml -f compose.prod.yml config
+WARN[0000] The "APP_ENV" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "PYTHON_VERSION" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "PROJECT_NAME" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "API_V1_STR" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "DEBUG" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "DB_MODE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "DB_APP_URL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "DB_LEGACY_URL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SSH_TUNNEL_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SSH_TUNNEL_LOCAL_PORT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SSH_TUNNEL_REMOTE_HOST" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SSH_TUNNEL_REMOTE_PORT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SSH_TUNNEL_BASTION_HOST" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SSH_TUNNEL_USER" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SSH_TUNNEL_KEY_PATH" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "REDIS_URL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "REDIS_PASSWORD" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "REDIS_DB" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "FILES_BASE_DIR" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "FILES_MAX_SIZE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "FILES_ALLOWED_TYPES" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "ADMIN_USERNAME" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "ADMIN_PASSWORD" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "ADMIN_EMAIL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "GDRIVE_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "GDRIVE_CLIENT_SECRETS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "GDRIVE_CREDENTIALS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "LOG_LEVEL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "LOG_FORMAT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "LOG_FILE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "CORS_ORIGINS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "CORS_ALLOW_CREDENTIALS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "CORS_ALLOW_METHODS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "CORS_ALLOW_HEADERS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "JWT_SECRET_KEY" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "JWT_ALGORITHM" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "JWT_ACCESS_TOKEN_EXPIRE_MINUTES" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "JWT_REFRESH_TOKEN_EXPIRE_DAYS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SECRET_KEY" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "BCRYPT_ROUNDS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SESSION_COOKIE_SECURE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SESSION_COOKIE_HTTPONLY" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SESSION_COOKIE_SAMESITE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "HTTPS_ONLY" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "API_HOST" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "API_PORT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "API_WORKERS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "API_RELOAD" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SCHEDULER_TIMEZONE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SCHEDULER_MAX_WORKERS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SCHEDULER_COALESCE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "PROMETHEUS_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "PROMETHEUS_PORT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "GRAFANA_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "GRAFANA_PORT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "ELK_STACK_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "DATABASE_POOL_SIZE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "DATABASE_MAX_OVERFLOW" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "REDIS_POOL_SIZE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "BACKUP_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "BACKUP_SCHEDULE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "BACKUP_RETENTION_DAYS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SLACK_WEBHOOK_URL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "EMAIL_SMTP_HOST" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "EMAIL_SMTP_PORT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "EMAIL_SMTP_USER" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "EMAIL_SMTP_PASSWORD" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "TEST_DATABASE_URL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "TEST_REDIS_URL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "PYTEST_ADDOPTS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "BLACK_LINE_LENGTH" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "RUFF_LINE_LENGTH" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "MYPY_STRICT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "NOTIFY_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "NOTIFY_DISPATCH_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "NOTIFY_WS_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "APP_ENV" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "PYTHON_VERSION" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "PROJECT_NAME" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "API_V1_STR" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "DEBUG" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "DB_MODE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "DB_APP_URL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "DB_LEGACY_URL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SSH_TUNNEL_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SSH_TUNNEL_LOCAL_PORT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SSH_TUNNEL_REMOTE_HOST" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SSH_TUNNEL_REMOTE_PORT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SSH_TUNNEL_BASTION_HOST" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SSH_TUNNEL_USER" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SSH_TUNNEL_KEY_PATH" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "REDIS_URL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "REDIS_PASSWORD" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "REDIS_DB" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "FILES_BASE_DIR" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "FILES_MAX_SIZE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "FILES_ALLOWED_TYPES" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "ADMIN_USERNAME" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "ADMIN_PASSWORD" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "ADMIN_EMAIL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "GDRIVE_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "GDRIVE_CLIENT_SECRETS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "GDRIVE_CREDENTIALS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "LOG_LEVEL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "LOG_FORMAT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "LOG_FILE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "CORS_ORIGINS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "CORS_ALLOW_CREDENTIALS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "CORS_ALLOW_METHODS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "CORS_ALLOW_HEADERS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "JWT_SECRET_KEY" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "JWT_ALGORITHM" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "JWT_ACCESS_TOKEN_EXPIRE_MINUTES" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "JWT_REFRESH_TOKEN_EXPIRE_DAYS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SECRET_KEY" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "BCRYPT_ROUNDS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SESSION_COOKIE_SECURE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SESSION_COOKIE_HTTPONLY" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SESSION_COOKIE_SAMESITE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "HTTPS_ONLY" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "API_HOST" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "API_PORT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "API_WORKERS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "API_RELOAD" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SCHEDULER_TIMEZONE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SCHEDULER_MAX_WORKERS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SCHEDULER_COALESCE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "PROMETHEUS_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "PROMETHEUS_PORT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "GRAFANA_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "GRAFANA_PORT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "ELK_STACK_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "DATABASE_POOL_SIZE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "DATABASE_MAX_OVERFLOW" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "REDIS_POOL_SIZE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "BACKUP_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "BACKUP_SCHEDULE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "BACKUP_RETENTION_DAYS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "SLACK_WEBHOOK_URL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "EMAIL_SMTP_HOST" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "EMAIL_SMTP_PORT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "EMAIL_SMTP_USER" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "EMAIL_SMTP_PASSWORD" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "TEST_DATABASE_URL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "TEST_REDIS_URL" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "PYTEST_ADDOPTS" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "BLACK_LINE_LENGTH" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "RUFF_LINE_LENGTH" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "MYPY_STRICT" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "NOTIFY_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "NOTIFY_DISPATCH_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] The "NOTIFY_WS_ENABLE" variable is not set. Defaulting to a blank string. 
+WARN[0000] /home/ubuntu/development/deeplearning-repo-1/server/app_server/docker/compose.base.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+WARN[0000] The "REDIS_PASSWORD" variable is not set. Defaulting to a blank string. 
+name: docker
+services:
+  api:
+    build:
+      context: /home/ubuntu/development/deeplearning-repo-1/server/app_server
+      dockerfile: docker/python.Dockerfile
+    command:
+      - uvicorn
+      - app.main:create_app
+      - --factory
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --log-level
+      - info
+    depends_on:
+      redis:
+        condition: service_started
+        required: true
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: "2147483648"
+        reservations:
+          cpus: 1
+          memory: "1073741824"
+    environment:
+      ADMIN_EMAIL: ""
+      ADMIN_PASSWORD: ""
+      ADMIN_USERNAME: ""
+      API_HOST: ""
+      API_PORT: ""
+      API_RELOAD: "false"
+      API_V1_STR: ""
+      API_WORKERS: "4"
+      APP_ENV: production
+      BACKUP_ENABLE: ""
+      BACKUP_RETENTION_DAYS: ""
+      BACKUP_SCHEDULE: ""
+      BCRYPT_ROUNDS: ""
+      BLACK_LINE_LENGTH: ""
+      CORS_ALLOW_CREDENTIALS: ""
+      CORS_ALLOW_HEADERS: ""
+      CORS_ALLOW_METHODS: ""
+      CORS_ORIGINS: ""
+      DATABASE_MAX_OVERFLOW: ""
+      DATABASE_POOL_SIZE: ""
+      DB_APP_URL: ""
+      DB_LEGACY_URL: ""
+      DB_MODE: ""
+      DEBUG: "false"
+      ELK_STACK_ENABLE: ""
+      EMAIL_SMTP_HOST: ""
+      EMAIL_SMTP_PASSWORD: ""
+      EMAIL_SMTP_PORT: ""
+      EMAIL_SMTP_USER: ""
+      FILES_ALLOWED_TYPES: ""
+      FILES_BASE_DIR: ""
+      FILES_MAX_SIZE: ""
+      GDRIVE_CLIENT_SECRETS: ""
+      GDRIVE_CREDENTIALS: ""
+      GDRIVE_ENABLE: ""
+      GRAFANA_ENABLE: ""
+      GRAFANA_PORT: ""
+      HTTPS_ONLY: "true"
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ""
+      JWT_ALGORITHM: ""
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: ""
+      JWT_SECRET_KEY: ""
+      LOG_FILE: ""
+      LOG_FORMAT: ""
+      LOG_LEVEL: INFO
+      ML_DB_URL: postgresql+asyncpg://svc_dev:IOT_dev_123%21%40%23@52.79.78.247:5432/iot_care
+      MYPY_STRICT: ""
+      NOTIFY_DISPATCH_ENABLE: ""
+      NOTIFY_ENABLE: ""
+      NOTIFY_WS_ENABLE: ""
+      PROJECT_NAME: ""
+      PROMETHEUS_ENABLE: ""
+      PROMETHEUS_PORT: ""
+      PYTEST_ADDOPTS: ""
+      PYTHON_VERSION: ""
+      REDIS_DB: ""
+      REDIS_PASSWORD: ""
+      REDIS_POOL_SIZE: ""
+      REDIS_URL: ""
+      RUFF_LINE_LENGTH: ""
+      SCHEDULER_COALESCE: ""
+      SCHEDULER_MAX_WORKERS: ""
+      SCHEDULER_TIMEZONE: ""
+      SECRET_KEY: ""
+      SESSION_COOKIE_HTTPONLY: ""
+      SESSION_COOKIE_SAMESITE: ""
+      SESSION_COOKIE_SECURE: "true"
+      SLACK_WEBHOOK_URL: ""
+      SSH_TUNNEL_BASTION_HOST: ""
+      SSH_TUNNEL_ENABLE: ""
+      SSH_TUNNEL_KEY_PATH: ""
+      SSH_TUNNEL_LOCAL_PORT: ""
+      SSH_TUNNEL_REMOTE_HOST: ""
+      SSH_TUNNEL_REMOTE_PORT: ""
+      SSH_TUNNEL_USER: ""
+      TEST_DATABASE_URL: ""
+      TEST_REDIS_URL: ""
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:8000/health
+      timeout: 10s
+      interval: 30s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-file: "3"
+        max-size: 10m
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 8000
+        published: "8000"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /home/ubuntu/development/deeplearning-repo-1/server/app_server/app
+        target: /app/app
+        bind:
+          create_host_path: true
+      - type: volume
+        source: files-data
+        target: /app/files
+        volume: {}
+      - type: volume
+        source: secrets-data
+        target: /app/secret
+        read_only: true
+        volume: {}
+      - type: volume
+        source: secrets-data
+        target: /app/secrets
+        volume: {}
+      - type: volume
+        source: logs-data
+        target: /app/logs
+        volume: {}
+  nginx:
+    build:
+      context: /home/ubuntu/development/deeplearning-repo-1/server/app_server
+      dockerfile: docker/nginx.Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+        required: true
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost/health
+      timeout: 10s
+      interval: 30s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-file: "2"
+        max-size: 5m
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 80
+        published: "80"
+        protocol: tcp
+      - mode: ingress
+        target: 443
+        published: "443"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /home/ubuntu/development/deeplearning-repo-1/server/app_server/static
+        target: /var/www/static
+        read_only: true
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /home/guehojung/Documents/Project/DEEP_LEARNING/deeplearning-repo-1/Util/notification
+        target: /var/www/notification
+        read_only: true
+        bind:
+          create_host_path: true
+  redis:
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+    environment:
+      REDIS_PASSWORD: ""
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 10s
+      interval: 30s
+      retries: 3
+    image: redis:7-alpine
+    logging:
+      driver: json-file
+      options:
+        max-file: "2"
+        max-size: 5m
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 6379
+        published: "6379"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: redis-data
+        target: /data
+        volume: {}
+networks:
+  default:
+    name: docker_default
+volumes:
+  files-data:
+    name: docker_files-data
+  logs-data:
+    name: docker_logs-data
+  redis-data:
+    name: docker_redis-data
+  secrets-data:
+    name: docker_secrets-data
+x-env:
+  env_file:
+    - ../secret/.env.local
+  environment:
+    - APP_ENV=
+    - PYTHON_VERSION=
+    - PROJECT_NAME=
+    - API_V1_STR=
+    - DEBUG=
+    - DB_MODE=
+    - DB_APP_URL=
+    - DB_LEGACY_URL=
+    - SSH_TUNNEL_ENABLE=
+    - SSH_TUNNEL_LOCAL_PORT=
+    - SSH_TUNNEL_REMOTE_HOST=
+    - SSH_TUNNEL_REMOTE_PORT=
+    - SSH_TUNNEL_BASTION_HOST=
+    - SSH_TUNNEL_USER=
+    - SSH_TUNNEL_KEY_PATH=
+    - REDIS_URL=
+    - REDIS_PASSWORD=
+    - REDIS_DB=
+    - FILES_BASE_DIR=
+    - FILES_MAX_SIZE=
+    - FILES_ALLOWED_TYPES=
+    - ADMIN_USERNAME=
+    - ADMIN_PASSWORD=
+    - ADMIN_EMAIL=
+    - GDRIVE_ENABLE=
+    - GDRIVE_CLIENT_SECRETS=
+    - GDRIVE_CREDENTIALS=
+    - LOG_LEVEL=
+    - LOG_FORMAT=
+    - LOG_FILE=
+    - CORS_ORIGINS=
+    - CORS_ALLOW_CREDENTIALS=
+    - CORS_ALLOW_METHODS=
+    - CORS_ALLOW_HEADERS=
+    - JWT_SECRET_KEY=
+    - JWT_ALGORITHM=
+    - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=
+    - JWT_REFRESH_TOKEN_EXPIRE_DAYS=
+    - SECRET_KEY=
+    - BCRYPT_ROUNDS=
+    - SESSION_COOKIE_SECURE=
+    - SESSION_COOKIE_HTTPONLY=
+    - SESSION_COOKIE_SAMESITE=
+    - HTTPS_ONLY=
+    - API_HOST=
+    - API_PORT=
+    - API_WORKERS=
+    - API_RELOAD=
+    - SCHEDULER_TIMEZONE=
+    - SCHEDULER_MAX_WORKERS=
+    - SCHEDULER_COALESCE=
+    - PROMETHEUS_ENABLE=
+    - PROMETHEUS_PORT=
+    - GRAFANA_ENABLE=
+    - GRAFANA_PORT=
+    - ELK_STACK_ENABLE=
+    - DATABASE_POOL_SIZE=
+    - DATABASE_MAX_OVERFLOW=
+    - REDIS_POOL_SIZE=
+    - BACKUP_ENABLE=
+    - BACKUP_SCHEDULE=
+    - BACKUP_RETENTION_DAYS=
+    - SLACK_WEBHOOK_URL=
+    - EMAIL_SMTP_HOST=
+    - EMAIL_SMTP_PORT=
+    - EMAIL_SMTP_USER=
+    - EMAIL_SMTP_PASSWORD=
+    - TEST_DATABASE_URL=
+    - TEST_REDIS_URL=
+    - PYTEST_ADDOPTS=
+    - BLACK_LINE_LENGTH=
+    - RUFF_LINE_LENGTH=
+    - MYPY_STRICT=
+    - NOTIFY_ENABLE=
+    - NOTIFY_DISPATCH_ENABLE=
+    - NOTIFY_WS_ENABLE=
+ubuntu@ip-172-31-40-44:~/development/deeplearning-repo-1/server/app_server/docker$ 
+
