@@ -293,6 +293,28 @@
   <script>
     let ws = null;
     
+    // URL 변환 유틸리티 함수
+    function websocketToHttpUrl(wsUrl) {
+      if (!wsUrl) return 'http://localhost';
+      
+      // ws:// 또는 wss://를 http:// 또는 https://로 변환
+      let httpUrl = wsUrl.replace(/^wss?:\/\//, (match) => {
+        return match === 'wss://' ? 'https://' : 'http://';
+      });
+      
+      // /ws 경로가 있다면 제거
+      httpUrl = httpUrl.replace(/\/ws\/?$/, '');
+      
+      return httpUrl;
+    }
+    
+    function getApiUrl(baseUrl, endpoint = '/api/v1/notify/queue') {
+      if (baseUrl.startsWith('ws')) {
+        baseUrl = websocketToHttpUrl(baseUrl);
+      }
+      return baseUrl.replace(/\/$/, '') + endpoint;
+    }
+    
     function updateConnectionStatus(connected) {
       const statusEl = document.getElementById('connection-status');
       if (connected) {
@@ -330,7 +352,15 @@
         return; 
       }
       
-      const url = base.replace(/\/$/, '') + '/ws?user_id=' + encodeURIComponent(user);
+      // HTTP URL을 WebSocket URL로 변환
+      let wsUrl = base;
+      if (base.startsWith('http://')) {
+        wsUrl = base.replace('http://', 'ws://');
+      } else if (base.startsWith('https://')) {
+        wsUrl = base.replace('https://', 'wss://');
+      }
+      
+      const url = wsUrl.replace(/\/$/, '') + '/ws?user_id=' + encodeURIComponent(user);
       
       if (ws) { 
         try { ws.close(); } catch (e) {} 
@@ -414,8 +444,8 @@
             <input 
               id="base" 
               class="form-input" 
-              value="http://localhost" 
-              placeholder="http://localhost 또는 http://localhost:8000"
+              value="http://ec2-43-201-96-23.ap-northeast-2.compute.amazonaws.com" 
+              placeholder="http://서버주소 또는 ws://서버주소"
             />
           </div>
           

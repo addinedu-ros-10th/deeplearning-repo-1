@@ -248,3 +248,4 @@ server/app_server/client/notification_client.html
 *테스트 수행자: Assistant*  
 *테스트 완료일: 2025-09-24*  
 *문서 버전: 1.0.0*
+

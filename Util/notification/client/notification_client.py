@@ -1,33 +1,142 @@
 #!/usr/bin/env python3
 """
-WebSocket 알림 클라이언트 (Python)
+WebSocket 알림 클라이언트 & REST API 전송자 (Python)
 
-사용 방법:
-1. 필요한 라이브러리 설치:
-   pip install websockets requests aiohttp
+이 모듈은 두 가지 주요 클래스를 제공합니다:
+1. NotificationClient: WebSocket을 통한 실시간 알림 수신
+2. NotificationSender: REST API를 통한 알림 전송
 
-2. 기본 사용법:
-   python notification_client.py
+=== 설치 ===
+pip install websockets requests aiohttp
 
-3. 모듈로 사용:
-   from notification_client import NotificationClient
-   
-   client = NotificationClient('ws://localhost', 'your-user-id')
-   await client.connect()
+=== 1. NotificationClient (WebSocket 수신) ===
 
-4. 커스텀 설정:
-   client = NotificationClient(
-       base_url='ws://localhost',
-       user_id='user-123',
-       auto_reconnect=True,
-       reconnect_interval=5.0,
-       max_reconnect_attempts=10
-   )
+기본 사용법:
+    from notification_client import NotificationClient
+    
+    client = NotificationClient('ws://your-server.com', 'your-user-id')
+    await client.connect()
 
-5. 알림 타입별 핸들러 등록:
-   @client.on_notification('warning')
-   async def handle_warning(notification):
-       print(f"경고: {notification['title']}")
+커스텀 설정:
+    client = NotificationClient(
+        base_url='ws://your-server.com',
+        user_id='user-123',
+        auto_reconnect=True,
+        reconnect_interval=5.0,
+        max_reconnect_attempts=10
+    )
+
+알림 타입별 핸들러 등록 (올바른 enum 값 사용):
+    @client.on_notification('system')  # 시스템 알림 (경고/오류 포함)
+    async def handle_system(notification):
+        severity = notification.get('severity', 'unknown')
+        if severity == 'yellow':
+            print(f"⚠️ 경고: {notification['title']}")
+        elif severity == 'red':
+            print(f"🚨 오류: {notification['title']}")
+    
+    @client.on_notification('info')     # 정보 알림
+    async def handle_info(notification):
+        print(f"ℹ️ 정보: {notification['title']}")
+    
+    @client.on_notification('schedule') # 일정 알림
+    async def handle_schedule(notification):
+        print(f"📅 일정: {notification['title']}")
+    
+    @client.on_notification('contact')  # 연락 요청
+    async def handle_contact(notification):
+        print(f"📞 연락: {notification['title']}")
+
+연결 이벤트 핸들러:
+    @client.on('connect')
+    async def on_connect():
+        print("✅ WebSocket 연결 성공")
+    
+    @client.on('disconnect')
+    async def on_disconnect():
+        print("🔌 WebSocket 연결 해제")
+    
+    @client.on('error')
+    async def on_error(error):
+        print(f"❌ 오류: {error}")
+
+=== 2. NotificationSender (REST API 전송) ===
+
+기본 사용법:
+    from notification_client import NotificationSender
+    
+    # WebSocket URL 또는 HTTP URL 모두 지원 (자동 변환)
+    sender = NotificationSender('ws://your-server.com')  # 또는 'http://your-server.com'
+    
+    result = sender.send_notification(
+        recipients=['user-id-1', 'user-id-2'],
+        title='알림 제목',
+        body='알림 내용',
+        kind='system',      # 필수: system/schedule/info/contact/marketing/inbound
+        severity='yellow',  # 필수: green/blue/yellow/orange/red
+        data={'custom': 'data'}  # 선택: 추가 데이터
+    )
+
+올바른 kind/severity 조합:
+    # 시스템 알림
+    kind='system', severity='green'   # 정상 상태
+    kind='system', severity='yellow'  # 경고 (예: 디스크 사용량 높음)
+    kind='system', severity='red'     # 오류 (예: 서비스 장애)
+    
+    # 일정 알림
+    kind='schedule', severity='blue'  # 복약, 진료 일정 등
+    
+    # 정보 알림
+    kind='info', severity='green'     # 일반 정보성 알림
+    
+    # 연락 요청
+    kind='contact', severity='orange' # 긴급 연락 필요
+
+=== 3. 동적 URL 변환 기능 ===
+
+WebSocket URL을 입력하면 HTTP API URL이 자동으로 생성됩니다:
+    ws://localhost → http://localhost/api/v1/notify/queue
+    wss://example.com → https://example.com/api/v1/notify/queue
+    ws://server.com:8080/ws → http://server.com:8080/api/v1/notify/queue
+
+API URL 직접 확인:
+    client = NotificationClient('ws://your-server.com', 'user-id')
+    api_url = client.get_api_url()  # HTTP API URL 반환
+    
+    sender = NotificationSender('ws://your-server.com')
+    print(sender.api_url)  # 생성된 API URL 확인
+
+=== 4. 완전한 예제 ===
+
+async def main():
+    # 1. WebSocket 클라이언트로 알림 수신
+    client = NotificationClient('ws://your-server.com', 'user-123')
+    
+    @client.on_notification('system')
+    async def handle_system(notification):
+        print(f"시스템 알림: {notification}")
+    
+    await client.connect()
+    
+    # 2. REST API로 알림 전송
+    sender = NotificationSender('ws://your-server.com')  # 같은 URL 사용
+    result = sender.send_notification(
+        recipients=['user-123'],
+        title='테스트 알림',
+        body='동적 URL 생성 테스트',
+        kind='system',
+        severity='green'
+    )
+    print(f"전송 결과: {result}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+=== 주의사항 ===
+- kind 값은 반드시 DB enum에 정의된 값을 사용: system/schedule/info/contact/marketing/inbound
+- severity 값은 반드시 DB enum에 정의된 값을 사용: green/blue/yellow/orange/red
+- 경고/오류는 kind='system'과 severity='yellow'/'red' 조합으로 표현
+- recipients는 반드시 UUID 형식의 사용자 ID 배열
 """
 
 import asyncio
@@ -41,6 +150,7 @@ from datetime import datetime
 import uuid
 import requests
 from urllib.parse import urlencode
+import re
 
 # 로깅 설정
 logging.basicConfig(
@@ -48,6 +158,44 @@ logging.basicConfig(
     format='[%(asctime)s] %(levelname)s: %(message)s',
     datefmt='%H:%M:%S'
 )
+
+# 유틸리티 함수들
+def websocket_to_http_url(ws_url: str) -> str:
+    """
+    WebSocket URL을 HTTP API URL로 변환
+    
+    Args:
+        ws_url: WebSocket URL (예: 'ws://localhost', 'ws://example.com:8080')
+        
+    Returns:
+        HTTP URL (예: 'http://localhost', 'http://example.com:8080')
+    """
+    if not ws_url:
+        return 'http://localhost'
+    
+    # ws:// 또는 wss://를 http:// 또는 https://로 변환
+    http_url = re.sub(r'^wss?://', lambda m: 'https://' if m.group(0) == 'wss://' else 'http://', ws_url)
+    
+    # /ws 경로가 있다면 제거
+    http_url = re.sub(r'/ws/?$', '', http_url)
+    
+    return http_url
+
+def get_api_url(base_url: str, endpoint: str = '/api/v1/notify/queue') -> str:
+    """
+    Base URL에서 API URL 생성
+    
+    Args:
+        base_url: WebSocket 또는 HTTP base URL
+        endpoint: API 엔드포인트 경로
+        
+    Returns:
+        완전한 API URL
+    """
+    if base_url.startswith('ws'):
+        base_url = websocket_to_http_url(base_url)
+    
+    return f"{base_url.rstrip('/')}{endpoint}"
 
 class NotificationClient:
     """
@@ -126,6 +274,18 @@ class NotificationClient:
             return handler
         return decorator
     
+    def get_api_url(self, endpoint: str = '/api/v1/notify/queue') -> str:
+        """
+        WebSocket base URL에서 HTTP API URL 생성
+        
+        Args:
+            endpoint: API 엔드포인트 경로
+            
+        Returns:
+            완전한 API URL
+        """
+        return get_api_url(self.base_url, endpoint)
+
     def add_notification_handler(self, notification_type: str, handler: Callable):
         """
         알림 핸들러 직접 등록
@@ -323,10 +483,15 @@ class NotificationSender:
         알림 전송자 초기화
         
         Args:
-            base_url: API 서버 URL
+            base_url: API 서버 URL (HTTP 또는 WebSocket URL 모두 지원)
         """
-        self.base_url = base_url
-        self.api_url = f"{base_url}/api/v1/notify/queue"
+        # WebSocket URL인 경우 HTTP URL로 변환
+        if base_url.startswith('ws'):
+            self.base_url = websocket_to_http_url(base_url)
+        else:
+            self.base_url = base_url
+            
+        self.api_url = get_api_url(self.base_url)
         self.logger = logging.getLogger('NotificationSender')
     
     def send_notification(
@@ -593,3 +758,4 @@ if __name__ == '__main__':
         asyncio.run(main())
     except KeyboardInterrupt:
         print("\n👋 프로그램을 종료합니다.")
+
