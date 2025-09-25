@@ -1369,8 +1369,45 @@ python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
 - 조치
   - 문서 예시 수정: `docs/notification_system_usage_guide.md`, `docs/notification_system_testing_guide.md`의 kind를 허용값(`system`)으로 교정
   - 클라이언트 예시 수정: `client/live_notification_test.py` 내 출력 예시 kind를 `system`으로 교정
-  - 가이드에 “경고/오류 레벨은 severity로 표현” 명시
+  - 가이드에 "경고/오류 레벨은 severity로 표현" 명시
 - 관련 산출물
   - 테스트 가이드: `staging/notify_testing_guide.md`
   - 수동 테스트 페이지: `staging/tools/notify_ws_client.html`
   - 프록시/플래그: `/ws` 업그레이드(Nginx), `NOTIFY_ENABLE/NOTIFY_DISPATCH_ENABLE/NOTIFY_WS_ENABLE`
+
+### 2025-09-25 업데이트: 동적 URL 변환 및 클라이언트 문서화 완성
+- 배경: 클라이언트 사용 시 WebSocket URL과 HTTP API URL을 각각 설정해야 하는 불편함과 `Failed to fetch` 오류 해결 필요
+- 주요 개선사항
+  - **동적 URL 변환 기능 구현**: WebSocket URL 입력 시 HTTP API URL 자동 생성
+    - `ws://localhost` → `http://localhost/api/v1/notify/queue`
+    - `wss://example.com/ws` → `https://example.com/api/v1/notify/queue`
+  - **HTML 클라이언트 개선**: API 서버 불일치 및 enum 값 문제 해결
+    - 서버 URL 필드에서 WebSocket과 HTTP API URL 자동 변환
+    - 잘못된 kind 값(`warning`, `error`) → 올바른 enum 값(`system`) + severity 조합
+  - **종합적 문서화 및 주석 보강**
+    - Python/JavaScript/HTML 클라이언트 모두 상세한 사용법 주석 추가
+    - DB enum 기준 올바른 kind/severity 조합 가이드 제공
+    - 동적 URL 변환 기능 사용법 및 예제 추가
+- 구현 내용
+  - **Python 유틸리티 함수**: `websocket_to_http_url()`, `get_api_url()` 추가
+  - **JavaScript 유틸리티 함수**: `websocketToHttpUrl()`, `getApiUrl()` 추가
+  - **NotificationClient 확장**: `get_api_url()` 메서드 추가
+  - **NotificationSender 개선**: WebSocket URL 입력 지원
+  - **HTML 클라이언트 수정**: 동적 URL 변환, 올바른 enum 값 사용, AWS 서버 기본값 설정
+- 수정된 파일들
+  - `client/notification_client.py`: 유틸리티 함수 및 종합 문서화
+  - `client/notification_client.js`: 유틸리티 함수 및 상세 주석
+  - `client/notification_client.html`: 동적 URL 변환 및 enum 수정
+  - `client/live_notification_test.py`: 동적 URL 사용 및 핸들러 개선
+  - `client/README.md`: 주요 특징 및 enum 값 가이드 추가
+  - `staging/tools/notify_ws_client*.html`: AWS 서버 기본값 및 URL 변환 함수
+- 테스트 결과
+  - ✅ 동적 URL 변환 기능 정상 작동 (다양한 URL 패턴 테스트 완료)
+  - ✅ HTML 클라이언트 `Failed to fetch` 오류 해결
+  - ✅ 모든 클라이언트에서 올바른 enum 값 사용
+  - ✅ 실제 알림 송수신 테스트 성공
+- 사용자 경험 개선
+  - **단일 URL 설정**: WebSocket URL 하나만 입력하면 모든 기능 사용 가능
+  - **오류 방지**: DB enum에 맞는 정확한 값들만 사용하도록 가이드 제공
+  - **개발 편의성**: 로컬/스테이징/프로덕션 환경 간 URL 변경 시 한 곳만 수정
+  - **완전한 문서화**: 모든 클라이언트에 실제 사용 가능한 예제 코드 제공

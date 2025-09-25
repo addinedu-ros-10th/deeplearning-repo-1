@@ -122,3 +122,4 @@ if __name__ == '__main__':
         asyncio.run(working_test())
     except KeyboardInterrupt:
         print("\n👋 사용자에 의해 중단됨")
+

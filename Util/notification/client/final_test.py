@@ -140,3 +140,4 @@ if __name__ == '__main__':
         asyncio.run(final_test())
     except KeyboardInterrupt:
         print("\n👋 프로그램 종료")
+
