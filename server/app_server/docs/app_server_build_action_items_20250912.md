@@ -1481,3 +1481,38 @@ python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
   - **개발자 경험 개선**: 설정 변경 시 혼동 제거
   - **시스템 안정성**: 설정 충돌 위험 완전 제거
   - **프로젝트 정리**: 불필요한 파일 제거로 깔끔한 구조 확보
+
+### 2025-09-25 최종 업데이트: 운영서버 배포 준비 및 프로젝트 최종 정리 완료
+- 배경: 운영서버에서 404 오류 발생 및 Docker 볼륨 마운트 경로 문제 해결
+- 문제 진단
+  - **운영서버 404 오류**: `http://ec2-43-201-96-23.ap-northeast-2.compute.amazonaws.com/notification/client/notification_client.html`
+  - **원인 분석**: Docker Compose 설정에서 로컬 개발환경 절대경로 사용
+    - 설정된 경로: `/home/guehojung/Documents/Project/DEEP_LEARNING/deeplearning-repo-1/Util/notification`
+    - 운영서버 실제 경로: `/home/ubuntu/development/deeplearning-repo-1/`
+    - 결과: 경로 불일치로 볼륨 마운트 실패
+- 근본적 해결책 적용
+  - **절대경로 → 상대경로 변경**: `docker/compose.base.yml` 수정
+    - 기존: `/home/guehojung/.../Util/notification:/var/www/notification:ro`
+    - 변경: `../../../Util/notification:/var/www/notification:ro`
+  - **환경 독립성 확보**: 로컬/운영서버 동일 설정으로 배포 가능
+  - **로컬 테스트 완료**: 상대경로 적용 후 모든 기능 정상 작동 확인
+- 최종 프로젝트 정리
+  - **불필요한 파일 제거**: 
+    - `docker/nginx/nginx.conf.backup` 삭제 (중복 백업 파일)
+    - `server/Util/notification/` 빈 디렉토리 제거 (Docker 자동 생성 오류)
+  - **프로젝트 구조 최적화**: 깔끔한 디렉토리 구조 확보
+- 시스템 검증 결과 (2025-09-25 19:57)
+  - **Docker 컨테이너**: 3개 서비스 모두 healthy 상태 (nginx, api, redis)
+  - **HTML 클라이언트**: ✅ HTTP 200 OK 정상 응답
+  - **FastAPI Swagger**: ✅ HTTP 200 OK 정상 응답  
+  - **WebSocket 알림**: ✅ 정상 작동 확인
+  - **볼륨 마운트**: ✅ 상대경로로 정상 마운트 확인
+- 운영서버 배포 준비 완료
+  - **배포 방법**: Git pull 후 Docker Compose 재시작만으로 즉시 적용 가능
+  - **환경 독립성**: 로컬과 운영서버 동일한 설정 파일 사용
+  - **안정성 보장**: 모든 기능 로컬 테스트 완료
+- 프로젝트 현황 요약 (2025-09-25)
+  - **개발 완료**: WebSocket 기반 실시간 알림 시스템 완전 구현
+  - **배포 준비**: 운영서버 배포 가능 상태 달성
+  - **문서화 완료**: 개발/사용/테스트 가이드 완비
+  - **프로젝트 정리**: 불필요한 파일 완전 제거 및 구조 최적화
