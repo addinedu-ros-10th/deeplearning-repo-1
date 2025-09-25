@@ -1,0 +1,21 @@
+services:
+  vllm:
+    image: vllm/vllm-openai:latest
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+      - VLLM_MODEL=${VLLM_MODEL:-microsoft/Phi-3-mini-4k-instruct}
+    command: ["--model", "${VLLM_MODEL}", "--device", "cpu", "--port", "8001"]
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./models:/models
+  voice-api:
+    build:
+      context: ../..
+      dockerfile: ./AI/VLLM/voice_interface/docker/voice.Dockerfile
+    environment:
+      - VLLM_BASE_URL=http://vllm:8001/v1
+    depends_on:
+      - vllm
+    ports:
+      - "8010:8010"
