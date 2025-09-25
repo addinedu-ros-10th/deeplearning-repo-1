@@ -1411,3 +1411,49 @@ python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
   - **오류 방지**: DB enum에 맞는 정확한 값들만 사용하도록 가이드 제공
   - **개발 편의성**: 로컬/스테이징/프로덕션 환경 간 URL 변경 시 한 곳만 수정
   - **완전한 문서화**: 모든 클라이언트에 실제 사용 가능한 예제 코드 제공
+
+### 2025-09-25 업데이트: Nginx 웹서버 호스팅 및 프로젝트 구조 최적화 완성
+- 배경: 클라이언트 파일들을 브라우저에서 직접 접근할 수 있도록 Nginx 웹서버 호스팅 필요성 및 프로젝트 구조 개선
+- 주요 개선사항
+  - **Nginx 정적 파일 서빙 구현**: `/notification/` 경로를 통한 클라이언트 파일 호스팅
+    - `http://localhost/notification/client/notification_client.html` 접근 가능
+    - `http://localhost/notification/tools/notify_ws_client.html` 등 모든 도구 웹 접근
+  - **Docker Compose 통합**: Nginx 컨테이너에 notification 파일 볼륨 마운트
+    - `Util/notification:/var/www/notification:ro` 마운트 설정
+    - 캐싱, 압축, 보안 헤더 최적화 적용
+  - **프로젝트 구조 재편성**: 알림 관련 모든 도구를 `Util/notification`으로 통합
+    - `server/app_server/client/` → `Util/notification/client/`
+    - `server/app_server/staging/tools/` → `Util/notification/tools/`
+    - 논리적 구조화 및 사용자 접근성 향상
+- 구현 내용
+  - **Nginx 설정 확장**:
+    ```nginx
+    location /notification/ {
+        alias /var/www/notification/;
+        try_files $uri $uri/ =404;
+        # 캐싱, 보안 헤더, 압축 설정 포함
+    }
+    ```
+  - **Docker Compose 설정 최적화**:
+    - `compose.base.yml`: notification 볼륨 마운트 추가
+    - `compose.local.yml`: 중복 설정 제거, 깔끔한 구조화
+  - **종합 문서화**: `Util/notification/README.md` 신규 작성
+    - 디렉토리 구조 설명, 사용법 가이드, 테스트 방법 상세화
+    - 동적 URL 변환, enum 값 가이드, 고급 설정 포함
+- 수정된 파일들
+  - `docker/compose.base.yml`: notification 볼륨 마운트 추가
+  - `docker/compose.local.yml`: nginx.conf 마운트 제거 (충돌 해결)
+  - `nginx/nginx.conf`: `/notification/` location 블록 추가
+  - `docker/nginx/nginx.conf`: 기존 설정과 통합
+  - `Util/notification/README.md`: 종합 사용 가이드 신규 작성
+- 테스트 결과
+  - ✅ Nginx 정적 파일 서빙 정상 작동 (HTTP 200 OK 응답)
+  - ✅ 모든 클라이언트 파일 웹 접근 가능
+  - ✅ 캐싱, 압축, 보안 헤더 정상 적용
+  - ✅ Docker 컨테이너 재빌드 및 볼륨 마운트 성공
+- 운영 효과
+  - **웹 기반 접근**: 별도 다운로드 없이 브라우저에서 바로 테스트 가능
+  - **통합 관리**: 모든 알림 도구가 한 곳에 집중되어 관리 효율성 향상
+  - **성능 최적화**: Nginx의 고성능 정적 파일 서빙 활용
+  - **보안 강화**: XSS 보호, Content-Type 보호 등 보안 헤더 적용
+  - **개발 편의성**: 로컬 개발 시 즉시 웹에서 테스트 가능
