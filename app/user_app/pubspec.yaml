@@ -64,10 +64,9 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # Optional .env assets can be added later if not using dart-define only
-  # assets:
-  #   - assets/env/.env.dev
-  #   - assets/env/.env.prod
+  assets:
+    - assets/env/.env.dev
+    - assets/env/.env.prod
 
   # To add assets to your application, add an assets section, like this:
   # assets:
