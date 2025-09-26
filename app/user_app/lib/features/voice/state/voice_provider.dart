@@ -19,7 +19,7 @@ class VoiceProvider extends ChangeNotifier {
 
   StreamSubscription<double>? _levelSub;
   StreamSubscription<String>? _transcriptSub;
-  final SpeechRecognizer _recognizer = _createRecognizer();
+  final SpeechRecognizer _recognizer = createSpeechRecognizer();
 
   bool get isListening => _isListening;
   bool get isSpeaking => _isSpeaking;
@@ -95,15 +95,6 @@ class VoiceProvider extends ChangeNotifier {
   }
 }
 
-SpeechRecognizer _createRecognizer() {
-  try {
-    // On web, this returns WebSpeechRecognizer due to conditional export
-    // On non-web, StubSpeechRecognizer
-    // ignore: prefer_const_constructors
-    return (WebSpeechRecognizer as dynamic?) != null ? WebSpeechRecognizer() as SpeechRecognizer : StubSpeechRecognizer();
-  } catch (_) {
-    return StubSpeechRecognizer();
-  }
-}
+// factory moved to speech_recognizer.dart
 
 
