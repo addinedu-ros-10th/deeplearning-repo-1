@@ -1,12 +1,6 @@
 import 'dart:async';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-
-abstract class SpeechRecognizer {
-  Stream<double> get levelStream;
-  Stream<String> get transcriptStream;
-  Future<void> start();
-  Future<void> stop();
-}
+import 'speech_recognizer.dart';
 
 class SttSpeechRecognizer implements SpeechRecognizer {
   SttSpeechRecognizer() {
@@ -41,8 +35,10 @@ class SttSpeechRecognizer implements SpeechRecognizer {
         final String text = result.recognizedWords;
         if (text.isNotEmpty) _transcriptController.add(text);
       },
-      listenMode: stt.ListenMode.dictation,
-      partialResults: true,
+      listenOptions: const stt.SpeechListenOptions(
+        listenMode: stt.ListenMode.dictation,
+        partialResults: true,
+      ),
       onSoundLevelChange: (double level) {
         final double normalized = (level / 30.0).clamp(0.0, 1.0);
         _levelController.add(normalized);

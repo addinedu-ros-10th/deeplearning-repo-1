@@ -1,11 +1,5 @@
 import 'dart:async';
-
-abstract class SpeechRecognizer {
-  Stream<double> get levelStream;
-  Stream<String> get transcriptStream;
-  Future<void> start();
-  Future<void> stop();
-}
+import 'speech_recognizer.dart';
 
 class StubSpeechRecognizer implements SpeechRecognizer {
   @override
