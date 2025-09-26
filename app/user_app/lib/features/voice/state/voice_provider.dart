@@ -18,6 +18,7 @@ class VoiceProvider extends ChangeNotifier {
   final OpenAiService _ai = OpenAiService();
 
   StreamSubscription<double>? _levelSub;
+  StreamSubscription<String>? _transcriptSub;
   final SpeechRecognizer _recognizer = _createRecognizer();
 
   bool get isListening => _isListening;
@@ -43,6 +44,11 @@ class VoiceProvider extends ChangeNotifier {
       _volumeLevel = level.clamp(0.0, 1.0);
       notifyListeners();
     });
+    _transcriptSub?.cancel();
+    _transcriptSub = _recognizer.transcriptStream.listen((String text) {
+      _transcript = text;
+      notifyListeners();
+    });
   }
 
   Future<void> stopListening() async {
@@ -51,6 +57,8 @@ class VoiceProvider extends ChangeNotifier {
     await _recognizer.stop();
     await _levelSub?.cancel();
     _levelSub = null;
+    await _transcriptSub?.cancel();
+    _transcriptSub = null;
     _volumeLevel = 0.0;
     notifyListeners();
 

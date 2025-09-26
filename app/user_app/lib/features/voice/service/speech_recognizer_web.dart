@@ -4,6 +4,7 @@ import 'dart:html' as html;
 
 abstract class SpeechRecognizer {
   Stream<double> get levelStream;
+  Stream<String> get transcriptStream;
   Future<void> start();
   Future<void> stop();
 }
@@ -14,10 +15,13 @@ class WebSpeechRecognizer implements SpeechRecognizer {
   }
 
   late final StreamController<double> _controller;
+  late final StreamController<String> _transcriptController;
   html.SpeechRecognition? _rec;
 
   @override
   Stream<double> get levelStream => _controller.stream;
+  @override
+  Stream<String> get transcriptStream => _transcriptController.stream;
 
   @override
   Future<void> start() async {
@@ -31,8 +35,21 @@ class WebSpeechRecognizer implements SpeechRecognizer {
     _rec!.continuous = true;
     _rec!.interimResults = true;
 
+    _transcriptController = StreamController<String>.broadcast();
+
     _rec!.onresult.listen((html.SpeechRecognitionEvent e) {
-      // No actual audio level from API; emit pseudo level during recognition
+      // Aggregate best transcript from results
+      final List<html.SpeechRecognitionResult> results = e.results;
+      if (results.isEmpty) return;
+      final html.SpeechRecognitionResult last = results.last;
+      if (last.isFinal ?? false) {
+        final String text = last.first.transcript ?? '';
+        _transcriptController.add(text);
+      } else {
+        final String text = last.first.transcript ?? '';
+        if (text.isNotEmpty) _transcriptController.add(text);
+      }
+      // pseudo level during recognition
       _controller.add(0.6);
     });
     _rec!.onstart.listen((_) => _controller.add(0.5));
