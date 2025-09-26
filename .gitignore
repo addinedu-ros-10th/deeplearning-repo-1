@@ -409,3 +409,43 @@ AI/VLLM/voice_interface/.env
 AI/VLLM/voice_interface/.env.local
 AI/VLLM/voice_interface/.env.prod
 AI/VLLM/voice_interface/**/*.wav
+
+# =============================================================================
+# Flutter user_app ignores
+# =============================================================================
+app/user_app/.dart_tool/
+app/user_app/.packages
+app/user_app/build/
+app/user_app/coverage/
+app/user_app/.flutter-plugins
+app/user_app/.flutter-plugins-dependencies
+app/user_app/.gradle/
+app/user_app/.idea/
+app/user_app/.vscode/
+
+# Android
+app/user_app/android/.gradle/
+app/user_app/android/captures/
+app/user_app/android/local.properties
+app/user_app/android/key.properties
+app/user_app/android/app/*.keystore
+app/user_app/android/app/*.jks
+
+# iOS
+app/user_app/ios/Flutter/.last_build_id
+app/user_app/ios/Flutter/ephemeral/
+app/user_app/ios/.symlinks/
+app/user_app/ios/.generated/
+app/user_app/ios/Pods/
+
+# macOS
+app/user_app/macos/Flutter/ephemeral/
+app/user_app/macos/Pods/
+
+# Windows/Linux generated
+app/user_app/windows/flutter/ephemeral/
+app/user_app/linux/flutter/ephemeral/
+
+# Env files
+app/user_app/assets/env/.env*
+app/user_app/.env*
