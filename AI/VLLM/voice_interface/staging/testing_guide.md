@@ -5,12 +5,25 @@
 - 실행:
 ```
 docker compose -f docker/compose.yml up -d --build
-curl http://localhost:8010/health  # {"ok": true}
+curl http://localhost:8010/health  # {"ok": true, "use_openai": false}
 ```
-- 환경변수(선택):
+- OpenAI 대체 모드(서버 vLLM 미구축 시):
 ```
-export VLLM_MODEL="microsoft/Phi-3-mini-4k-instruct"
+export USE_OPENAI=true
+export OPENAI_API_KEY=sk-...   # 필수
+export OPENAI_MODEL=gpt-4o-mini
+export OPENAI_BASE_URL=https://api.openai.com/v1
 ```
+- vLLM 모드로 복귀:
+```
+unset USE_OPENAI OPENAI_API_KEY OPENAI_MODEL OPENAI_BASE_URL
+```
+
+---
+
+## STT 동작(현재)
+- 서버측 STT: 클라이언트가 오디오 파일(예: WAV)을 업로드하면 서버가 faster-whisper(CPU)로 전사
+- 클라이언트측 STT(향후): Flutter에서 mic 캡처→로컬 STT 또는 서버 스트리밍(STT)으로 대체 가능
 
 ---
 

@@ -8,11 +8,15 @@ from .tts_synth import synth_text_to_wav_bytes
 
 app = FastAPI(title="Voice API", version="0.1.0")
 VLLM_BASE_URL = os.getenv("VLLM_BASE_URL", "http://localhost:8001/v1")
+USE_OPENAI = os.getenv("USE_OPENAI", "false").lower() == "true"
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 
 @app.get("/health")
 async def health():
-    return {"ok": True}
+    return {"ok": True, "use_openai": USE_OPENAI}
 
 
 @app.post("/voice/stt")
@@ -26,14 +30,27 @@ async def stt(file: UploadFile):
 
 @app.post("/voice/llm")
 async def llm(prompt: dict):
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        resp = await client.post(f"{VLLM_BASE_URL}/chat/completions", json={
-            "model": "cpu-small",
-            "messages": prompt.get("messages", []),
-            "max_tokens": prompt.get("max_tokens", 256),
-            "temperature": prompt.get("temperature", 0.2),
-        })
-        return JSONResponse(status_code=resp.status_code, content=resp.json())
+    if USE_OPENAI:
+        if not OPENAI_API_KEY:
+            raise HTTPException(status_code=400, detail="OPENAI_API_KEY required when USE_OPENAI=true")
+        headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(f"{OPENAI_BASE_URL}/chat/completions", headers=headers, json={
+                "model": OPENAI_MODEL,
+                "messages": prompt.get("messages", []),
+                "max_tokens": prompt.get("max_tokens", 256),
+                "temperature": prompt.get("temperature", 0.2),
+            })
+            return JSONResponse(status_code=resp.status_code, content=resp.json())
+    else:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(f"{VLLM_BASE_URL}/chat/completions", json={
+                "model": "cpu-small",
+                "messages": prompt.get("messages", []),
+                "max_tokens": prompt.get("max_tokens", 256),
+                "temperature": prompt.get("temperature", 0.2),
+            })
+            return JSONResponse(status_code=resp.status_code, content=resp.json())
 
 
 @app.post("/voice/tts")
@@ -51,15 +68,27 @@ async def assistant(file: UploadFile):
     if not data:
         raise HTTPException(status_code=400, detail="empty file")
     text, dur = transcribe_file(data)
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        resp = await client.post(f"{VLLM_BASE_URL}/chat/completions", json={
-            "model": "cpu-small",
-            "messages": [{"role":"user","content": text}],
-            "max_tokens": 256,
-            "temperature": 0.2,
-        })
-        data_llm = resp.json()
-    # extract assistant text safely
+    if USE_OPENAI:
+        if not OPENAI_API_KEY:
+            raise HTTPException(status_code=400, detail="OPENAI_API_KEY required when USE_OPENAI=true")
+        headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(f"{OPENAI_BASE_URL}/chat/completions", headers=headers, json={
+                "model": OPENAI_MODEL,
+                "messages": [{"role": "user", "content": text}],
+                "max_tokens": 256,
+                "temperature": 0.2,
+            })
+            data_llm = resp.json()
+    else:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(f"{VLLM_BASE_URL}/chat/completions", json={
+                "model": "cpu-small",
+                "messages": [{"role":"user","content": text}],
+                "max_tokens": 256,
+                "temperature": 0.2,
+            })
+            data_llm = resp.json()
     content = None
     try:
         content = data_llm.get("choices", [{}])[0].get("message", {}).get("content", "")

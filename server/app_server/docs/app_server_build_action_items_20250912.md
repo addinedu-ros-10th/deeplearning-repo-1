@@ -1375,6 +1375,66 @@ python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
   - 수동 테스트 페이지: `staging/tools/notify_ws_client.html`
   - 프록시/플래그: `/ws` 업그레이드(Nginx), `NOTIFY_ENABLE/NOTIFY_DISPATCH_ENABLE/NOTIFY_WS_ENABLE`
 
+---
+
+## 2025-09-24 에드온: Voice Interface(vLLM+FastAPI) 스캐폴딩 현황
+
+### 개요
+- 목적: 노트북급 CPU 환경에서도 동작 가능한 음성 인터페이스(STT→LLM→TTS)를 경량 구성
+- 구성: vLLM(OpenAI 호환) 서버 + FastAPI 음성 API(REST/WS)
+
+### 리포 경로 & 구조
+- `AI/VLLM/voice_interface/`
+  - `docker/compose.yml`: vLLM(8001, CPU) + voice-api(8010)
+  - `docker/voice.Dockerfile`: voice-api 컨테이너
+  - `requirements.txt`: fastapi/httpx/websockets + faster-whisper 등
+  - `src/app.py`: REST/WS 스텁, vLLM 연동(`/chat/completions`)
+  - `src/stt_transcriber.py`: faster-whisper CPU 전사
+  - `README.md`: 사용 요약
+  - `staging/build_plan.md`: 구축 전략·체크리스트(Phase 진행)
+  - `scripts/run_vllm.sh`: vLLM 실행 헬퍼(cpu)
+
+### 현재 상태(스캐폴딩)
+- vLLM: CPU 모드, 기본 모델 `microsoft/Phi-3-mini-4k-instruct` (env로 교체 가능)
+- voice-api: `/voice/stt`, `/voice/llm`, `/voice/tts(Stub)`, `/voice/assistant`, `WS /voice/stream`
+- STT: faster-whisper(base,int8) 파일 전사 연동
+- LLM: vLLM OpenAI 호환 `/chat/completions` 연동
+- TTS: Stub(후속 XTTS v2 CPU)
+
+### 사용법(로컬)
+```bash
+cd AI/VLLM/voice_interface
+# 모델 변경(선택): export VLLM_MODEL="meta-llama/Meta-Llama-3-8B-Instruct-AWQ"
+docker compose -f docker/compose.yml up -d --build
+curl http://localhost:8010/health
+
+# STT 예시
+curl -F file=@sample.wav http://localhost:8010/voice/stt
+
+# LLM 예시
+curl -X POST http://localhost:8010/voice/llm \
+  -H 'Content-Type: application/json' \
+  -d '{"messages":[{"role":"user","content":"안녕"}]}'
+```
+
+### 환경 변수
+- `VLLM_MODEL`: vLLM 서버 모델명(기본 Phi-3-mini-4k-instruct)
+- `VLLM_BASE_URL`: voice-api가 사용할 OpenAI 호환 엔드포인트(기본 `http://vllm:8001/v1`)
+- `STT_MODEL`: faster-whisper 모델 크기(기본 `base`)
+
+### CPU 기준
+- 인텔 코어 울트라5(메테오레이크)/LPDDR5x 16GB/내장 Arc 기준으로 CPU 우선 구성
+- vLLM `--device cpu` + 작은 모델(AWQ/INT4 권장)로 시작 후, 자원 여유 시 상향
+
+### server/app_server WebSocket 재사용 방안
+- 상위 Nginx에서 `/voice/*` → voice-api로 프록시(기존 `/ws` 업그레이드 규칙 재사용)
+- 단일 게이트웨이로 인증/리밋팅을 일원화
+
+### 다음 단계(Phase)
+- Phase 1(진행): REST MVP 완성(TTS CPU/캐시, 응답 포맷 정리)
+- Phase 2: WS 스트리밍(부분 전사/LLM 토큰/TTS chunk)
+- Phase 3: 품질/가시성(지연/품질 로그, 메트릭)
+
 ### 2025-09-25 업데이트: 동적 URL 변환 및 클라이언트 문서화 완성
 - 배경: 클라이언트 사용 시 WebSocket URL과 HTTP API URL을 각각 설정해야 하는 불편함과 `Failed to fetch` 오류 해결 필요
 - 주요 개선사항

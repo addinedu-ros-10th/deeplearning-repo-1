@@ -127,3 +127,27 @@ pytest AI/VLLM/voice_interface/tests/test_api.py -q
 - XTTS v2 CPU 통합/캐시 → 오디오 품질 개선
 - WS 스트리밍 초안 구현 및 테스트(부분 전사/토큰/TTS chunk)
 - server/app_server Nginx 프록시 연동 가이드 추가
+
+## 13) 서비스 파이프라인(Flow)
+```
+[Client Mic] --(audio)--> [Voice API]
+    STT: faster-whisper(CPU)
+      -> text
+    LLM:
+      - if USE_OPENAI=true: OpenAI Chat Completions
+      - else: vLLM /chat/completions
+      -> assistant text
+    TTS: placeholder(WAV) (→ XTTS v2 예정)
+      -> audio/wav
+[Client] ←(audio/wav)-- [Voice API]
+```
+
+## 14) OpenAI 대체 모드
+- vLLM 서버 미구축 시 서버 측에서 OpenAI API로 대체 가능
+- env:
+```
+USE_OPENAI=true
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_BASE_URL=https://api.openai.com/v1
+```
