@@ -3,12 +3,12 @@ services:
     image: vllm/vllm-openai:latest
     environment:
       - HF_HOME=/root/.cache/huggingface
-      - VLLM_MODEL=${VLLM_MODEL:-microsoft/Phi-3-mini-4k-instruct}
-    command: ["--model", "${VLLM_MODEL}", "--device", "cpu", "--port", "8001"]
+      - VLLM_MODEL=${VLLM_MODEL:-/models/qwen2.5-3b-instruct}
+    command: ["--model", "${VLLM_MODEL}", "--device", "cpu", "--port", "8001", "--max-model-len", "2048"]
     ports:
       - "8001:8001"
     volumes:
-      - ./models:/models
+      - ./models:/models:ro
   voice-api:
     build:
       context: ../..

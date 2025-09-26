@@ -394,18 +394,45 @@ server/app_server/.env.staging
 **/marimo/_lsp/
 **/__marimo__/
 
-# Voice Interface project ignores
+# =============================================================================
+# AI/VLLM Voice Interface - Large Model Files & Runtime Data
+# =============================================================================
+
+# Large Language Models (prevent accidental commits of multi-GB files)
 AI/VLLM/voice_interface/models/
-AI/VLLM/voice_interface/.venv/
+AI/VLLM/voice_interface/models/**/*
+AI/VLLM/voice_interface/checkpoints/
+AI/VLLM/voice_interface/cache/
 AI/VLLM/voice_interface/.cache/
+
+# Audio files (STT/TTS data)
+AI/VLLM/voice_interface/**/*.wav
+AI/VLLM/voice_interface/**/*.mp3
+AI/VLLM/voice_interface/**/*.flac
+AI/VLLM/voice_interface/**/*.ogg
+AI/VLLM/voice_interface/audio_data/
+AI/VLLM/voice_interface/recordings/
+
+# Python runtime & development files
+AI/VLLM/voice_interface/.venv/
 AI/VLLM/voice_interface/__pycache__/
 AI/VLLM/voice_interface/**/*.pyc
 AI/VLLM/voice_interface/.pytest_cache/
 AI/VLLM/voice_interface/.ipynb_checkpoints/
+
+# Logs and temporary files
 AI/VLLM/voice_interface/logs/
 AI/VLLM/voice_interface/tmp/
-AI/VLLM/voice_interface/.DS_Store
+AI/VLLM/voice_interface/temp/
+AI/VLLM/voice_interface/**/*.log
+
+# Environment and configuration
 AI/VLLM/voice_interface/.env
 AI/VLLM/voice_interface/.env.local
 AI/VLLM/voice_interface/.env.prod
-AI/VLLM/voice_interface/**/*.wav
+AI/VLLM/voice_interface/.DS_Store
+
+# HuggingFace cache and downloads
+AI/VLLM/voice_interface/.huggingface/
+AI/VLLM/voice_interface/hub/
+AI/VLLM/voice_interface/transformers_cache/
