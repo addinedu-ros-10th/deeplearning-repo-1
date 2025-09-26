@@ -82,6 +82,7 @@ app/user_app/assets/env/.env*
   - 완료: Web STT 통합(speech_to_text) + 전사/레벨 스트림 바인딩
   - 완료: 파형 폴백 애니메이션(레벨 미제공 시) 및 TTS 중 파형 표시
   - 완료: 보이스 선택/속도/피치 옵션 UI 추가
+  - 완료: dotenv NotInitializedError 회피 (maybeGet 사용, tolerant load)
 
 ## 테스트 가이드 (요약)
 - OpenAI 토큰 없이: UI 구동/파형 확인용. “Listen” 클릭 시 랜덤 레벨 파형 확인, “Ask + Speak”는 안내 문구 또는 빈 응답 처리
