@@ -22,7 +22,8 @@
   - `src/tts_synth.py`: TTS placeholder(WAV 바이트 생성)
   - `README.md`: 사용 요약
   - `staging/build_plan.md`: 구축 전략·체크리스트(Phase 진행)
-  - `staging/development_management.md`: 본 문서
+  - `staging/development_management.md`: 본 문서(본 파일)
+  - `staging/testing_guide.md`: 단계별 테스트 가이드
   - `scripts/run_vllm.sh`: vLLM 실행 헬퍼(cpu)
 
 ## 4) Docker Compose 서비스
@@ -87,9 +88,42 @@ curl http://localhost:8010/health
 
 ## 11) 진행 로그(요약)
 - 2025-09-24: 스캐폴딩 생성, vLLM CPU 구성, STT 연동, 문서/체크리스트 작성
-- 2025-09-24: TTS placeholder 통합, /voice/assistant에서 WAV 반환
+- 2025-09-24: TTS placeholder 통합, /voice/assistant에서 WAV 반환, API 테스트 추가
 
-## 12) 다음 단계
-- XTTS v2 CPU 통합 및 캐시 → 음질 개선
-- WS 스트리밍 초안(부분 전사/토큰/TTS chunk)
-- 서버 게이트웨이 프록시 연동 및 인증/리밋팅
+## 12) 핸드오버/재개 가이드(다른 머신)
+1) 종속성
+- Docker, Docker Compose 설치
+- 포트 가용성: 8001(vLLM), 8010(voice-api)
+
+2) 코드 체크아웃
+```bash
+git clone <repo>
+cd AI/VLLM/voice_interface
+```
+
+3) 모델/환경 설정
+```bash
+export VLLM_MODEL="microsoft/Phi-3-mini-4k-instruct"  # 또는 원하는 모델
+```
+
+4) 기동/헬스
+```bash
+docker compose -f docker/compose.yml up -d --build
+curl http://localhost:8010/health
+```
+
+5) 기능 점검(수동)
+- STT: `/voice/stt`(파일 업로드)
+- LLM: `/voice/llm`(메시지 요청)
+- TTS: `/voice/tts`(WAV 저장/재생)
+- Assistant: `/voice/assistant`(WAV 저장/재생)
+
+6) 테스트 (로컬)
+```bash
+pytest AI/VLLM/voice_interface/tests/test_api.py -q
+```
+
+7) 다음 작업
+- XTTS v2 CPU 통합/캐시 → 오디오 품질 개선
+- WS 스트리밍 초안 구현 및 테스트(부분 전사/토큰/TTS chunk)
+- server/app_server Nginx 프록시 연동 가이드 추가
