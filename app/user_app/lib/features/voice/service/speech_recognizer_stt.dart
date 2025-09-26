@@ -24,21 +24,22 @@ class SttSpeechRecognizer implements SpeechRecognizer {
       if (status == 'notListening') {
         _levelController.add(0.0);
       }
-    }, onError: (stt.SpeechRecognitionError e) {
+    }, onError: (dynamic e) {
       _levelController.add(0.0);
     });
     if (!available) return;
 
     await _stt.listen(
       localeId: 'ko_KR',
-      onResult: (stt.SpeechRecognitionResult result) {
-        final String text = result.recognizedWords;
-        if (text.isNotEmpty) _transcriptController.add(text);
+      onResult: (dynamic result) {
+        try {
+          final String text = result.recognizedWords as String;
+          if (text.isNotEmpty) _transcriptController.add(text);
+        } catch (_) {}
       },
-      listenOptions: const stt.SpeechListenOptions(
-        listenMode: stt.ListenMode.dictation,
-        partialResults: true,
-      ),
+      // Use deprecated fields for broader compatibility across platforms
+      listenMode: stt.ListenMode.dictation,
+      partialResults: true,
       onSoundLevelChange: (double level) {
         final double normalized = (level / 30.0).clamp(0.0, 1.0);
         _levelController.add(normalized);

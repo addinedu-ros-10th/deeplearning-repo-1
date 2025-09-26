@@ -449,3 +449,7 @@ app/user_app/linux/flutter/ephemeral/
 # Env files
 app/user_app/assets/env/.env*
 app/user_app/.env*
+
+# Do not ignore Flutter source directory under user_app
+!app/user_app/lib/
+!app/user_app/lib/**
