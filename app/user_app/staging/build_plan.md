@@ -9,8 +9,9 @@
 - [x] HTTP/WS 클라이언트 유틸 추가
 - [x] Provider 상태(녹음, 전사 텍스트, 응답 오디오) 초안
 - [x] 파형 UI(흑/회색 CustomPainter) 초안
-- [ ] .env.dev/.env.prod 추가 및 dart-define 연계
+ - [x] .env.dev/.env.prod 추가 및 dart-define 연계
 - [ ] 네트워크: STT/Assistant 호출 및 오디오 재생
+  - [x] Assistant(OpenAI) 호출 및 TTS 재생
 - [ ] WS 초안 연결(향후)
 - [ ] 문서/테스트 가이드
 
@@ -77,6 +78,10 @@ app/user_app/assets/env/.env*
   - 완료: 파형 UI 구현 및 렌더링 이슈 수정(CustomPaint child 덮어쓰임 제거)
   - 완료: 문서에 실행/트러블슈팅/환경변수 전략 추가
   - 보류: `.env.dev/.env.prod` 파일 생성(보안상 수동 생성 권장). 현재는 `dart-define` 우선 사용
+ - 완료: `.env.dev/.env.prod` 플레이스홀더 생성 및 assets 등록, `flutter pub get` 반영
+  - 완료: Web STT 통합(speech_to_text) + 전사/레벨 스트림 바인딩
+  - 완료: 파형 폴백 애니메이션(레벨 미제공 시) 및 TTS 중 파형 표시
+  - 완료: 보이스 선택/속도/피치 옵션 UI 추가
 
 ## 테스트 가이드 (요약)
 - OpenAI 토큰 없이: UI 구동/파형 확인용. “Listen” 클릭 시 랜덤 레벨 파형 확인, “Ask + Speak”는 안내 문구 또는 빈 응답 처리
