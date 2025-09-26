@@ -36,7 +36,7 @@ url = "http://100.65.221.86:3010/receiver?camera_id=cam4"
 
 # cap = cv2.VideoCapture(0)
 # cap = cv2.VideoCapture("http://100.65.221.86:3010/receiver?camera_id=cam4")
-cap = cv2.VideoCapture(url)
+cap = cv2.VideoCapture(2)
 # cap = cv2.VideoCapture("/home/dj/dev_ws/EDA/data/LSTM_test/test/test.mp4")
 """0번: 노트북 카메라, 1번~: 기타 카메라. 카메라 포트 확인 시에는 터미널에 "ls -l /dev/video*" 커맨드를 입력하여 확인. """
 
@@ -161,12 +161,12 @@ while cap.isOpened():
         index_number += 1
         print(len(items))
 
-    if len(items) == 60:
-        items_dict = {"items": items}
-        print(f"items_dict: {items_dict}")
-        status, body = client.post("/frame-predictions/batch", json = items_dict)
-        print(status, body)
-        items = []
+    # if len(items) == 60:
+    #     items_dict = {"items": items}
+    #     print(f"items_dict: {items_dict}")
+    #     status, body = client.post("/frame-predictions/batch", json = items_dict)
+    #     print(status, body)
+    #     items = []
         # index_number = 0
 
     if yolo_activate_switch == True:
