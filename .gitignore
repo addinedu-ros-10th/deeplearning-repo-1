@@ -393,3 +393,19 @@ server/app_server/.env.staging
 **/marimo/_static/
 **/marimo/_lsp/
 **/__marimo__/
+
+# Voice Interface project ignores
+AI/VLLM/voice_interface/models/
+AI/VLLM/voice_interface/.venv/
+AI/VLLM/voice_interface/.cache/
+AI/VLLM/voice_interface/__pycache__/
+AI/VLLM/voice_interface/**/*.pyc
+AI/VLLM/voice_interface/.pytest_cache/
+AI/VLLM/voice_interface/.ipynb_checkpoints/
+AI/VLLM/voice_interface/logs/
+AI/VLLM/voice_interface/tmp/
+AI/VLLM/voice_interface/.DS_Store
+AI/VLLM/voice_interface/.env
+AI/VLLM/voice_interface/.env.local
+AI/VLLM/voice_interface/.env.prod
+AI/VLLM/voice_interface/**/*.wav
