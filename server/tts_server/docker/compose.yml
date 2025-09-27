@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  tts-backend:
+    image: rhasspy/wyoming-piper:latest
+    command: ["--voice", "ko_KR-pml_high"]
+    ports:
+      - "5002:5002"
+
+  tts-server:
+    build:
+      context: ..
+      dockerfile: docker/tts.Dockerfile
+    environment:
+      - APP_ENV=dev
+      - TTS_BACKEND=piper
+      - TTS_BASE_URL=http://tts-backend:5002
+      - TTS_DEFAULT_VOICE=ko_KR-pml_high
+      - API_PORT=5502
+    ports:
+      - "5502:5502"
+    depends_on:
+      - tts-backend
+
+
