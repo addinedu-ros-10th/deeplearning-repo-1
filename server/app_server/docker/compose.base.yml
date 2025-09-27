@@ -115,6 +115,11 @@ x-env: &env
     - RUFF_LINE_LENGTH=${RUFF_LINE_LENGTH}
     - MYPY_STRICT=${MYPY_STRICT}
 
+    # Notify feature flags
+    - NOTIFY_ENABLE=${NOTIFY_ENABLE}
+    - NOTIFY_DISPATCH_ENABLE=${NOTIFY_DISPATCH_ENABLE}
+    - NOTIFY_WS_ENABLE=${NOTIFY_WS_ENABLE}
+
 services:
   api:
     build:
@@ -162,6 +167,7 @@ services:
         condition: service_healthy
     volumes:
       - ../static:/var/www/static:ro
+      - ../../../Util/notification:/var/www/notification:ro  # Notification client files
     ports:
       - "80:80"
       - "443:443"

@@ -90,11 +90,21 @@ def create_app() -> FastAPI:
     from app.adapters.http.experiment_router import router as experiment_router
     from app.adapters.http.frame_prediction_router import router as frame_prediction_router
     from app.adapters.http.detection_event_router import router as detection_event_router
+    from app.adapters.http.notify_message_router import router as notify_message_router
+    from app.adapters.http.notify_delivery_router import router as notify_delivery_router
+    from app.adapters.http.notify_device_router import router as notify_device_router
+    from app.adapters.http.notify_queue_router import router as notify_queue_router
+    from app.adapters.http.ws_router import router as ws_router
     
     app.include_router(dataset_router)
     app.include_router(experiment_router)
     app.include_router(frame_prediction_router)
     app.include_router(detection_event_router)
+    app.include_router(notify_message_router)
+    app.include_router(notify_delivery_router)
+    app.include_router(notify_device_router)
+    app.include_router(notify_queue_router)
+    app.include_router(ws_router)
     
     # 데이터베이스 초기화 이벤트 핸들러
     @app.on_event("startup")
@@ -113,7 +123,13 @@ def create_app() -> FastAPI:
 
     # SQLAdmin 관리자 패널 설정
     _setup_admin_panel(app)
-    
+    # Notify dispatcher startup (feature-flagged)
+    @app.on_event("startup")
+    async def _start_notify_dispatcher():
+        import asyncio
+        from app.services.notify_dispatcher import dispatcher_loop
+        asyncio.create_task(dispatcher_loop())
+
     # 추가 API 엔드포인트 설정 (한 번만 실행)
     if not hasattr(app, '_endpoints_configured'):
         _setup_additional_endpoints(app)

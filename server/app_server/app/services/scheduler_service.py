@@ -95,6 +95,7 @@ class SchedulerService:
         try:
             # 환경변수에서 DB 연결 정보 파싱
             conn_params = get_db_connection_params('DB_APP_URL')
+            logger.info(f"[SCHED] Loading jobs with conn_params host={conn_params.get('host')} port={conn_params.get('port')} db={conn_params.get('database')} user={'***' if conn_params.get('user') else None}")
             conn = await asyncpg.connect(**conn_params)
             
             # 활성화된 작업들 조회
@@ -244,6 +245,7 @@ class SchedulerService:
         try:
             # 환경변수에서 DB 연결 정보 파싱
             conn_params = get_db_connection_params('DB_APP_URL')
+            logger.info(f"[SCHED] Update job status conn_params host={conn_params.get('host')} port={conn_params.get('port')} db={conn_params.get('database')} user={'***' if conn_params.get('user') else None}")
             conn = await asyncpg.connect(**conn_params)
             
             now = datetime.now(timezone.utc)

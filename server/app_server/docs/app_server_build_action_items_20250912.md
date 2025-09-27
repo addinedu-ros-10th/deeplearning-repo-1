@@ -46,7 +46,14 @@
    - 이벤트 루프 충돌 문제 해결
    - 모든 ML Registry API 정상 작동 보장
 
-### 🔄 현재 상태 (2025-09-18 최종 업데이트)
+8. **WebSocket 기반 실시간 알림 시스템 구현 (2025-09-24)**
+   - Hexagonal Architecture 기반 알림 시스템 설계 및 구현
+   - PostgreSQL 알림 스키마 구축 (notify_message, notify_delivery, notify_device)
+   - WebSocket 연결 관리 및 실시간 메시지 전송
+   - 백그라운드 디스패처를 통한 비동기 알림 처리
+   - 현대적 UI/UX 디자인의 테스트 도구 완성
+
+### 🔄 현재 상태 (2025-09-24 최종 업데이트)
 - **API 서버**: ✅ 정상 동작 (http://localhost:8000) - Health Check 통과
 - **데이터베이스**: ✅ 연결 성공 (환경변수 기반) - 모든 스키마 정상 접근
 - **스케줄러**: ✅ 완전 정상 동작 - 환경변수 기반 DB 연결
@@ -59,6 +66,7 @@
 - **DB 연결 통합**: ✅ 모든 서비스가 환경변수 기반으로 통일된 DB 연결
 - **ML 스키마 초기화**: ✅ FastAPI startup 이벤트 기반 안정적 초기화
 - **운영 환경 호환성**: ✅ 운영 환경에서 모든 ML API 정상 작동
+- **알림 시스템**: ✅ WebSocket 기반 실시간 알림 완전 구현 - Hexagonal Architecture
 - **전체 시스템**: ✅ 완전 정상 작동 - 모든 기능 테스트 통과
 
 ### 🛠️ 해결된 주요 문제들 (2025-09-18)
@@ -1220,3 +1228,256 @@ python3 frame_prediction_api_example.py --experiment-id <EXPERIMENT_ID>
 - **자동화 지원**: 스크립트 기반 API 호출로 CI/CD 파이프라인 구축 가능
 - **문서화 강화**: 실제 작동하는 예제 코드로 API 사용법 명확화
 - **품질 보증**: 모든 API 엔드포인트의 정상 작동 검증 완료
+
+---
+
+## 2025-09-19 업데이트: 프로젝트 종합 현황 & Notify Deliveries/Devices API 추가
+
+### 전체 현황 요약
+- 아키텍처: 헥사고날(Ports & Adapters), 레이어 분리(Domain → Application → Adapters → Infrastructure)
+- 실행/배포: Docker Compose(base/local/prod), Nginx 프록시, SQLAdmin 관리자 UI
+- DB: SQLAlchemy(Async) 멀티 엔진, ENV 기반 URL 파싱/로깅 강화, 진단 스크립트 제공
+- 스케줄러: APScheduler + DB(scheduled_jobs) 로더, 공개/내부 엔드포인트 분리
+
+### 주요 API 현황
+- Datasets `/api/v1/datasets` (CRUD)
+- Experiments `/api/v1/experiments` (CRUD)
+- Frame-Predictions `/api/v1/frame-predictions` (생성/조회/삭제, 배치 생성 포함)
+- Detection-Events `/api/v1/detection-events` (생성/조회/삭제)
+- Scheduler: 공개 `/api/v1/scheduled-jobs`(ORM), 내부 `/internal/*`(직접 연결)
+- Notify:
+  - Messages `/api/v1/notify/messages` (CRUD)
+  - Deliveries `/api/v1/notify/deliveries` (CRUD, 필터: user_id, status)
+  - Devices `/api/v1/notify/devices` (CRUD, 필터: user_id, channel, is_active)
+
+### 신규 작업(이번 업데이트)
+- Notify Deliveries/Devices API 추가
+  - DTO: `notify_delivery_dto.py`, `notify_device_dto.py`
+  - 포트: `notify_delivery_repository.py`, `notify_device_repository.py`
+  - 리포지토리: `notify_delivery_repository_impl.py`, `notify_device_repository_impl.py`
+  - 유즈케이스: `notify_delivery_use_cases.py`, `notify_device_use_cases.py`
+  - 라우터: `notify_delivery_router.py`, `notify_device_router.py`
+  - 앱 등록: `app/main.py`에 include
+- ENUM 매핑 안정화(Notify)
+  - 기존 PostgreSQL ENUM(`notify.kind_enum`, `notify.severity_enum`, `notify.channel_enum`, `notify.delivery_status_enum`)에 ORM 바인딩
+  - `create_type=False`, 스키마·타입명 명시로 중복 생성/불일치 방지
+
+### 운영/진단 관련 메모
+- ENV 주입: prod에서는 `compose.prod.yml`이 `env_file: ../secret/.env.prod`로 base를 덮어써야 함
+- ML/App DB URL: 시작 로그에 마스킹된 URL과 파싱된 host/port/db가 출력되므로 값 확인 가능
+- 내부 엔드포인트(`/internal/*`) 오류 시: SSH 터널 미기동/호스트 IP 불일치가 주원인 → 터널 활성화 또는 ORM 일원화 검토
+
+### 현재 상태 체크
+- 공개 API: 정상 동작 (/api/v1/*)
+- SQLAdmin: 정상 마운트
+- Compose(prod): ENV 우선순위 정정 후 DB 연결 정상
+- Notify: Messages/Deliveries/Devices CRUD 동작, ENUM 불일치 오류 해결
+
+---
+
+## 2025-09-23 업데이트: Notify 기능 개발 계획 & 체크리스트(에드온)
+
+### 개발 목표
+- 실시간 알림 파이프라인의 최소 기능 확보: 메시지 생성→수신자 큐잉→(디스패처)전송→열람/ACK 상태 반영
+- 기존 기능 영향 최소화: 헥사고날 구조로 격리, Feature Flag로 점진 롤아웃
+
+### 단계별 계획(Phase)
+- Phase 1: 큐잉/상태 갱신 API
+  - POST `/api/v1/notify/queue` (메시지 생성 + recipients×channel 큐잉)
+  - POST `/api/v1/notify/deliveries/{id}/read`, `/ack` (상태 갱신)
+  - Repo 보강: `mark_sent|delivered|read|ack`
+- Phase 2: 실시간 전송(WS) 및 디스패처
+  - `ConnectionManager`, `WsNotifier`, `/ws` 엔드포인트
+  - APScheduler 디스패처 잡(queued→sent→delivered), 만료(expires_at) 가드
+  - Feature Flag: `NOTIFY_DISPATCH_ENABLE`, `NOTIFY_WS_ENABLE`
+- Phase 3: 테스트/문서화
+  - TDD: 유즈케이스, 리포, 디스패처 유닛/통합
+  - 수동 체크리스트 기반 시나리오 테스트
+  - 문서/런북 업데이트(운영 쿼리 포함)
+- Phase 4: 가시성/롤아웃
+  - 구조화 로깅, SQLAdmin 뷰/쿼리
+  - Staging canary→Prod 점진 적용
+
+### 액션 아이템 체크리스트
+- [x] Phase1-API: DTO(Queue) 및 유즈케이스(CreateMessageAndQueue) 추가
+- [x] Phase1-API: POST `/api/v1/notify/queue` 라우터 추가
+- [x] Phase1-API: POST `/api/v1/notify/deliveries/{id}/read` 구현
+- [x] Phase1-API: POST `/api/v1/notify/deliveries/{id}/ack` 구현
+- [x] Phase1-Repo: Deliveries `mark_sent|delivered|read|ack` 구현
+- [x] Phase2-WS: ConnectionManager/WsNotifier 추가 및 `/ws` 라우터
+- [x] Phase2-Disp: APScheduler 디스패처 잡 추가(Feature Flag)
+- [ ] Phase3-Test: 유닛/통합/API/WebSocket 테스트 추가
+- [ ] Phase3-Docs: 운영/수동 테스트 가이드 및 쿼리 보강
+- [ ] Phase4-Obs: 구조화 로그/SQLAdmin 뷰
+- [ ] Phase4-Rollout: Flags로 Staging→Prod 전개
+
+### 운영/배포 메모(Nginx)
+- `/ws` 업그레이드 설정 추가: `proxy_http_version 1.1`, Upgrade/Connection 헤더, `proxy_read_timeout`
+- `/api/` 기존 프록시 유지, 헬스체크 `/healthz`로 확인
+- 멀티 인스턴스 시 sticky 또는 브로커 도입 검토
+ 
+### 2025-09-23 에드온: Notify Phase 1+2 진행 현황
+- 구현 완료
+  - Queue API: `POST /api/v1/notify/queue`
+  - 상태 갱신: `POST /api/v1/notify/deliveries/{id}/read|ack`
+  - 리포 헬퍼: `mark_sent|delivered|read|ack`, `next_queued`
+  - WebSocket: `/ws?user_id=<uuid>`, ConnectionManager/WsNotifier
+  - Dispatcher: Feature flags (`NOTIFY_ENABLE`, `NOTIFY_DISPATCH_ENABLE`, `NOTIFY_WS_ENABLE`)
+- 환경 변수 예시(.env)
+  - `NOTIFY_ENABLE=true`
+  - `NOTIFY_DISPATCH_ENABLE=true`
+  - `NOTIFY_WS_ENABLE=true`
+- 수동 테스트 체크리스트
+  - [ ] 브라우저 `ws://<host>/ws?user_id=<UUID>` 연결
+  - [ ] `POST /api/v1/notify/queue` 로 recipients에 위 UUID 지정하여 큐잉
+  - [ ] 디스패처 ON 시 `queued→sent→delivered` 전이 확인(DB/로그)
+  - [ ] `read`/`ack` 호출로 상태·타임스탬프 반영 확인
+- 브로커 연동(추후)
+  - Redis Pub/Sub → Redis Streams → Kafka 단계 도입(요구 증가 시)
+  - 목적: 다중 인스턴스/내구성/재처리 보장
+
+### 2025-09-23 에드온: 테스트 진행 현황(Phase 3 시작)
+- 추가 테스트
+  - 라우트 존재 테스트: `tests/test_notify_api.py`
+  - WebSocket 연결 테스트: `tests/test_notify_ws.py`
+- 다음 테스트 계획
+  - Repo/UseCase 통합 테스트(세션 트랜잭션 롤백 기반)
+  - 디스패처 루프 단위 테스트(WS on/off 플래그별)
+
+### 2025-09-24 에드온: 환경 변수/프록시 및 진행 상태 리포트
+- Compose 경고 설명
+  - `NOTIFY_ENABLE/DISPATCH_ENABLE/WS_ENABLE` 경고는 env 파일에서 해당 변수가 비어있어 발생 → `.env.local` 또는 `--env-file`에 값을 추가하면 해소됩니다.
+  - `version` 키는 Compose v2에서 obsolete 경고이며 동작에 영향은 없습니다(혼동 방지 위해 제거 권장).
+- 환경 변수(추가 제안)
+  - `NOTIFY_ENABLE=true`
+  - `NOTIFY_DISPATCH_ENABLE=true`
+  - `NOTIFY_WS_ENABLE=true`
+- 프록시 설정
+  - `docker/nginx/nginx.conf`에 `/ws` 업그레이드 경로 추가 완료
+  - BASE_URL: `http://localhost` (또는 `http://localhost:8080`/`http://localhost:8000`)
+- 테스트 페이지/문서
+  - 수동 페이지: `staging/tools/notify_ws_client.html`
+  - 가이드: `staging/notify_testing_guide.md`
+- 진행 현황(요약)
+  - Phase 1+2 구현 완료(큐잉/상태/WS/디스패처), Phase 3 테스트 진행 중(유닛/WS/플래그)
+  - 브로커 도입은 후속(스케일 요구 시)
+- 다음 단계
+  - 리포 통합 테스트, 운영 쿼리/가시성 보강, 플래그 기반 롤아웃 가이드 확정
+
+### 2025-09-24 에드온: Notify kind ENUM 정합성 및 클라이언트/문서 정리
+- 배경: DB `notify.kind_enum` 허용값은 `system|schedule|info|contact|marketing|inbound`. `warning/error`는 kind가 아닌 severity(노랑/빨강)로 표현해야 함.
+- 조치
+  - 문서 예시 수정: `docs/notification_system_usage_guide.md`, `docs/notification_system_testing_guide.md`의 kind를 허용값(`system`)으로 교정
+  - 클라이언트 예시 수정: `client/live_notification_test.py` 내 출력 예시 kind를 `system`으로 교정
+  - 가이드에 "경고/오류 레벨은 severity로 표현" 명시
+- 관련 산출물
+  - 테스트 가이드: `staging/notify_testing_guide.md`
+  - 수동 테스트 페이지: `staging/tools/notify_ws_client.html`
+  - 프록시/플래그: `/ws` 업그레이드(Nginx), `NOTIFY_ENABLE/NOTIFY_DISPATCH_ENABLE/NOTIFY_WS_ENABLE`
+
+### 2025-09-25 업데이트: 동적 URL 변환 및 클라이언트 문서화 완성
+- 배경: 클라이언트 사용 시 WebSocket URL과 HTTP API URL을 각각 설정해야 하는 불편함과 `Failed to fetch` 오류 해결 필요
+- 주요 개선사항
+  - **동적 URL 변환 기능 구현**: WebSocket URL 입력 시 HTTP API URL 자동 생성
+    - `ws://localhost` → `http://localhost/api/v1/notify/queue`
+    - `wss://example.com/ws` → `https://example.com/api/v1/notify/queue`
+  - **HTML 클라이언트 개선**: API 서버 불일치 및 enum 값 문제 해결
+    - 서버 URL 필드에서 WebSocket과 HTTP API URL 자동 변환
+    - 잘못된 kind 값(`warning`, `error`) → 올바른 enum 값(`system`) + severity 조합
+  - **종합적 문서화 및 주석 보강**
+    - Python/JavaScript/HTML 클라이언트 모두 상세한 사용법 주석 추가
+    - DB enum 기준 올바른 kind/severity 조합 가이드 제공
+    - 동적 URL 변환 기능 사용법 및 예제 추가
+- 구현 내용
+  - **Python 유틸리티 함수**: `websocket_to_http_url()`, `get_api_url()` 추가
+  - **JavaScript 유틸리티 함수**: `websocketToHttpUrl()`, `getApiUrl()` 추가
+  - **NotificationClient 확장**: `get_api_url()` 메서드 추가
+  - **NotificationSender 개선**: WebSocket URL 입력 지원
+  - **HTML 클라이언트 수정**: 동적 URL 변환, 올바른 enum 값 사용, AWS 서버 기본값 설정
+- 수정된 파일들
+  - `client/notification_client.py`: 유틸리티 함수 및 종합 문서화
+  - `client/notification_client.js`: 유틸리티 함수 및 상세 주석
+  - `client/notification_client.html`: 동적 URL 변환 및 enum 수정
+  - `client/live_notification_test.py`: 동적 URL 사용 및 핸들러 개선
+  - `client/README.md`: 주요 특징 및 enum 값 가이드 추가
+  - `staging/tools/notify_ws_client*.html`: AWS 서버 기본값 및 URL 변환 함수
+- 테스트 결과
+  - ✅ 동적 URL 변환 기능 정상 작동 (다양한 URL 패턴 테스트 완료)
+  - ✅ HTML 클라이언트 `Failed to fetch` 오류 해결
+  - ✅ 모든 클라이언트에서 올바른 enum 값 사용
+  - ✅ 실제 알림 송수신 테스트 성공
+- 사용자 경험 개선
+  - **단일 URL 설정**: WebSocket URL 하나만 입력하면 모든 기능 사용 가능
+  - **오류 방지**: DB enum에 맞는 정확한 값들만 사용하도록 가이드 제공
+  - **개발 편의성**: 로컬/스테이징/프로덕션 환경 간 URL 변경 시 한 곳만 수정
+  - **완전한 문서화**: 모든 클라이언트에 실제 사용 가능한 예제 코드 제공
+
+### 2025-09-25 업데이트: Nginx 웹서버 호스팅 및 프로젝트 구조 최적화 완성
+- 배경: 클라이언트 파일들을 브라우저에서 직접 접근할 수 있도록 Nginx 웹서버 호스팅 필요성 및 프로젝트 구조 개선
+- 주요 개선사항
+  - **Nginx 정적 파일 서빙 구현**: `/notification/` 경로를 통한 클라이언트 파일 호스팅
+    - `http://localhost/notification/client/notification_client.html` 접근 가능
+    - `http://localhost/notification/tools/notify_ws_client.html` 등 모든 도구 웹 접근
+  - **Docker Compose 통합**: Nginx 컨테이너에 notification 파일 볼륨 마운트
+    - `Util/notification:/var/www/notification:ro` 마운트 설정
+    - 캐싱, 압축, 보안 헤더 최적화 적용
+  - **프로젝트 구조 재편성**: 알림 관련 모든 도구를 `Util/notification`으로 통합
+    - `server/app_server/client/` → `Util/notification/client/`
+    - `server/app_server/staging/tools/` → `Util/notification/tools/`
+    - 논리적 구조화 및 사용자 접근성 향상
+- 구현 내용
+  - **Nginx 설정 확장**:
+    ```nginx
+    location /notification/ {
+        alias /var/www/notification/;
+        try_files $uri $uri/ =404;
+        # 캐싱, 보안 헤더, 압축 설정 포함
+    }
+    ```
+  - **Docker Compose 설정 최적화**:
+    - `compose.base.yml`: notification 볼륨 마운트 추가
+    - `compose.local.yml`: 중복 설정 제거, 깔끔한 구조화
+  - **종합 문서화**: `Util/notification/README.md` 신규 작성
+    - 디렉토리 구조 설명, 사용법 가이드, 테스트 방법 상세화
+    - 동적 URL 변환, enum 값 가이드, 고급 설정 포함
+- 수정된 파일들
+  - `docker/compose.base.yml`: notification 볼륨 마운트 추가
+  - `docker/compose.local.yml`: nginx.conf 마운트 제거 (충돌 해결)
+  - `nginx/nginx.conf`: `/notification/` location 블록 추가
+  - `docker/nginx/nginx.conf`: 기존 설정과 통합
+  - `Util/notification/README.md`: 종합 사용 가이드 신규 작성
+- 테스트 결과
+  - ✅ Nginx 정적 파일 서빙 정상 작동 (HTTP 200 OK 응답)
+  - ✅ 모든 클라이언트 파일 웹 접근 가능
+  - ✅ 캐싱, 압축, 보안 헤더 정상 적용
+  - ✅ Docker 컨테이너 재빌드 및 볼륨 마운트 성공
+- 운영 효과
+  - **웹 기반 접근**: 별도 다운로드 없이 브라우저에서 바로 테스트 가능
+  - **통합 관리**: 모든 알림 도구가 한 곳에 집중되어 관리 효율성 향상
+  - **성능 최적화**: Nginx의 고성능 정적 파일 서빙 활용
+  - **보안 강화**: XSS 보호, Content-Type 보호 등 보안 헤더 적용
+  - **개발 편의성**: 로컬 개발 시 즉시 웹에서 테스트 가능
+
+### 2025-09-25 업데이트: 프로젝트 정리 및 중복 파일 제거 완료
+- 배경: 프로젝트 구조 최적화 과정에서 발견된 중복 nginx.conf 파일 정리 필요성
+- 문제 분석
+  - **중복 파일 존재**: `docker/nginx/nginx.conf`와 `nginx/nginx.conf` 두 파일 공존
+  - **설정 충돌 가능성**: Docker 빌드 시와 볼륨 마운트 시 다른 설정 파일 사용
+  - **개발자 혼동**: 어떤 파일이 실제 사용되는지 불명확
+- 조치 사항
+  - **파일 백업**: `docker/nginx/nginx.conf` → `docker/nginx/nginx.conf.backup`
+  - **중복 파일 삭제**: 사용되지 않는 `docker/nginx/nginx.conf` 제거
+  - **시스템 검증**: 파일 삭제 전후 전체 기능 테스트 수행
+- 검증 결과
+  - **삭제 전 테스트**: ✅ 모든 기능 정상 (Swagger, HTML 클라이언트, WebSocket, API)
+  - **삭제 후 테스트**: ✅ 모든 기능 정상 (동일한 성능 및 안정성 확인)
+  - **시스템 영향**: 없음 (실제 사용 파일은 `nginx/nginx.conf`였음)
+- 최종 상태
+  - **단일 설정 파일**: `nginx/nginx.conf`만 사용하여 일관성 확보
+  - **백업 보관**: 필요 시 복원 가능하도록 백업 파일 유지
+  - **문서 업데이트**: 프로젝트 구조 문서에 정리 내용 반영
+- 운영 효과
+  - **유지보수성 향상**: 단일 설정 파일로 관리 복잡도 감소
+  - **개발자 경험 개선**: 설정 변경 시 혼동 제거
+  - **시스템 안정성**: 설정 충돌 위험 완전 제거
+  - **프로젝트 정리**: 불필요한 파일 제거로 깔끔한 구조 확보
