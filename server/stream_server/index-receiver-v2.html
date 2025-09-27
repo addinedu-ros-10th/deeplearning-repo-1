@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Receiver</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background:#111; color:#eee; }
+    #videos { display:grid; grid-template-columns: repeat(auto-fill, minmax(320px,1fr)); gap:12px; }
+    video { width:100%; background:#000; border-radius:12px; }
+    .cam { border:1px solid #333; padding:8px; border-radius:12px; }
+    .label { font-size:12px; color:#aaa; margin:6px 0; }
+  </style>
+</head>
+<body>
+  <h2>Receiver</h2>
+  <button id="btnStart">Connect</button>
+  <div id="videos"></div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    // 서버 주소는 환경에 맞게
+    const sio = io('http://100.65.221.86:3010', { transports: ["websocket"] });
+
+    let pc = null;
+    const views = new Map();   // camera_id -> {wrap, video}
+    const xcvrs = new Map();   // camera_id -> RTCRtpTransceiver
+
+    function ensureView(camera_id) {
+      if (views.has(camera_id)) return views.get(camera_id);
+      const wrap = document.createElement('div');
+      wrap.className = 'cam';
+      wrap.id = `cam_${camera_id}`;
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = camera_id;
+      const video = document.createElement('video');
+      video.id = `remoteVideo_${camera_id}`;
+      video.autoplay = true; video.playsInline = true; video.muted = false;
+      wrap.appendChild(label); wrap.appendChild(video);
+      document.getElementById('videos').appendChild(wrap);
+      const entry = { wrap, video };
+      views.set(camera_id, entry);
+      return entry;
+    }
+
+    function removeView(camera_id) {
+      const ent = views.get(camera_id);
+      if (!ent) return;
+      try { ent.video.srcObject = null; } catch {}
+      ent.wrap.remove();
+      views.delete(camera_id);
+    }
+
+    async function makePcIfNeeded() {
+      if (pc) return pc;
+      pc = new RTCPeerConnection();
+
+      // 들어온 track을 '해당 트랜시버'의 receiver.track.id로 camera_id 매칭
+      pc.ontrack = (ev) => {
+        if (ev.track.kind !== 'video') return;
+
+        let camera_id = null;
+        for (const [cid, x] of xcvrs.entries()) {
+          if (x.receiver && x.receiver.track && x.receiver.track.id === ev.track.id) {
+            camera_id = cid;
+            break;
+          }
+        }
+        if (!camera_id) {
+          console.warn('unmapped track; ignoring or fallback binding');
+          return;
+        }
+
+        const view = ensureView(camera_id);
+        const ms = view.video.srcObject || new MediaStream();
+        const prev = ms.getVideoTracks()[0];
+        if (prev) ms.removeTrack(prev);
+        ms.addTrack(ev.track);
+        view.video.srcObject = ms;
+      };
+
+      return pc;
+    }
+
+    async function renegotiate() {
+      const _pc = await makePcIfNeeded();
+      const offer = await _pc.createOffer();  // m-line = addTransceiver 수
+      await _pc.setLocalDescription(offer);
+      sio.emit('offer', { sdp: _pc.localDescription.sdp, type: _pc.localDescription.type });
+    }
+
+    document.getElementById('btnStart').onclick = async () => {
+      await makePcIfNeeded();
+      sio.emit('join', { role: 'receiver' });
+    };
+
+    // ⛔ joined에서 바로 renegotiate 하지 않음 (트랜시버 먼저!)
+    sio.on('joined', async ({ role }) => {
+      // no-op; active_cameras에서 처리
+    });
+
+    sio.on('answer', async ({ sdp, type }) => {
+      if (!pc) return;
+      await pc.setRemoteDescription({ sdp, type });
+    });
+
+    // 현재 활성 카메라 목록 → 먼저 view & recvonly 트랜시버 확보 → 그다음 첫 오퍼
+    sio.on('active_cameras', async ({ cameras }) => {
+      await makePcIfNeeded();
+      for (const camera_id of cameras) {
+        ensureView(camera_id);
+        if (!xcvrs.has(camera_id)) {
+          const x = pc.addTransceiver('video', { direction: 'recvonly' });
+          xcvrs.set(camera_id, x);
+        }
+      }
+      await renegotiate();
+    });
+
+    // 새 카메라 등장: 슬롯(트랜시버) 먼저 만들고 재협상
+    sio.on('sender_added', ({ camera_id }) => {
+      ensureView(camera_id);
+      if (!xcvrs.has(camera_id)) {
+        const x = pc.addTransceiver('video', { direction: 'recvonly' });
+        xcvrs.set(camera_id, x);
+      }
+      renegotiate();
+    });
+
+    // 카메라 제거: UI/트랜시버 정리 후 재협상
+    sio.on('sender_removed', ({ camera_id }) => {
+      removeView(camera_id);
+      const x = xcvrs.get(camera_id);
+      if (x) { try { x.direction = 'inactive'; } catch {} }
+      renegotiate();
+    });
+
+    // 서버가 재협상 요청: 필요 시 슬롯 만들고 재협상
+    sio.on('need_offer', ({ camera_id }) => {
+      if (camera_id && !xcvrs.has(camera_id)) {
+        const x = pc.addTransceiver('video', { direction: 'recvonly' });
+        xcvrs.set(camera_id, x);
+      }
+      renegotiate();
+    });
+  </script>
+</body>
+</html>

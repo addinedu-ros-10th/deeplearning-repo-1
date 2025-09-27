@@ -4,6 +4,7 @@ from aiortc import RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.media import MediaPlayer
 import ssl
 import signal
+import sys
 
 sio = socketio.AsyncClient()
 pc = RTCPeerConnection()
@@ -24,15 +25,15 @@ async def main(camera_id):
     #   'aiohttp_session_get_kwargs': {'ssl': False}
     # })
     sio = socketio.AsyncClient(ssl_verify=False)
-    await sio.connect("http://100.104.225.118:3010")
+    await sio.connect("http://100.65.221.86:3010")
 
     # join (sender 등록)
     await sio.emit("join", {"role": "sender", "camera_id": camera_id})
 
     # 카메라 or 영상 파일 열기
-    player = MediaPlayer("0:none", format="avfoundation",
-                         options={"framerate":"30","video_size":"1280x720"})
-                        #  options={"input_format":"mjpeg","video_size": "640x480", "framerate": "30"})  # Linux 카메라 장치
+    player = MediaPlayer("/dev/video0", format="v4l2",
+                        #  options={"framerate":"30","video_size":"1280x720"})
+                         options={"input_format":"mjpeg","video_size": "640x480", "framerate": "30"})  # Linux 카메라 장치
     if not player.video:
         print(f"{camera_id} 화면을 열지 못했습니다.")
         return
@@ -60,9 +61,10 @@ async def main(camera_id):
         await cleanup(camera_id)
 
 if __name__ == "__main__":
+    camera_id = sys.argv[1]
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    main_task = loop.create_task(main("cam2"))
+    main_task = loop.create_task(main(camera_id))
 
     async def _shutdown(task, cam):
         if not task.done():
@@ -80,7 +82,7 @@ if __name__ == "__main__":
 
     def _schedule_shutdown():
         try:
-            asyncio.create_task(_shutdown(main_task, "cam2"))
+            asyncio.create_task(_shutdown(main_task, camera_id))
         except RuntimeError:
             pass
 

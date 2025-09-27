@@ -23,24 +23,113 @@ relay = MediaRelay()
 sender_tracks = {}
 sender_sources = {}
 pc_subs = {}
+cameras = {}
+receivers = {}
 
 # --- 시그널링 이벤트 핸들러 ---
 @sio.event
 async def join(sid, data):
     role = data.get("role")
-    camera_id = data.get("camera_id", str(uuid.uuid4()))
-    print(f"[join] sid={sid}, role={role}, camera_id={camera_id}")
 
     if role == "sender":
-        # sender는 tracks를 저장할 준비만
-        sender_tracks[camera_id] = []
+        camera_id = data.get("camera_id")
+        if not camera_id:
+            await sio.emit("error", {"message": "camera_id required for sender"}, to=sid)
+            return
+        
+        if camera_id in cameras:
+            await teardown_camera(camera_id, reason="duplicate_sender")
+
+        pc = RTCPeerConnection()
+        cameras[camera_id] = {
+            "sender_sid": sid,
+            "sender_pc": pc,
+            "orig_tracks": {"video":None, "audio":None},
+            "subscribers": {}
+        }
+
+        @pc.on("iceconnectionstatechange")
+        async def on_ice_state_change():
+            st = pc.iceConnectionState
+            print("[sender ice]", camera_id, st)
+            if st in ("failed", "disconnected", "closed"):
+                await teardown_camera(camera_id, reason=st)
+
+        await sio.save_session(sid, {"role": "sender", "camera_id": camera_id})
         await sio.enter_room(sid, f"sender:{camera_id}")
 
-    elif role == "receiver" and "receivers" not in sio.rooms(sid):
+        await sio.emit("joined", {"role": "sender", "camera_id": camera_id}, to=sid)
+
+        @pc.on("track")
+        def on_track(track):
+            camera_id = camera_id_from_sid(sid)
+            cam = cameras.get(camera_id)
+            if not cam:
+                return
+            
+            kind = track.kind
+            print(f"[sender] {camera_id} new track kind={kind}")
+
+            old = cam["orig_tracks"].get(kind)
+            if old:
+                try: old.stop()
+                except: pass
+
+            cam["orig_tracks"][kind] = track
+
+            for rcv_sid, ent in cam["subscribers"].items():
+                rcv_pc = ent["pc"]
+
+                prev = ent["clones"].get(kind)
+                if prev:
+                    try: prev.stop()
+                    except: pass
+
+                clone = relay.subscribe(track)
+                ent["clones"][kind] = clone
+                rcv_pc.addTrack(clone)
+
+            if kind == "video":
+                asyncio.create_task(sio.emit("sender_added", {"camera_id": camera_id}, room="receivers"))
+
+    elif role == "receiver":
+        pc = RTCPeerConnection()
+        receivers[sid] = {
+            "pc": pc
+        }
+        
+        @pc.on("iceconnectionstatechange")
+        async def on_ice_state_change():
+            st = pc.iceConnectionState
+            print("[receiver ice]", sid, st)
+            if st in ("failed", "disconnected", "closed"):
+                await receiver_cleanup(sid)
+        
+        await sio.save_session(sid, {"role": "receiver"})
         await sio.enter_room(sid, "receivers")
+        await sio.emit("joined", {"role": "receiver"}, to=sid)
 
-    return {"camera_id": camera_id}
+@sio.event
+async def start_receive(sid, data):
+    info = receivers.get(sid)
+    if not info:
+        return
+    rcv_pc = info["pc"]
 
+    for camera_id, cam in cameras.items():
+        sub = cam["subscribers"].setdefault(sid, {"pc": rcv_pc, "clones": {"video": None, "audio": None}})
+        for kind in ("video", "audio"):
+            orig = cam["orig_tracks"].get(kind)
+            if orig:
+                prev = sub["clones"].get(kind)
+                if prev:
+                    try: prev.stop()
+                    except: pass
+                clone = relay.subscribe(orig)
+                sub["clones"][kind] = clone
+                rcv_pc.addTrack(clone)
+    
+    await sio.emit("subscribed", {"ok": True}, to=sid)
 
 @sio.event
 async def offer(sid, data):
@@ -119,6 +208,10 @@ async def offer(sid, data):
         "type": pc.localDescription.type
     }, room=sid)
 
+@sio.event
+async def sender_left(sid, data):
+    camera_id = data.get("camera_id")
+    await teardown_camera(camera_id, reason="sender_left")
 
 @sio.event
 async def candidate(sid, data):
@@ -164,6 +257,60 @@ async def cleanup_pc(pc: RTCPeerConnection):
     except Exception as e:
         print("[cleanup_pc] error:", e)
 
+async def receiver_cleanup(sid: str):
+    ent = receivers.pop(sid, None)
+    if not ent:
+        return
+    pc = ent.get("pc")
+    if pc:
+        try: await pc.close()
+        except: pass
+
+    # 모든 camera의 subscribers에서 제거 + 해당 리시버에게 붙였던 클론 stop
+    for cam in cameras.values():
+        sub = cam["subscribers"].pop(sid, None)
+        if sub:
+            for k, tr in list(sub["clones"].items()):
+                if tr:
+                    try: tr.stop()
+                    except: pass
+            sub["clones"].clear()
+
+async def teardown_camera(camera_id: str, reason: str = "replaced"):
+    cam = cameras.get(camera_id)
+    if not cam:
+        return
+    for rcv_sid, ent in list(cam["subscribers"].items()):
+        clones = ent.get("clones", {})
+        for k in list(clones.keys()):
+            tr = clones[k]
+            if tr:
+                try:
+                    tr.stop()
+                except Exception:
+                    pass
+        ent["clones"].clear()
+
+    for k in list(cam["orig_tracks"].keys()):
+        tr = cam["orig_tracks"][k]
+        if tr:
+            try:
+                tr.stop()
+            except Exception:
+                pass
+        cam["orig_tracks"][k] = None
+
+    spc = cam.get("pc")
+    if spc:
+        try:
+            await spc.close()
+        except Exception:
+            pass
+        cam["sender_pc"] = None
+
+    await sio.emit("sender_removed", {"camera_id": camera_id, "reason": reason})
+
+    cameras.pop(camera_id, None)
 
 # --- 모니터링 엔드포인트 ---
 async def metrics(request):

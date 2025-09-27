@@ -29,7 +29,7 @@
     <div id="status"></div>
 
     <script>
-      const socket = io('http://100.104.225.118:3010', {
+      const socket = io('http://100.65.221.86:3010', {
         transports: ['websocket'],
       });
       let pc;
@@ -100,12 +100,16 @@
         pc.ontrack = (event) => {
           S(`ontrack: ${event.track.kind} track received.`);
           S(`track: ${event.track}`);
-          S(`event: ${event}`);
+          const videoId = `remoteVideo_${event.track.id}`;
+          // S(`Is document has videoId ${videoId}?`, !!document.getElementById(videoId));
           // 비디오 트랙만 화면에 추가
+          // if (document.getElementById(videoId)) {
+          //   document.getElementById(videoId).remove();
+          // }
           if (event.track.kind === 'video') {
             const video = document.createElement('video');
             // 각 비디오 요소를 구분하기 위해 스트림 ID를 사용
-            video.id = `remoteVideo_${event.track.id}`;
+            video.id = videoId;
             video.autoplay = true;
             video.playsinline = true;
 
@@ -117,6 +121,11 @@
 
             document.getElementById('videos').appendChild(video);
             video.play().catch((e) => console.error('Video play failed:', e));
+
+            event.track.onended = () => {
+              const el = document.getElementById(videoId);
+              if (el) el.remove();
+            }
           }
           console.dir(event);
           console.dir(event.track);
