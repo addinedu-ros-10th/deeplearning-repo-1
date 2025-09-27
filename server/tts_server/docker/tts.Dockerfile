@@ -17,6 +17,7 @@ COPY pyproject.toml /app/
 RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi --no-root
 
 COPY src /app/src
+ENV PYTHONPATH=/app/src
 
 EXPOSE 5502
 
