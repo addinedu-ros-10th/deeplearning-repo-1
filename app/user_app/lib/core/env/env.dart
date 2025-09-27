@@ -17,22 +17,30 @@ class AppEnv {
     }
   }
 
+  static String _safeMaybeGet(String key) {
+    try {
+      return dotenv.maybeGet(key) ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
   static String get apiBaseUrl {
     const String envValue = String.fromEnvironment('API_BASE_URL');
     if (envValue.isNotEmpty) return envValue;
-    return dotenv.maybeGet('API_BASE_URL') ?? '';
+    return _safeMaybeGet('API_BASE_URL');
   }
 
   static String get wsUrl {
     const String envValue = String.fromEnvironment('WS_URL');
     if (envValue.isNotEmpty) return envValue;
-    return dotenv.maybeGet('WS_URL') ?? '';
+    return _safeMaybeGet('WS_URL');
   }
 
   static String get authToken {
     const String envValue = String.fromEnvironment('AUTH_TOKEN');
     if (envValue.isNotEmpty) return envValue;
-    return dotenv.maybeGet('AUTH_TOKEN') ?? '';
+    return _safeMaybeGet('AUTH_TOKEN');
   }
 }
 

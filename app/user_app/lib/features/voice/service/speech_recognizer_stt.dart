@@ -37,9 +37,11 @@ class SttSpeechRecognizer implements SpeechRecognizer {
           if (text.isNotEmpty) _transcriptController.add(text);
         } catch (_) {}
       },
-      // Use deprecated fields for broader compatibility across platforms
-      listenMode: stt.ListenMode.dictation,
-      partialResults: true,
+      // New API: consolidate options to remove deprecated parameter usage
+      listenOptions: stt.SpeechListenOptions(
+        listenMode: stt.ListenMode.dictation,
+        partialResults: true,
+      ),
       onSoundLevelChange: (double level) {
         final double normalized = (level / 30.0).clamp(0.0, 1.0);
         _levelController.add(normalized);

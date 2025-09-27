@@ -102,3 +102,25 @@ flutter run -d chrome \
   --dart-define=AUTH_TOKEN=sk-... \
   --dart-define=USE_DOTENV=false
 ```
+
+## 환경 구축 상태 (2025-09-27)
+- Flutter: 3.32.8 stable (Dart 3.8.1)
+- 플랫폼 지원: Web, Linux desktop 활성화 완료
+- Android Studio/SDK: 설치 및 구성 완료 (SDK 36, build-tools 36.0.0, 라이선스 수락)
+- AVD(Device Manager): `pixel7api34` (Android 14 Google APIs x86_64) 생성 완료
+- JAVA_HOME: `/opt/android-studio/jbr` 로 설정 및 `~/.bashrc` 반영
+- flutter doctor: No issues found!
+
+## 개발 현황 업데이트 (2025-09-27)
+- dotenv 안전화: 테스트 환경에서 `NotInitializedError` 방지 (`env.dart` 안전 접근)
+- STT API 마이그레이션: `SpeechListenOptions` 적용으로 deprecated 제거 및 분석기 경고 0
+- 테스트: 기본 위젯 테스트를 현재 UI(`Voice Interface`)에 맞게 갱신, 통과 확인
+- 문서: 실행/환경/테스트 가이드 보강, 환경 구축 결과 기록
+- 자산: `assets/env/.env.dev`, `.env.prod` 플레이스홀더 생성 (토큰 빈 값)
+
+## 향후 진행
+- 네트워크 STT 및 오디오 업로드 경로 연동(서버 지원 시) 및 재생 품질 검증
+- WS 스트리밍 초안 연결 및 이벤트 핸들링(선택)
+- 에뮬레이터/실기기(Android) 마이크 권한/동작 검증 플로우 문서화
+- CI 통합: `flutter analyze`, `flutter test` 파이프라인 추가
+- 프로덕션 프로파일링: TTS 음성/속도/피치 프리셋 및 UX 보완
