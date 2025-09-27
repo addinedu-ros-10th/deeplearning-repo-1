@@ -37,3 +37,40 @@ docker compose up --build -d
 curl -sS "http://localhost:5502/api/tts?text=테스트" --output test.wav
 aplay test.wav # 또는 시스템 재생기
 ```
+
+### 수동 테스트(마이크 사용, Flutter user_app 연동)
+1) TTS 서버 기동
+```bash
+cd server/tts_server/docker
+docker compose up --build -d
+```
+
+2) 사용자 앱 환경 변수 설정(`app/user_app/assets/env/.env.dev`)
+```env
+TTS_BACKEND=piper
+TTS_BASE_URL=http://localhost:5502
+TTS_DEFAULT_VOICE=ko_KR-pml_high
+```
+
+3) Flutter 앱 실행(데스크톱 또는 Android 권장)
+```bash
+cd app/user_app
+flutter pub get
+# Linux 데스크톱
+flutter run -d linux --dart-define=USE_DOTENV=true --dart-define=APP_ENV=dev
+# 또는 Android 에뮬레이터
+flutter run -d emulator-5554 --dart-define=USE_DOTENV=true --dart-define=APP_ENV=dev
+# Web(옵션): 마이크 권한 허용, CORS 이슈 시 동일 출처 또는 프록시 권장
+flutter run -d chrome --dart-define=USE_DOTENV=true --dart-define=APP_ENV=dev
+```
+
+4) 앱 내 테스트 절차
+- 상단 안내에서 Backend가 Piper인지 확인
+- Piper Voice: `ko_KR-pml_high` 선택
+- Listen 버튼으로 마이크 녹음을 시작하여 한국어 문장을 말하기
+- Ask + Speak 버튼으로 합성된 한국어 음성 재생 확인(자연스러움 체크)
+
+5) 트러블슈팅
+- 오디오 미출력: 시스템 볼륨/출력 장치 확인, `docker compose logs -f tts-backend tts-server`
+- 마이크 권한: OS/Chrome 권한 허용 여부 확인, Android는 에뮬레이터/실기기 권한 허용
+- Web CORS: 서로 다른 origin일 경우 FastAPI에 CORS 미들웨어 추가 또는 리버스 프록시로 동일 출처 구성

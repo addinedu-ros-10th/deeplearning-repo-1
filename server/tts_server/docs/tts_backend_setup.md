@@ -18,6 +18,38 @@ curl -sS "http://localhost:5502/api/tts?text=안녕하세요" --output hello.wav
 aplay hello.wav # or any wav player
 ```
 
+### Microphone-based Manual Test with Flutter
+1) Run Docker Compose for TTS backend and server
+```bash
+cd server/tts_server/docker
+docker compose up --build -d
+```
+
+2) Configure `app/user_app/assets/env/.env.dev`
+```env
+TTS_BACKEND=piper
+TTS_BASE_URL=http://localhost:5502
+TTS_DEFAULT_VOICE=ko_KR-pml_high
+```
+
+3) Launch Flutter app (desktop or Android recommended)
+```bash
+cd app/user_app
+flutter pub get
+flutter run -d linux --dart-define=USE_DOTENV=true --dart-define=APP_ENV=dev
+# or Android emulator: flutter run -d emulator-5554 --dart-define=USE_DOTENV=true --dart-define=APP_ENV=dev
+# or Web (allow mic): flutter run -d chrome --dart-define=USE_DOTENV=true --dart-define=APP_ENV=dev
+```
+
+4) In-app test
+- Select Backend = Piper, Voice = ko_KR-pml_high
+- Tap Listen and speak Korean; then tap Ask + Speak to hear TTS
+
+Troubleshooting
+- No audio: check system volume/device; `docker compose logs -f tts-backend tts-server`
+- Mic permission: allow in OS/Android/Web (Chrome)
+- CORS on Web: use same-origin or add CORS middleware/proxy
+
 ## Environment Variables
 - `TTS_BACKEND`: `piper` | `mimic3` | `opentts`
 - `TTS_BASE_URL`: upstream base URL (e.g., `http://tts-backend:5002`)
