@@ -164,3 +164,24 @@ flutter run -d emulator-5554 \
   --dart-define=AUTH_TOKEN=sk-... \
   --dart-define=USE_DOTENV=false
 ```
+
+## 한국어 TTS 옵션 및 결정
+- 후보:
+  - Piper (권장, 경량/실시간, ko_KR-pml_high/low)
+  - Mimic3 (다양한 음색, REST API, 다소 무거움)
+  - OpenTTS (통합, Piper/Mimic3 백엔드 선택 가능)
+  - System TTS (기기 엔진 사용: Google/Samsung 등)
+- 앱 제공 기능:
+  - Backend 선택: system / piper / mimic3 / opentts
+  - Piper 음성: ko_KR-pml_high / ko_KR-pml_low 선택 가능
+  - 엔진/음성/STT 특성 안내 텍스트 표시
+  - `.env`: `TTS_BACKEND`, `TTS_BASE_URL`, `TTS_DEFAULT_VOICE`
+- 기본값(개발): Piper + `ko_KR-pml_high` + `http://localhost:5002`
+
+### 체크리스트 (Korean TTS)
+- [x] UI에 Backend/Voice 선택 추가 및 안내 텍스트 노출
+- [x] Provider에 HTTP TTS 서비스 통합(Piper/Mimic3/OpenTTS)
+- [x] `.env.dev/.env.prod`에 TTS 변수 추가
+- [ ] Piper 서버 샘플 배포/연동 가이드 추가(FastAPI/OpenTTS 등)
+- [ ] 실제 샘플 한국어 문장들로 음질/자연스러움 리스닝 테스트
+- [ ] 사용자 선호 기본값(여/남, 속도/피치) 저장/복원

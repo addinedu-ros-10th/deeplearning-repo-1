@@ -2,8 +2,12 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'dart:math' as math;
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'dart:typed_data';
+import '../../../core/env/env.dart';
 import '../service/openai_service.dart';
 import '../service/speech_recognizer.dart';
+import '../service/http_tts_service.dart';
 
 class VoiceProvider extends ChangeNotifier {
   VoiceProvider() {
@@ -17,6 +21,7 @@ class VoiceProvider extends ChangeNotifier {
   String _transcript = '';
   String _responseText = '';
   final OpenAiService _ai = OpenAiService();
+  final HttpTtsService _httpTts = HttpTtsService();
 
   StreamSubscription<double>? _levelSub;
   StreamSubscription<String>? _transcriptSub;
@@ -32,6 +37,11 @@ class VoiceProvider extends ChangeNotifier {
   double _ttsPitch = 1.0;
   List<String> _availableEngines = <String>[]; // Android only; empty elsewhere
   String? _selectedEngine;
+  final List<String> _availableBackends = <String>['system', 'piper', 'mimic3', 'opentts'];
+  String _selectedBackend = (AppEnv.ttsBackend.isEmpty ? 'system' : AppEnv.ttsBackend).toLowerCase();
+  List<String> _availableModelVoices = <String>[];
+  String? _selectedModelVoice = AppEnv.ttsDefaultVoice.isNotEmpty ? AppEnv.ttsDefaultVoice : null;
+  final AudioPlayer _audioPlayer = AudioPlayer();
   final SpeechRecognizer _recognizer = createSpeechRecognizer();
 
   bool get isListening => _isListening;
@@ -50,6 +60,7 @@ class VoiceProvider extends ChangeNotifier {
     await _loadEngines();
     await _ensureKoreanLanguage();
     await _loadVoices();
+    _refreshModelVoices();
   }
 
   Future<void> startListening() async {
@@ -103,7 +114,7 @@ class VoiceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> speak(String text) async {
+  Future<void> speak(String text, {String? overrideVoice, bool useHttpTtsIfConfigured = true}) async {
     if (text.isEmpty) return;
     _isSpeaking = true;
     notifyListeners();
@@ -116,13 +127,35 @@ class VoiceProvider extends ChangeNotifier {
     }
     await _tts.setSpeechRate(_ttsRate);
     await _tts.setPitch(_ttsPitch);
-    await _tts.speak(text);
+    // If external HTTP TTS backend configured, prefer it for Korean voices
+    try {
+      if (useHttpTtsIfConfigured) {
+        final String backend = _selectedBackend;
+        if (backend == 'piper' || backend == 'mimic3' || backend == 'opentts') {
+          final String? modelVoice = _selectedModelVoice ?? AppEnv.ttsDefaultVoice;
+          final Uint8List wav = await _httpTts.synthesize(text, voice: modelVoice);
+          await _playWavBytes(wav);
+        } else {
+          await _tts.speak(text);
+        }
+      } else {
+        await _tts.speak(text);
+      }
+    } catch (_) {
+      // fallback to system TTS
+      await _tts.speak(text);
+    }
     _isSpeaking = false;
     if (!_isListening) {
       _stopWaveformAnimation();
       _volumeLevel = 0.0;
     }
     notifyListeners();
+  }
+
+  Future<void> _playWavBytes(Uint8List wavBytes) async {
+    await _audioPlayer.stop();
+    await _audioPlayer.play(BytesSource(wavBytes));
   }
 
   Future<void> sendToAssistant() async {
@@ -167,6 +200,10 @@ class VoiceProvider extends ChangeNotifier {
   double get ttsPitch => _ttsPitch;
   List<String> get availableEngines => _availableEngines;
   String? get selectedEngine => _selectedEngine;
+  List<String> get availableBackends => _availableBackends;
+  String get selectedBackend => _selectedBackend;
+  List<String> get availableModelVoices => _availableModelVoices;
+  String? get selectedModelVoice => _selectedModelVoice;
 
   String get engineInfoText {
     final String platform = defaultTargetPlatform.name;
@@ -207,6 +244,30 @@ class VoiceProvider extends ChangeNotifier {
       return 'STT: iOS 음성 인식. 한국어(ko-KR) 로케일 사용 시 인식률이 향상됩니다.';
     }
     return 'STT: 플랫폼 기본 음성 인식 사용. 한국어 로케일 설정과 조용한 환경이 인식 품질에 도움이 됩니다.';
+  }
+
+  String get backendInfoText {
+    switch (_selectedBackend) {
+      case 'piper':
+        return 'Piper: 경량 고속, ko_KR-pml_high/low 추천. 서버 URL 필요.';
+      case 'mimic3':
+        return 'Mimic3: 다양한 음색, REST API. Piper보다 무거움.';
+      case 'opentts':
+        return 'OpenTTS: Piper/Mimic3 등 통합. 백엔드 교체 용이.';
+      default:
+        return 'System TTS: 기기 내 엔진 사용(예: Google TTS). ko-KR 음성 선택 권장.';
+    }
+  }
+
+  String get modelVoiceInfoText {
+    if (_selectedBackend == 'piper') {
+      final String v = _selectedModelVoice ?? 'ko_KR-pml_high';
+      return '모델 음성: $v (Piper). 일반적으로 pml_high가 더 자연스럽습니다.';
+    }
+    if (_selectedBackend == 'mimic3' || _selectedBackend == 'opentts') {
+      return '모델 음성: ${_selectedModelVoice ?? '(미지정)'} (서버가 제공하는 보이스 이름을 사용)';
+    }
+    return '모델 음성: 시스템 엔진의 기기 음성 선택을 사용';
   }
 
   Future<void> _loadVoices() async {
@@ -258,6 +319,27 @@ class VoiceProvider extends ChangeNotifier {
     await _ensureKoreanLanguage();
     await _loadVoices();
     notifyListeners();
+  }
+
+  void selectBackend(String backend) {
+    _selectedBackend = backend.toLowerCase();
+    _refreshModelVoices();
+    notifyListeners();
+  }
+
+  void setModelVoice(String voice) {
+    _selectedModelVoice = voice;
+    notifyListeners();
+  }
+
+  void _refreshModelVoices() {
+    if (_selectedBackend == 'piper') {
+      _availableModelVoices = <String>['ko_KR-pml_high', 'ko_KR-pml_low'];
+      _selectedModelVoice ??= 'ko_KR-pml_high';
+    } else {
+      _availableModelVoices = <String>[];
+      // keep selectedModelVoice as-is for non-Piper backends
+    }
   }
 
   Future<void> _ensureKoreanLanguage() async {

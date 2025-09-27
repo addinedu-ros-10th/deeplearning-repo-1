@@ -42,6 +42,25 @@ class AppEnv {
     if (envValue.isNotEmpty) return envValue;
     return _safeMaybeGet('AUTH_TOKEN');
   }
+
+  // TTS backend endpoints and defaults
+  static String get ttsBackend { // piper | mimic3 | opentts | system
+    const String envValue = String.fromEnvironment('TTS_BACKEND');
+    if (envValue.isNotEmpty) return envValue;
+    return _safeMaybeGet('TTS_BACKEND');
+  }
+
+  static String get ttsBaseUrl { // http(s)://host:port
+    const String envValue = String.fromEnvironment('TTS_BASE_URL');
+    if (envValue.isNotEmpty) return envValue;
+    return _safeMaybeGet('TTS_BASE_URL');
+  }
+
+  static String get ttsDefaultVoice { // e.g., ko_KR-pml_high or ko-KR-Standard-A
+    const String envValue = String.fromEnvironment('TTS_DEFAULT_VOICE');
+    if (envValue.isNotEmpty) return envValue;
+    return _safeMaybeGet('TTS_DEFAULT_VOICE');
+  }
 }
 
 

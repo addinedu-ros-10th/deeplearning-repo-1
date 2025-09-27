@@ -43,7 +43,11 @@ class VoicePage extends StatelessWidget {
                     if (vp.availableEngines.isNotEmpty)
                       Text(vp.engineInfoText, style: const TextStyle(color: Colors.white54)),
                     if (vp.availableEngines.isNotEmpty) const SizedBox(height: 8),
+                    Text(vp.backendInfoText, style: const TextStyle(color: Colors.white54)),
+                    const SizedBox(height: 8),
                     Text(vp.voiceInfoText, style: const TextStyle(color: Colors.white54)),
+                    const SizedBox(height: 4),
+                    Text(vp.modelVoiceInfoText, style: const TextStyle(color: Colors.white54)),
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -94,6 +98,64 @@ class VoicePage extends StatelessWidget {
                         ],
                       ),
                     if (vp.availableEngines.isNotEmpty) const SizedBox(height: 12),
+                    // Backend (Piper/Mimic3/OpenTTS/System)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            dropdownColor: Colors.black,
+                            value: vp.selectedBackend,
+                            items: vp.availableBackends
+                                .map((b) => DropdownMenuItem<String>(
+                                      value: b,
+                                      child: Text(b, style: const TextStyle(color: Colors.white70)),
+                                    ))
+                                .toList(),
+                            onChanged: (String? b) {
+                              if (b != null) {
+                                vp.selectBackend(b);
+                              }
+                            },
+                            decoration: const InputDecoration(
+                              labelText: 'Korean TTS Backend',
+                              labelStyle: TextStyle(color: Colors.white54),
+                              enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                              focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white54)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (vp.selectedBackend == 'piper')
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              dropdownColor: Colors.black,
+                              value: vp.selectedModelVoice,
+                              items: vp.availableModelVoices
+                                  .map((mv) => DropdownMenuItem<String>(
+                                        value: mv,
+                                        child: Text(mv, style: const TextStyle(color: Colors.white70)),
+                                      ))
+                                  .toList(),
+                              onChanged: (String? mv) {
+                                if (mv != null) {
+                                  vp.setModelVoice(mv);
+                                }
+                              },
+                              decoration: const InputDecoration(
+                                labelText: 'Piper Voice (ko_KR)',
+                                labelStyle: TextStyle(color: Colors.white54),
+                                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white54)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    if (vp.selectedBackend == 'piper') const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
