@@ -48,25 +48,22 @@ def create_detection_event_example(client: CommonApiClient, experiment_id: str) 
     # 세션 ID 생성
     session_id = str(uuid.uuid4())
     
-    # 감지 이벤트 데이터 준비
+    # 감지 이벤트 데이터 준비 (올바른 API 스키마)
     detection_event_data = {
         "session_id": session_id,
         "experiment_id": experiment_id,
+        "input_uri": "file:///data/video_demo.mp4",
+        "start_frame": 10,
+        "end_frame": 20,
         "event_type": "fall_detected",
-        "confidence": 0.95,
-        "timestamp": datetime.now().isoformat(),
-        "location": {
-            "x": 150,
-            "y": 200,
-            "width": 180,
-            "height": 280
-        },
-        "metadata": {
-            "video_path": "file:///data/video_demo.mp4",
-            "frame_index": 15,
-            "detection_model": "yolo_v8_fall_detection",
-            "threshold": 0.8
-        }
+        "top_label": "fall",
+        "threshold_snapshot": {"fall": 0.8, "warning": 0.6, "normal": 0.3},
+        "max_confidence": 0.95,
+        "agg_prob": {"fall": 0.85, "warning": 0.10, "normal": 0.05},
+        "start_ts_ms": 1000,
+        "end_ts_ms": 2000,
+        "threshold_name": "default_v1",
+        "trigger_reason": "confidence_threshold_exceeded"
     }
     
     print("요청 데이터:")
@@ -98,34 +95,55 @@ def create_multiple_detection_events_example(client: CommonApiClient, experiment
     # 세션 ID 생성
     session_id = str(uuid.uuid4())
     
-    # 여러 감지 이벤트 데이터 준비
+    # 여러 감지 이벤트 데이터 준비 (올바른 API 스키마)
     events_data = [
         {
             "session_id": session_id,
             "experiment_id": experiment_id,
+            "input_uri": "file:///data/video_demo.mp4",
+            "start_frame": 5,
+            "end_frame": 15,
             "event_type": "warning_detected",
-            "confidence": 0.75,
-            "timestamp": datetime.now().isoformat(),
-            "location": {"x": 120, "y": 180, "width": 160, "height": 250},
-            "metadata": {"video_path": "file:///data/video_demo.mp4", "frame_index": 10}
+            "top_label": "warning",
+            "threshold_snapshot": {"warning": 0.7, "fall": 0.8, "normal": 0.3},
+            "max_confidence": 0.75,
+            "agg_prob": {"warning": 0.70, "normal": 0.25, "fall": 0.05},
+            "start_ts_ms": 500,
+            "end_ts_ms": 1500,
+            "threshold_name": "default_v1",
+            "trigger_reason": "warning_threshold_exceeded"
         },
         {
             "session_id": session_id,
             "experiment_id": experiment_id,
+            "input_uri": "file:///data/video_demo.mp4",
+            "start_frame": 15,
+            "end_frame": 25,
             "event_type": "fall_detected",
-            "confidence": 0.92,
-            "timestamp": datetime.now().isoformat(),
-            "location": {"x": 140, "y": 190, "width": 170, "height": 270},
-            "metadata": {"video_path": "file:///data/video_demo.mp4", "frame_index": 20}
+            "top_label": "fall",
+            "threshold_snapshot": {"fall": 0.8, "warning": 0.6, "normal": 0.3},
+            "max_confidence": 0.92,
+            "agg_prob": {"fall": 0.90, "warning": 0.08, "normal": 0.02},
+            "start_ts_ms": 1500,
+            "end_ts_ms": 2500,
+            "threshold_name": "default_v1",
+            "trigger_reason": "fall_threshold_exceeded"
         },
         {
             "session_id": session_id,
             "experiment_id": experiment_id,
+            "input_uri": "file:///data/video_demo.mp4",
+            "start_frame": 25,
+            "end_frame": 35,
             "event_type": "normal_detected",
-            "confidence": 0.88,
-            "timestamp": datetime.now().isoformat(),
-            "location": {"x": 130, "y": 185, "width": 165, "height": 260},
-            "metadata": {"video_path": "file:///data/video_demo.mp4", "frame_index": 30}
+            "top_label": "normal",
+            "threshold_snapshot": {"normal": 0.5, "warning": 0.7, "fall": 0.8},
+            "max_confidence": 0.88,
+            "agg_prob": {"normal": 0.85, "warning": 0.10, "fall": 0.05},
+            "start_ts_ms": 2500,
+            "end_ts_ms": 3500,
+            "threshold_name": "default_v1",
+            "trigger_reason": "normal_behavior_detected"
         }
     ]
     
