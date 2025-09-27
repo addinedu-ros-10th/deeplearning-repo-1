@@ -120,6 +120,9 @@ flutter run -d chrome \
  - 한국어 TTS 통합: Piper/Mimic3/OpenTTS 백엔드 선택 및 Piper ko_KR 보이스 선택 UI/로직 추가, audioplayers로 WAV 재생
  - 환경 변수 확장: `TTS_BACKEND`, `TTS_BASE_URL`, `TTS_DEFAULT_VOICE` 지원 및 `.env` 반영
  - 분석기/테스트: 의존성 추가 후 분석기 0 issue, 위젯 테스트 통과 유지
+ - tts_server 연동: `/healthz` UI 노출 및 재시도 버튼 추가, 런타임 env 리로드 API 제공
+ - HttpTtsService: GET/POST 폴백 로직 도입(서버 호환), `health()` 추가
+ - 테스트: `http_tts_service_test.dart`에 health/폴백 테스트 케이스 추가
 
 ## 향후 진행
 - 네트워크 STT 및 오디오 업로드 경로 연동(서버 지원 시) 및 재생 품질 검증
@@ -181,6 +184,14 @@ flutter run -d emulator-5554 \
   - 엔진/음성/STT 특성 안내 텍스트 표시
   - `.env`: `TTS_BACKEND`, `TTS_BASE_URL`, `TTS_DEFAULT_VOICE`
 - 기본값(개발): Piper + `ko_KR-pml_high` + `http://localhost:5002`
+
+## TTS Health 확인(UI/CLI)
+- UI: 상단 "TTS Server: ok / piper" 표시 시 정상. refresh 아이콘으로 재시도
+- CLI:
+```
+curl http://localhost:5502/healthz
+curl -sS "http://localhost:5502/api/tts?text=테스트" --output test.wav
+```
 
 ### 체크리스트 (Korean TTS)
 - [x] UI에 Backend/Voice 선택 추가 및 안내 텍스트 노출

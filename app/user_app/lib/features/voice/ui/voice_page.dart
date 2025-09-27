@@ -37,6 +37,28 @@ class VoicePage extends StatelessWidget {
                 builder: (context, vp, _) => Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'TTS Server: '
+                            '${vp.ttsHealthStatus == null ? '(Not checked)' : vp.ttsHealthStatus}'
+                            '${vp.ttsHealthBackend == null ? '' : ' / ${vp.ttsHealthBackend}'}',
+                            style: TextStyle(
+                              color: vp.ttsHealthStatus == 'ok'
+                                  ? Colors.lightGreenAccent
+                                  : (vp.ttsHealthStatus == null ? Colors.white54 : Colors.redAccent),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: vp.checkTtsHealth,
+                          icon: const Icon(Icons.refresh, color: Colors.white70),
+                          tooltip: 'Check TTS Server',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     // STT/TTS information
                     Text(vp.sttInfoText, style: const TextStyle(color: Colors.white54)),
                     const SizedBox(height: 8),

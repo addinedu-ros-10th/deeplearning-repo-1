@@ -21,7 +21,7 @@ class VoiceProvider extends ChangeNotifier {
   String _transcript = '';
   String _responseText = '';
   final OpenAiService _ai = OpenAiService();
-  final HttpTtsService _httpTts = HttpTtsService();
+  HttpTtsService _httpTts = HttpTtsService();
 
   StreamSubscription<double>? _levelSub;
   StreamSubscription<String>? _transcriptSub;
@@ -43,12 +43,16 @@ class VoiceProvider extends ChangeNotifier {
   String? _selectedModelVoice = AppEnv.ttsDefaultVoice.isNotEmpty ? AppEnv.ttsDefaultVoice : null;
   final AudioPlayer _audioPlayer = AudioPlayer();
   final SpeechRecognizer _recognizer = createSpeechRecognizer();
+  String? _ttsHealthStatus; // ok | error | null(not checked)
+  String? _ttsHealthBackend; // piper/mimic3/opentts
 
   bool get isListening => _isListening;
   bool get isSpeaking => _isSpeaking;
   double get volumeLevel => _volumeLevel;
   String get transcript => _transcript;
   String get responseText => _responseText;
+  String? get ttsHealthStatus => _ttsHealthStatus;
+  String? get ttsHealthBackend => _ttsHealthBackend;
 
   Future<void> _initTts() async {
     await _tts.setSpeechRate(_ttsRate);
@@ -149,6 +153,32 @@ class VoiceProvider extends ChangeNotifier {
     if (!_isListening) {
       _stopWaveformAnimation();
       _volumeLevel = 0.0;
+    }
+    notifyListeners();
+  }
+
+  // Refresh TTS configuration from environment and rebuild HTTP client
+  Future<void> refreshFromEnvironment({bool reloadDotenv = false}) async {
+    if (reloadDotenv) {
+      await AppEnv.load();
+    }
+    _selectedBackend = (AppEnv.ttsBackend.isEmpty ? 'system' : AppEnv.ttsBackend).toLowerCase();
+    if (AppEnv.ttsDefaultVoice.isNotEmpty) {
+      _selectedModelVoice = AppEnv.ttsDefaultVoice;
+    }
+    _httpTts = HttpTtsService(baseUrl: AppEnv.ttsBaseUrl.isNotEmpty ? AppEnv.ttsBaseUrl : null);
+    _refreshModelVoices();
+    notifyListeners();
+  }
+
+  Future<void> checkTtsHealth() async {
+    try {
+      final Map<String, dynamic> info = await _httpTts.health();
+      _ttsHealthStatus = (info['status']?.toString() ?? '').isEmpty ? 'unknown' : info['status']?.toString();
+      _ttsHealthBackend = info['backend']?.toString();
+    } catch (_) {
+      _ttsHealthStatus = 'error';
+      _ttsHealthBackend = null;
     }
     notifyListeners();
   }

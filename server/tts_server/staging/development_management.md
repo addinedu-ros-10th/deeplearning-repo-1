@@ -25,12 +25,14 @@
 - 기본 단위 테스트 추가: 헬스체크, 잘못된 입력 검증
 - Docker Compose로 Piper+TTS 서버 로컬 기동 가능
 - Dockerfile(poetry) 정리 및 포트 노출(5502)
+ - Flutter `user_app` 연동: `/healthz` UI 표시/재시도, `/api/tts`로 WAV 재생 확인(로컬)
 
 ## 다음 일정
 1. 통합 테스트: 실제 Piper 컨테이너와 end-to-end WAV 생성/재생 확인
 2. 실패 시 재시도/백오프, 요청 로깅/메트릭 추가
 3. 운영 구성 샘플(.env, env 파일 템플릿) 제공
 4. `app_server`와 연동 가이드 및 헬스체크/장애 처리 흐름 문서화
+5. Web CORS 정책/리버스 프록시 샘플 추가 문서화
 
 ## 수동 테스트 가이드 (로컬)
 ```bash
