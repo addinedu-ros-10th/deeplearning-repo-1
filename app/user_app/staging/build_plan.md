@@ -124,3 +124,43 @@ flutter run -d chrome \
 - 에뮬레이터/실기기(Android) 마이크 권한/동작 검증 플로우 문서화
 - CI 통합: `flutter analyze`, `flutter test` 파이프라인 추가
 - 프로덕션 프로파일링: TTS 음성/속도/피치 프리셋 및 UX 보완
+
+## 구축 달성 단계 (Milestones)
+- [x] Flutter 스캐폴딩 및 필수 의존성 구성
+- [x] Web/Linux 데스크톱 타깃 활성화 및 구동 확인
+- [x] Provider 상태관리/파형 UI/녹음 제어 초안 구현
+- [x] OpenAI Assistant 호출 + TTS 재생 플로우 구현 (토큰 필요 시 동작)
+- [x] dotenv 안전화 및 테스트 안정화
+- [x] Analyzer 경고 제거(0), 위젯 테스트 통과
+- [x] Android SDK/AVD/JAVA 환경 구축 및 flutter doctor 정상화
+- [ ] 서버 STT/오디오 업로드 API 연동 및 응답 파싱 정제
+- [ ] WebSocket 스트리밍 초안 연결 및 이벤트 모델 정의
+- [ ] CI 파이프라인 연동 및 브랜치 보호 규칙 반영
+
+## 현재 단계 (2025-09-27)
+- 앱 기능은 로컬에서 Web/Linux 데스크톱 대상으로 안정 구동
+- Android 에뮬레이터 환경 구성이 완료되어, 기기 테스트 준비 상태
+- 서버 연동(STT/Streaming)은 사양 확정 대기; dotenv/define로 운영 변수 분리 완료
+
+## 다음 액션 아이템 (우선순위)
+1. 서버 STT/Assistant 실제 엔드포인트 연동 및 예외 처리 정제
+2. 마이크 권한/오디오 경로(Android/Web)의 권한 안내/실패 복구 UX 보완
+3. WS 스트리밍(선택): 연결 수명주기/재연결/버퍼링 정책 설계 및 초안 구현
+4. CI: `flutter analyze`/`flutter test` GitHub Actions 추가, 배지 노출
+5. 문서화: Android/웹 권한 가이드, 문제 해결(네트워크/권한/에뮬레이터) 섹션 확장
+
+## Android 실행/검증 가이드 (요약)
+- AVD 실행:
+```
+$ANDROID_SDK_ROOT/emulator/emulator -avd pixel7api34 -netdelay none -netspeed full &
+```
+- 앱 실행 예시(Android):
+```
+cd app/user_app
+flutter run -d emulator-5554 \
+  --dart-define=APP_ENV=dev \
+  --dart-define=API_BASE_URL=https://api.openai.com \
+  --dart-define=WS_URL=wss://example.dev/ws \
+  --dart-define=AUTH_TOKEN=sk-... \
+  --dart-define=USE_DOTENV=false
+```
