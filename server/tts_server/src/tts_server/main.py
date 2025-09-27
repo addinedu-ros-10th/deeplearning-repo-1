@@ -13,6 +13,27 @@ async def healthz() -> dict:
     return {"status": "ok", "backend": settings.tts_backend}
 
 
+@app.get("/api/voices")
+async def list_voices():
+    backend = settings.tts_backend.lower()
+    base = settings.tts_base_url.rstrip("/")
+
+    async with httpx.AsyncClient(timeout=None) as client:
+        try:
+            if backend in {"mimic3", "opentts"}:
+                resp = await client.get(f"{base}/api/voices")
+            elif backend == "piper":
+                return JSONResponse({"error": "voices listing not supported for piper backend"}, status_code=400)
+            else:
+                return JSONResponse({"error": f"unsupported backend: {backend}"}, status_code=400)
+
+            if resp.status_code >= 400:
+                return JSONResponse({"error": f"upstream error {resp.status_code}"}, status_code=502)
+
+            return resp.json()
+        except httpx.HTTPError as e:
+            return JSONResponse({"error": str(e)}, status_code=502)
+
 @app.get("/api/tts")
 async def tts_api(text: str = Query(..., min_length=1), voice: str | None = None):
     voice_id = voice or settings.tts_default_voice

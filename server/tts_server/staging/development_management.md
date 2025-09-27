@@ -21,6 +21,7 @@
 
 ## 현황 (2025-09-27)
 - FastAPI 서버 `/healthz`, `/api/tts` 라우트 제공
+- 보이스 조회 라우트 `/api/voices` 추가(OpenTTS/Mimic3 업스트림 프록시)
 - 업스트림 OpenTTS(HTTP 5500)로 전환, GET 우선/POST 폴백 지원
 - Settings 평탄화로 환경변수 신뢰성 향상(`TTS_BACKEND`, `TTS_BASE_URL`, `TTS_DEFAULT_VOICE`)
 - 기본 단위 테스트 추가: 헬스체크, 잘못된 입력 검증 + env 반영 테스트
@@ -41,6 +42,24 @@ curl -sS "http://localhost:5502/api/tts?text=hello" --output test.wav
 aplay test.wav # 또는 시스템 재생기
 ```
 
+### 한국어 보이스 사용 방법(OpenTTS)
+1) 사용 가능한 보이스 조회(호스트 → OpenTTS):
+```bash
+curl -sS http://localhost:5500/api/voices | jq '.' | less
+```
+또는 프록시 경유:
+```bash
+curl -sS http://localhost:5502/api/voices | python -m json.tool
+```
+2) 목록에서 한국어(ko 또는 ko_KR) 보이스 ID를 선택(예: `ko_KR-xxxx-high`)
+3) 프록시 경유 테스트(보이스 파라미터 지정):
+```bash
+curl -sS "http://localhost:5502/api/tts?voice=ko_KR-xxxx-high&text=안녕하세요" -o ko.wav
+```
+4) 기본 보이스로 고정하려면 환경변수 조정:
+ - `server/tts_server/docker/compose.yml`의 `TTS_DEFAULT_VOICE` 값을 한국어 보이스 ID로 변경
+ - Flutter `.env.dev`의 `TTS_DEFAULT_VOICE`도 동일 값으로 변경 후 앱에서 환경 리로드
+
 ### 수동 테스트(마이크 사용, Flutter user_app 연동)
 1) TTS 서버 기동
 ```bash
@@ -52,6 +71,7 @@ docker compose up --build -d
 ```env
 TTS_BACKEND=opentts
 TTS_BASE_URL=http://localhost:5502
+# 예: 한국어 보이스 ID로 교체(아래 조회 절차 참고)
 TTS_DEFAULT_VOICE=en_US-lessac-high
 ```
 
