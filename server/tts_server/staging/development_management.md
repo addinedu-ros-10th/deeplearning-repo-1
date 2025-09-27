@@ -20,9 +20,11 @@
 - PR 시 `analyze/test` 통과 로그 첨부
 
 ## 현황 (2025-09-27)
-- FastAPI 서버 `/healthz`, `/api/tts` 라우트 추가
-- Piper/Mimic3/OpenTTS 업스트림 프록시 지원 (WAV 스트림 반환)
-- Docker compose로 Piper+TTS 서버 로컬 기동 가능
+- FastAPI 서버 `/healthz`, `/api/tts` 라우트 제공
+- Piper/Mimic3/OpenTTS 업스트림 프록시 지원, WAV 스트림 반환
+- 기본 단위 테스트 추가: 헬스체크, 잘못된 입력 검증
+- Docker Compose로 Piper+TTS 서버 로컬 기동 가능
+- Dockerfile(poetry) 정리 및 포트 노출(5502)
 
 ## 다음 일정
 1. 통합 테스트: 실제 Piper 컨테이너와 end-to-end WAV 생성/재생 확인
