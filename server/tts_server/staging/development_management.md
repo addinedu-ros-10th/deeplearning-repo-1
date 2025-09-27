@@ -21,9 +21,10 @@
 
 ## 현황 (2025-09-27)
 - FastAPI 서버 `/healthz`, `/api/tts` 라우트 제공
-- Piper/Mimic3/OpenTTS 업스트림 프록시 지원, WAV 스트림 반환
-- 기본 단위 테스트 추가: 헬스체크, 잘못된 입력 검증
-- Docker Compose로 Piper+TTS 서버 로컬 기동 가능
+- 업스트림 OpenTTS(HTTP 5500)로 전환, GET 우선/POST 폴백 지원
+- Settings 평탄화로 환경변수 신뢰성 향상(`TTS_BACKEND`, `TTS_BASE_URL`, `TTS_DEFAULT_VOICE`)
+- 기본 단위 테스트 추가: 헬스체크, 잘못된 입력 검증 + env 반영 테스트
+- Docker Compose로 OpenTTS + TTS Server + (옵션) Nginx 프록시 구동 가능
 - Dockerfile(poetry) 정리 및 포트 노출(5502)
 
 ## 다음 일정
@@ -36,7 +37,7 @@
 ```bash
 cd server/tts_server/docker
 docker compose up --build -d
-curl -sS "http://localhost:5502/api/tts?text=테스트" --output test.wav
+curl -sS "http://localhost:5502/api/tts?text=hello" --output test.wav
 aplay test.wav # 또는 시스템 재생기
 ```
 
@@ -49,9 +50,9 @@ docker compose up --build -d
 
 2) 사용자 앱 환경 변수 설정(`app/user_app/assets/env/.env.dev`)
 ```env
-TTS_BACKEND=piper
+TTS_BACKEND=opentts
 TTS_BASE_URL=http://localhost:5502
-TTS_DEFAULT_VOICE=ko_KR-pml_high
+TTS_DEFAULT_VOICE=en_US-lessac-high
 ```
 
 3) Flutter 앱 실행(데스크톱 또는 Android 권장)
@@ -67,8 +68,8 @@ flutter run -d chrome --dart-define=USE_DOTENV=true --dart-define=APP_ENV=dev
 ```
 
 4) 앱 내 테스트 절차
-- 상단 안내에서 Backend가 Piper인지 확인
-- Piper Voice: `ko_KR-pml_high` 선택
+- 상단 안내에서 Backend가 OpenTTS인지 확인
+- Voice: `en_US-lessac-high` 선택(한국어 모델 준비 시 ko-KR로 교체)
 - Listen 버튼으로 마이크 녹음을 시작하여 한국어 문장을 말하기
 - Ask + Speak 버튼으로 합성된 한국어 음성 재생 확인(자연스러움 체크)
 

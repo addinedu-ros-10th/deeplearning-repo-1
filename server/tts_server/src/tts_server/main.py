@@ -10,14 +10,14 @@ settings = get_settings()
 
 @app.get("/healthz")
 async def healthz() -> dict:
-    return {"status": "ok", "backend": settings.tts.backend}
+    return {"status": "ok", "backend": settings.tts_backend}
 
 
 @app.get("/api/tts")
 async def tts_api(text: str = Query(..., min_length=1), voice: str | None = None):
-    voice_id = voice or settings.tts.default_voice
-    backend = settings.tts.backend.lower()
-    base = settings.tts.base_url.rstrip("/")
+    voice_id = voice or settings.tts_default_voice
+    backend = settings.tts_backend.lower()
+    base = settings.tts_base_url.rstrip("/")
 
     async with httpx.AsyncClient(timeout=None) as client:
         try:
@@ -25,8 +25,14 @@ async def tts_api(text: str = Query(..., min_length=1), voice: str | None = None
                 # POST /api/tts?voice=...  body: { text }
                 resp = await client.post(f"{base}/api/tts", params={"voice": voice_id}, json={"text": text})
             elif backend in {"mimic3", "opentts"}:
-                # GET /api/tts?voice=...&text=...
+                # Prefer GET, fallback to POST for compatibility
                 resp = await client.get(f"{base}/api/tts", params={"voice": voice_id, "text": text})
+                if resp.status_code in (400, 404, 405):
+                    resp = await client.post(
+                        f"{base}/api/tts",
+                        params={"voice": voice_id},
+                        json={"text": text},
+                    )
             else:
                 return JSONResponse({"error": f"unsupported backend: {backend}"}, status_code=400)
 

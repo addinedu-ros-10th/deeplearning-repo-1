@@ -117,8 +117,9 @@ flutter run -d chrome \
 - 테스트: 기본 위젯 테스트를 현재 UI(`Voice Interface`)에 맞게 갱신, 통과 확인
 - 문서: 실행/환경/테스트 가이드 보강, 환경 구축 결과 기록
 - 자산: `assets/env/.env.dev`, `.env.prod` 플레이스홀더 생성 (토큰 빈 값)
- - 한국어 TTS 통합: Piper/Mimic3/OpenTTS 백엔드 선택 및 Piper ko_KR 보이스 선택 UI/로직 추가, audioplayers로 WAV 재생
+ - 한국어 TTS 통합: Piper/Mimic3/OpenTTS 백엔드 선택 및 보이스 선택 UI/로직 추가, audioplayers로 WAV 재생
  - 환경 변수 확장: `TTS_BACKEND`, `TTS_BASE_URL`, `TTS_DEFAULT_VOICE` 지원 및 `.env` 반영
+ - TTS 서버 상태 표시/재시도 버튼 추가(`/healthz`)
  - 분석기/테스트: 의존성 추가 후 분석기 0 issue, 위젯 테스트 통과 유지
 
 ## 향후 진행
