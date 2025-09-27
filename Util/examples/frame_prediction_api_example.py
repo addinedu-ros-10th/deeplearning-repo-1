@@ -98,32 +98,35 @@ def create_frame_predictions_batch_example(client: CommonApiClient, experiment_i
     # 세션 ID 생성
     session_id = str(uuid.uuid4())
     
-    # 배치 프레임 예측 데이터 준비
+    # 배치 프레임 예측 데이터 준비 (올바른 API 스키마)
     batch_data = {
-        "session_id": session_id,
-        "experiment_id": experiment_id,
-        "input_uri": "file:///data/video_demo.mp4",
-        "predictions": [
+        "items": [
             {
+                "session_id": session_id,
+                "experiment_id": experiment_id,
+                "input_uri": "file:///data/video_demo.mp4",
                 "frame_index": 0,
                 "probabilities": {"normal": 0.85, "warning": 0.10, "fall": 0.05},
                 "label_pred": "normal",
-                "confidence": 0.85,
-                "bbox": {"x": 100, "y": 150, "width": 200, "height": 300}
+                "confidence": 0.85
             },
             {
+                "session_id": session_id,
+                "experiment_id": experiment_id,
+                "input_uri": "file:///data/video_demo.mp4",
                 "frame_index": 1,
                 "probabilities": {"normal": 0.70, "warning": 0.25, "fall": 0.05},
                 "label_pred": "normal",
-                "confidence": 0.70,
-                "bbox": {"x": 105, "y": 155, "width": 195, "height": 295}
+                "confidence": 0.70
             },
             {
+                "session_id": session_id,
+                "experiment_id": experiment_id,
+                "input_uri": "file:///data/video_demo.mp4",
                 "frame_index": 2,
                 "probabilities": {"normal": 0.30, "warning": 0.60, "fall": 0.10},
                 "label_pred": "warning",
-                "confidence": 0.60,
-                "bbox": {"x": 110, "y": 160, "width": 190, "height": 290}
+                "confidence": 0.60
             }
         ]
     }
