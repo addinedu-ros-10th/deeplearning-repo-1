@@ -37,6 +37,14 @@ class VoicePage extends StatelessWidget {
                 builder: (context, vp, _) => Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // STT/TTS information
+                    Text(vp.sttInfoText, style: const TextStyle(color: Colors.white54)),
+                    const SizedBox(height: 8),
+                    if (vp.availableEngines.isNotEmpty)
+                      Text(vp.engineInfoText, style: const TextStyle(color: Colors.white54)),
+                    if (vp.availableEngines.isNotEmpty) const SizedBox(height: 8),
+                    Text(vp.voiceInfoText, style: const TextStyle(color: Colors.white54)),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
@@ -57,6 +65,35 @@ class VoicePage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
+                    if (vp.availableEngines.isNotEmpty)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              dropdownColor: Colors.black,
+                              value: vp.selectedEngine?.toString().isEmpty == true ? null : vp.selectedEngine,
+                              items: vp.availableEngines
+                                  .map((e) => DropdownMenuItem<String>(
+                                        value: e,
+                                        child: Text(e, style: const TextStyle(color: Colors.white70)),
+                                      ))
+                                  .toList(),
+                              onChanged: (String? engine) {
+                                if (engine != null) {
+                                  vp.selectEngine(engine);
+                                }
+                              },
+                              decoration: const InputDecoration(
+                                labelText: 'TTS Engine',
+                                labelStyle: TextStyle(color: Colors.white54),
+                                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white54)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    if (vp.availableEngines.isNotEmpty) const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(

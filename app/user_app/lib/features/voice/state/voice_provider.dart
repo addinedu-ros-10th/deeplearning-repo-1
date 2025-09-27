@@ -30,6 +30,8 @@ class VoiceProvider extends ChangeNotifier {
   Map<String, dynamic>? _selectedVoice;
   double _ttsRate = 0.95;
   double _ttsPitch = 1.0;
+  List<String> _availableEngines = <String>[]; // Android only; empty elsewhere
+  String? _selectedEngine;
   final SpeechRecognizer _recognizer = createSpeechRecognizer();
 
   bool get isListening => _isListening;
@@ -45,6 +47,8 @@ class VoiceProvider extends ChangeNotifier {
     try {
       await _tts.awaitSpeakCompletion(true);
     } catch (_) {}
+    await _loadEngines();
+    await _ensureKoreanLanguage();
     await _loadVoices();
   }
 
@@ -161,6 +165,49 @@ class VoiceProvider extends ChangeNotifier {
   Map<String, dynamic>? get selectedVoice => _selectedVoice;
   double get ttsRate => _ttsRate;
   double get ttsPitch => _ttsPitch;
+  List<String> get availableEngines => _availableEngines;
+  String? get selectedEngine => _selectedEngine;
+
+  String get engineInfoText {
+    final String platform = defaultTargetPlatform.name;
+    final String engine = (_selectedEngine ?? '').toLowerCase();
+    if (engine.contains('google')) {
+      return 'TTS 엔진: Google (Android). 한국어 ko-KR 음성이 비교적 자연스럽고 기기/버전에 따라 다양한 음성이 제공됩니다.';
+    }
+    if (engine.contains('samsung')) {
+      return 'TTS 엔진: Samsung (Android). 한국어 음성 제공. 일부 기기에서 발음/억양 차이가 있을 수 있습니다.';
+    }
+    if (platform == 'iOS') {
+      return 'TTS 엔진: iOS AVSpeechSynthesizer. 기기/OS 버전에 따라 한국어(ko-KR) 음성 품질이 다를 수 있습니다.';
+    }
+    if (_selectedEngine == null || _selectedEngine!.isEmpty) {
+      return 'TTS 엔진: 시스템 기본 엔진 사용. 한국어 자연스러움을 위해 ko-KR 음성 선택을 권장합니다.';
+    }
+    return 'TTS 엔진: $_selectedEngine';
+  }
+
+  String get voiceInfoText {
+    final String locale = (_selectedVoice?['locale']?.toString() ?? '').toLowerCase();
+    final String name = _selectedVoice?['name']?.toString() ?? 'unknown';
+    if (locale.startsWith('ko')) {
+      return '선택된 음성: $name ($locale). 한국어 전용/지원 음성으로 자연스러운 발화를 기대할 수 있습니다.';
+    }
+    if (locale.isEmpty) {
+      return '선택된 음성 정보가 제한적입니다. 한국어(ko-KR) 음성을 선택하면 자연스러움이 개선됩니다.';
+    }
+    return '선택된 음성: $name ($locale). 한국어가 아니므로 발음이 어색할 수 있습니다. ko-KR 음성을 권장합니다.';
+  }
+
+  String get sttInfoText {
+    final String platform = defaultTargetPlatform.name;
+    if (platform == 'android') {
+      return 'STT: 기기 내 Google 음성 인식(설정에 따라 다름). 한국어 ko-KR로 설정 시 인식 품질이 개선됩니다.';
+    }
+    if (platform == 'iOS') {
+      return 'STT: iOS 음성 인식. 한국어(ko-KR) 로케일 사용 시 인식률이 향상됩니다.';
+    }
+    return 'STT: 플랫폼 기본 음성 인식 사용. 한국어 로케일 설정과 조용한 환경이 인식 품질에 도움이 됩니다.';
+  }
 
   Future<void> _loadVoices() async {
     try {
@@ -179,6 +226,44 @@ class VoiceProvider extends ChangeNotifier {
         }
         notifyListeners();
       }
+    } catch (_) {}
+  }
+
+  Future<void> _loadEngines() async {
+    try {
+      final dynamic engines = await _tts.getEngines;
+      if (engines is List) {
+        _availableEngines = engines.cast<String>().toList();
+        // Prefer Google TTS if available on Android
+        final String google = _availableEngines.firstWhere(
+          (String e) => e.toLowerCase().contains('google'),
+          orElse: () => _availableEngines.isNotEmpty ? _availableEngines.first : '',
+        );
+        if (google.isNotEmpty) {
+          _selectedEngine = google;
+          try {
+            await _tts.setEngine(google);
+          } catch (_) {}
+        }
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> selectEngine(String engine) async {
+    _selectedEngine = engine;
+    try {
+      await _tts.setEngine(engine);
+    } catch (_) {}
+    await _ensureKoreanLanguage();
+    await _loadVoices();
+    notifyListeners();
+  }
+
+  Future<void> _ensureKoreanLanguage() async {
+    try {
+      // Best-effort: set language to Korean for more natural TTS
+      await _tts.setLanguage('ko-KR');
     } catch (_) {}
   }
 
