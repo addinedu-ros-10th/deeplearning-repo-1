@@ -43,10 +43,9 @@ services:
     environment:
       # neurlang/piper-onnx-kss-korean 저장소 사용
       VOICE_VERSION: "main"
-      VOICE_ID: "kss-korean"
-      BASE_URL: "https://huggingface.co/neurlang/piper-onnx-kss-korean/resolve"
-      # 해당 저장소는 루트(main)에 파일이 위치함
-      VOICE_PATH_DIR: ""
+      VOICE_ID: "piper-kss-korean"
+      BASE_URL_RESOLVE: "https://huggingface.co/neurlang/piper-onnx-kss-korean/resolve"
+      BASE_URL_RAW: "https://huggingface.co/neurlang/piper-onnx-kss-korean/raw"
     volumes:
       - voices:/voices
     command:
@@ -58,15 +57,26 @@ services:
         # Escape with double-$ to defer expansion to container shell.
         [ -n "$$VOICE_ID" ] || { echo "VOICE_ID is required"; exit 1; }
         [ -n "$$VOICE_VERSION" ] || { echo "VOICE_VERSION is required"; exit 1; }
-        [ -n "$$BASE_URL" ] || { echo "BASE_URL is required"; exit 1; }
+        [ -n "$$BASE_URL_RESOLVE" ] || { echo "BASE_URL_RESOLVE is required"; exit 1; }
+        [ -n "$$BASE_URL_RAW" ] || { echo "BASE_URL_RAW is required"; exit 1; }
+
+        echo "[voices-fetcher] env:"
+        echo "  VOICE_ID=$$VOICE_ID"
+        echo "  VOICE_VERSION=$$VOICE_VERSION"
+        echo "  BASE_URL_RESOLVE=$$BASE_URL_RESOLVE"
+        echo "  BASE_URL_RAW=$$BASE_URL_RAW"
 
         mkdir -p "/voices/$$VOICE_ID"
         cd "/voices/$$VOICE_ID"
-        echo "[voices-fetcher] downloading $$VOICE_ID ..."
+        echo "[voices-fetcher] PWD=$(pwd)"
 
-        # neurlang 저장소는 루트에 파일이 있으므로 PATH_DIR 없이 다운로드
-        curl -fL -o "$$VOICE_ID.onnx" "$$BASE_URL/$$VOICE_VERSION/$$VOICE_ID.onnx?download=true"
-        curl -fL -o "$$VOICE_ID.onnx.json" "$$BASE_URL/$$VOICE_VERSION/$$VOICE_ID.onnx.json?download=true"
+        ONNX_URL="$$BASE_URL_RESOLVE/$$VOICE_VERSION/$$VOICE_ID.onnx?download=true"
+        JSON_URL="$$BASE_URL_RAW/$$VOICE_VERSION/$$VOICE_ID.onnx.json"
+        echo "[voices-fetcher] ONNX_URL=$ONNX_URL"
+        echo "[voices-fetcher] JSON_URL=$JSON_URL"
+
+        curl -fL -o "$$VOICE_ID.onnx" "$ONNX_URL"
+        curl -fL -o "$$VOICE_ID.onnx.json" "$JSON_URL"
 
         echo "[voices-fetcher] done"
     restart: "no"
