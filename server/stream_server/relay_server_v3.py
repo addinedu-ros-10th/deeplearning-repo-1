@@ -23,80 +23,168 @@ pc_owners = {}
 pc_subs = {}  # pc -> dict[(camera_id, kind)] = relay.clone track
 
 async def receiver_cleanup(sid: str):
+    print(f"[cleanup] 수신자 정리 시작: {sid}")
+
     ent = receivers.pop(sid, None)
+
+    # 모든 카메라에서 이 수신자의 구독 정리
     for cam in cameras.values():
         sub = cam["subscribers"].pop(sid, None)
         if sub:
             for tr in list(sub.get("clones", {}).values()):
-                try: tr.stop()
-                except: pass
+                try:
+                    if hasattr(tr, 'stop'):
+                        tr.stop()
+                except Exception as e:
+                    print(f"[cleanup] 구독 트랙 정지 실패: {e}")
             sub["clones"].clear()
 
+    # 이 수신자의 PeerConnection 찾기 및 정리
     pc = None
     for _pc, owner in list(pc_owners.items()):
         if owner == sid:
             pc = _pc
+            break
+
     if pc:
+        # pc_subs에서 관련 트랙들 정리
         subs = pc_subs.pop(pc, {})
         for tr in list(subs.values()):
-            try: tr.stop()
-            except: pass
-        try: await pc.close()
-        except: pass
+            try:
+                if hasattr(tr, 'stop'):
+                    tr.stop()
+            except Exception as e:
+                print(f"[cleanup] PC 트랙 정지 실패: {e}")
+
+        # PeerConnection 닫기
+        try:
+            if hasattr(pc, 'close') and pc.connectionState != 'closed':
+                await pc.close()
+        except Exception as e:
+            print(f"[cleanup] PC 닫기 실패: {e}")
+
+        # 관련 데이터 정리
         pcs.discard(pc)
         pc_roles.pop(pc, None)
         pc_owners.pop(pc, None)
+
+    print(f"[cleanup] 수신자 정리 완료: {sid}")
+
+async def delayed_teardown(camera_id: str, reason: str):
+    """딜레이를 두고 카메라 정리 작업 수행"""
+    await asyncio.sleep(0.5)  # 500ms 딜레이
+    await teardown_camera(camera_id, reason)
+
+async def delayed_receiver_cleanup(sid: str):
+    """딜레이를 두고 수신자 정리 작업 수행"""
+    await asyncio.sleep(0.5)  # 500ms 딜레이
+    await receiver_cleanup(sid)
 
 async def teardown_camera(camera_id: str, reason: str = "replaced"):
     cam = cameras.get(camera_id)
     if not cam:
         return
 
+    print(f"[teardown] 카메라 정리 시작: {camera_id} (이유: {reason})")
+
+    # 구독자들의 클론 트랙 정리
     for rcv_sid, ent in list(cam["subscribers"].items()):
         clones = ent.get("clones", {})
         for k, tr in list(clones.items()):
-            try: tr.stop()
-            except: pass
+            try:
+                if hasattr(tr, 'stop'):
+                    tr.stop()
+            except Exception as e:
+                print(f"[teardown] 클론 트랙 정지 실패: {e}")
             clones.pop(k, None)
         cam["subscribers"].pop(rcv_sid, None)
 
+    # 원본 트랙 정리
     for kind, tr in list(cam["orig_tracks"].items()):
         if tr:
-            try: tr.stop()
-            except: pass
+            try:
+                if hasattr(tr, 'stop'):
+                    tr.stop()
+            except Exception as e:
+                print(f"[teardown] 원본 트랙 정지 실패: {e}")
         cam["orig_tracks"][kind] = None
 
+    # PeerConnection 정리
     spc = cam.get("sender_pc")
     if spc:
-        try: await spc.close()
-        except: pass
+        try:
+            if hasattr(spc, 'close') and spc.connectionState != 'closed':
+                await spc.close()
+            pcs.discard(spc)
+            pc_roles.pop(spc, None)
+            pc_owners.pop(spc, None)
+        except Exception as e:
+            print(f"[teardown] PC 닫기 실패: {e}")
 
     cameras.pop(camera_id, None)
-    await sio.emit("sender_removed", {"camera_id": camera_id, "reason": reason}, room="receivers")
+
+    try:
+        await sio.emit("sender_removed", {"camera_id": camera_id, "reason": reason}, room="receivers")
+    except Exception as e:
+        print(f"[teardown] 이벤트 전송 실패: {e}")
+
+    print(f"[teardown] 카메라 정리 완료: {camera_id}")
 
 async def attach_current_cameras_to_receiver(receiver_sid: str):
     info = receivers.get(receiver_sid)
     if not info:
         return
     rcv_pc = info["pc"]
+
+    # PeerConnection 상태 확인
+    if rcv_pc.connectionState in ('closed', 'failed'):
+        print(f"[attach] 수신자 PC 상태가 불량함: {receiver_sid} -> {rcv_pc.connectionState}")
+        return
+
     subs = pc_subs.setdefault(rcv_pc, {})
 
     for camera_id, cam in cameras.items():
-        for kind in ("video", "audio"):
-            orig = cam["orig_tracks"].get(kind)
-            if not orig:
-                continue
-            key = (camera_id, kind)
-            if key in subs:
-                continue
-            sub_track = relay.subscribe(orig)
-            subs[key] = sub_track
-            rcv_pc.addTrack(sub_track)
+        try:
+            for kind in ("video", "audio"):
+                orig = cam["orig_tracks"].get(kind)
+                if not orig:
+                    continue
+                key = (camera_id, kind)
+                if key in subs:
+                    continue
 
-        cam["subscribers"].setdefault(receiver_sid, {"pc": rcv_pc, "clones": {}})
-        cam["subscribers"][receiver_sid]["clones"] = {
-            k: v for k, v in pc_subs[rcv_pc].items() if k[0] == camera_id
-        }
+                # 릴레이 구독 시 예외 처리
+                try:
+                    sub_track = relay.subscribe(orig)
+                    subs[key] = sub_track
+
+                    # 트랙 추가 시 트랜시버 찾기
+                    available_transceiver = None
+                    for transceiver in rcv_pc.getTransceivers():
+                        if (transceiver.receiver.track is None and
+                            transceiver.direction == "recvonly" and
+                            transceiver.mid is None):
+                            available_transceiver = transceiver
+                            break
+
+                    if available_transceiver:
+                        # 기존 트랜시버 재사용
+                        available_transceiver.sender.replaceTrack(sub_track)
+                    else:
+                        # 새 트랜시버 생성
+                        rcv_pc.addTrack(sub_track)
+
+                except Exception as e:
+                    print(f"[attach] 트랙 구독 실패 {camera_id}.{kind}: {e}")
+                    continue
+
+            cam["subscribers"].setdefault(receiver_sid, {"pc": rcv_pc, "clones": {}})
+            cam["subscribers"][receiver_sid]["clones"] = {
+                k: v for k, v in pc_subs[rcv_pc].items() if k[0] == camera_id
+            }
+        except Exception as e:
+            print(f"[attach] 카메라 연결 실패 {camera_id}: {e}")
+            continue
 
 @sio.event
 async def connect(sid, environ):
@@ -132,7 +220,8 @@ async def join(sid, data):
             st = pc.iceConnectionState
             print(f"[sender ice] {camera_id} -> {st}")
             if st in ("failed", "disconnected", "closed"):
-                await teardown_camera(camera_id, reason=st)
+                # 약간의 딜레이를 두고 정리 작업 수행
+                asyncio.create_task(delayed_teardown(camera_id, st))
 
         @pc.on("track")
         def on_track(track: MediaStreamTrack):
@@ -175,12 +264,21 @@ async def join(sid, data):
         pc_owners[pc] = sid
         receivers[sid] = {"pc": pc}
 
+        # 트랜시버 미리 생성 (다중 스트림 수신용)
+        for i in range(8):
+            video_transceiver = pc.addTransceiver("video", direction="recvonly")
+            audio_transceiver = pc.addTransceiver("audio", direction="recvonly")
+            # 방향 명시적 설정
+            video_transceiver._offerDirection = "recvonly"
+            audio_transceiver._offerDirection = "recvonly"
+
         @pc.on("iceconnectionstatechange")
         async def on_ice_state_change():
             st = pc.iceConnectionState
             print(f"[receiver ice] {sid} -> {st}")
             if st in ("failed", "disconnected", "closed"):
-                await receiver_cleanup(sid)
+                # 약간의 딜레이를 두고 정리 작업 수행
+                asyncio.create_task(delayed_receiver_cleanup(sid))
 
         await sio.save_session(sid, {"role": "receiver"})
         await sio.enter_room(sid, "receivers")
@@ -193,29 +291,46 @@ async def join(sid, data):
 
 @sio.event
 async def offer(sid, data):
-    sdp = data.get("sdp")
-    type_ = data.get("type")
-    if not sdp or not type_:
-        await sio.emit("error", {"msg": "invalid offer"}, to=sid)
-        return
+    try:
+        sdp = data.get("sdp")
+        type_ = data.get("type")
+        if not sdp or not type_:
+            await sio.emit("error", {"msg": "invalid offer"}, to=sid)
+            return
 
-    session = await sio.get_session(sid)
-    role = session.get("role")
-    pc = None
-    for _pc, owner in pc_owners.items():
-        if owner == sid:
-            pc = _pc
-            break
-    if not pc:
-        await sio.emit("error", {"msg": "pc not found for sid"}, to=sid)
-        return
+        session = await sio.get_session(sid)
+        role = session.get("role")
+        pc = None
+        for _pc, owner in pc_owners.items():
+            if owner == sid:
+                pc = _pc
+                break
+        if not pc:
+            await sio.emit("error", {"msg": "pc not found for sid"}, to=sid)
+            return
 
-    await pc.setRemoteDescription(RTCSessionDescription(sdp=sdp, type=type_))
-    if role == "receiver":
-        await attach_current_cameras_to_receiver(sid)
-    answer = await pc.createAnswer()
-    await pc.setLocalDescription(answer)
-    await sio.emit("answer", {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}, to=sid)
+        # PeerConnection 상태 확인
+        if pc.connectionState == 'closed':
+            print(f"[offer] PC가 이미 닫힌 상태: {sid}")
+            return
+
+        await pc.setRemoteDescription(RTCSessionDescription(sdp=sdp, type=type_))
+        if role == "receiver":
+            await attach_current_cameras_to_receiver(sid)
+
+        # 트랜시버 방향 검증 및 수정
+        for transceiver in pc.getTransceivers():
+            if transceiver._offerDirection is None:
+                transceiver._offerDirection = transceiver.direction or "recvonly"
+                print(f"[offer] 트랜시버 방향 수정: {transceiver._offerDirection}")
+
+        answer = await pc.createAnswer()
+        await pc.setLocalDescription(answer)
+        await sio.emit("answer", {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}, to=sid)
+
+    except Exception as e:
+        print(f"[offer] 오퍼 처리 중 오류: {e}")
+        await sio.emit("error", {"msg": f"offer processing failed: {str(e)}"}, to=sid)
 
 @sio.event
 async def disconnect(sid):

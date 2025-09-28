@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCTV 관제 시스템 - 노인공경 스마트 케어</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 70px);
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .cctv-section {
+            width: 66.67%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .cctv-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 15px;
+            height: 100%;
+        }
+
+        .cctv-feed {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .cctv-feed:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.02);
+        }
+
+        .cctv-feed.alert {
+            border-color: #ff4757;
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.5);
+            animation: alertPulse 2s infinite;
+        }
+
+        @keyframes alertPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 71, 87, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(255, 71, 87, 0.8); }
+        }
+
+        .cctv-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .cctv-title {
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .cctv-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-normal {
+            background: #2ed573;
+            color: white;
+        }
+
+        .status-alert {
+            background: #ff4757;
+            color: white;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.7; }
+        }
+
+        .video-container {
+            width: 100%;
+            height: calc(100% - 40px);
+            background: #1a1a1a;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .video-placeholder {
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .stream-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .cctv-feed:hover .stream-controls {
+            opacity: 1;
+        }
+
+        .control-btn {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .control-btn.active {
+            background: #2ed573;
+        }
+
+        .dashboard-section {
+            width: 33.33%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
+        }
+
+        .dashboard-title {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sensor-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            order: 2;
+        }
+
+        .expanded-card-container {
+            order: 1;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .expanded-card-container.show {
+            display: block;
+        }
+
+        .sensor-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .sensor-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .sensor-card.expanded {
+            width: 100%;
+            aspect-ratio: unset;
+            height: auto;
+            padding: 20px;
+            margin-bottom: 0;
+        }
+
+        .sensor-card.expanded .card-compact {
+            display: none;
+        }
+
+        .sensor-card.expanded .card-expanded {
+            display: block;
+        }
+
+        .card-compact {
+            display: block;
+        }
+
+        .card-expanded {
+            display: none;
+            width: 100%;
+        }
+
+        .sensor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .sensor-name {
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .sensor-name-compact {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .sensor-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-bottom: 8px;
+        }
+
+        .sensor-icon-expanded {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+
+        .icon-temperature { background: #ff6b35; }
+        .icon-humidity { background: #4834d4; }
+        .icon-gas { background: #ffb142; }
+        .icon-fire { background: #ff3838; }
+
+        .sensor-value {
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .sensor-value-expanded {
+            color: white;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .sensor-unit {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+        }
+
+        .sensor-unit-expanded {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+
+        .sensor-status {
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .status-safe { color: #2ed573; }
+        .status-warning { color: #ffb142; }
+        .status-danger { color: #ff4757; }
+
+        .chart-container {
+            height: 120px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin-top: 15px;
+            padding: 10px;
+            position: relative;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .alert-panel {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .alert-title {
+            color: #ff4757;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .alert-item {
+            color: white;
+            font-size: 14px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .alert-item:last-child {
+            border-bottom: none;
+        }
+
+        .alert-time {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+        }
+
+        .fullscreen-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+            user-select: none;
+        }
+
+        .cctv-feed:hover .fullscreen-btn {
+            opacity: 1;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(0, 0, 0, 0.7);
+            transform: scale(1.05);
+        }
+
+        .fullscreen-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 전체화면 모드에서의 스타일 */
+        :fullscreen .video-container,
+        :-webkit-full-screen .video-container,
+        :-moz-full-screen .video-container,
+        :-ms-fullscreen .video-container {
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: contain;
+        }
+
+        :fullscreen video,
+        :-webkit-full-screen video,
+        :-moz-full-screen video,
+        :-ms-fullscreen video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain;
+        }
+
+        @media (max-width: 1200px) {
+            .main-container {
+                flex-direction: column;
+            }
+
+            .cctv-section {
+                width: 100%;
+                height: 60%;
+            }
+
+            .dashboard-section {
+                width: 100%;
+                height: 40%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏠 노인공경 CCTV 관제 시스템</h1>
+    </div>
+
+    <div class="main-container">
+        <!-- CCTV 섹션 -->
+        <div class="cctv-section">
+            <div class="cctv-grid">
+                <!-- 동적으로 생성되는 카메라 피드들 -->
+            </div>
+        </div>
+
+        <!-- 대시보드 섹션 -->
+        <div class="dashboard-section">
+            <div class="dashboard-title">📊 환경 모니터링</div>
+
+            <div class="sensor-grid">
+                <!-- 확장된 카드를 위한 컨테이너 -->
+                <div class="expanded-card-container" id="expanded-container"></div>
+
+                <!-- 일반 카드들 컨테이너 -->
+                <div class="cards-container">
+                    <div class="sensor-card" onclick="toggleCard(this)" data-sensor="temperature">
+                        <div class="card-compact">
+                            <div class="sensor-icon icon-temperature"></div>
+                            <div class="sensor-name-compact">온도</div>
+                            <div class="sensor-value">22.5<span class="sensor-unit">°C</span></div>
+                        </div>
+                        <div class="card-expanded">
+                            <button class="close-btn" onclick="closeCard(event, this.parentElement.parentElement)">×</button>
+                            <div class="sensor-header">
+                                <div class="sensor-name">온도 센서</div>
+                                <div class="sensor-icon-expanded icon-temperature"></div>
+                            </div>
+                            <div class="sensor-value-expanded">22.5<span class="sensor-unit-expanded">°C</span></div>
+                            <div class="sensor-status status-safe">정상 범위 (18-25°C)</div>
+                            <div class="chart-container">
+                                <canvas class="chart-canvas" id="temperature-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sensor-card" onclick="toggleCard(this)" data-sensor="humidity">
+                        <div class="card-compact">
+                            <div class="sensor-icon icon-humidity"></div>
+                            <div class="sensor-name-compact">습도</div>
+                            <div class="sensor-value">45<span class="sensor-unit">%</span></div>
+                        </div>
+                        <div class="card-expanded">
+                            <button class="close-btn" onclick="closeCard(event, this.parentElement.parentElement)">×</button>
+                            <div class="sensor-header">
+                                <div class="sensor-name">습도 센서</div>
+                                <div class="sensor-icon-expanded icon-humidity"></div>
+                            </div>
+                            <div class="sensor-value-expanded">45<span class="sensor-unit-expanded">%</span></div>
+                            <div class="sensor-status status-safe">정상 범위 (40-60%)</div>
+                            <div class="chart-container">
+                                <canvas class="chart-canvas" id="humidity-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sensor-card" onclick="toggleCard(this)" data-sensor="gas">
+                        <div class="card-compact">
+                            <div class="sensor-icon icon-gas"></div>
+                            <div class="sensor-name-compact">가스</div>
+                            <div class="sensor-value">0.02<span class="sensor-unit">ppm</span></div>
+                        </div>
+                        <div class="card-expanded">
+                            <button class="close-btn" onclick="closeCard(event, this.parentElement.parentElement)">×</button>
+                            <div class="sensor-header">
+                                <div class="sensor-name">가스 감지 센서</div>
+                                <div class="sensor-icon-expanded icon-gas"></div>
+                            </div>
+                            <div class="sensor-value-expanded">0.02<span class="sensor-unit-expanded">ppm</span></div>
+                            <div class="sensor-status status-safe">안전 (< 0.5ppm)</div>
+                            <div class="chart-container">
+                                <canvas class="chart-canvas" id="gas-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sensor-card" onclick="toggleCard(this)" data-sensor="fire">
+                        <div class="card-compact">
+                            <div class="sensor-icon icon-fire"></div>
+                            <div class="sensor-name-compact">화재</div>
+                            <div class="sensor-value">정상</div>
+                        </div>
+                        <div class="card-expanded">
+                            <button class="close-btn" onclick="closeCard(event, this.parentElement.parentElement)">×</button>
+                            <div class="sensor-header">
+                                <div class="sensor-name">화재 감지 센서</div>
+                                <div class="sensor-icon-expanded icon-fire"></div>
+                            </div>
+                            <div class="sensor-value-expanded">정상</div>
+                            <div class="sensor-status status-safe">화재 감지 없음</div>
+                            <div class="chart-container">
+                                <canvas class="chart-canvas" id="fire-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert-panel">
+                <div class="alert-title">🚨 최근 알림</div>
+                <div class="alert-item">
+                    <div>낙상 감지 - 화장실</div>
+                    <div class="alert-time">2분 전</div>
+                </div>
+                <div class="alert-item">
+                    <div>온도 상승 경고</div>
+                    <div class="alert-time">15분 전</div>
+                </div>
+                <div class="alert-item">
+                    <div>시스템 정상 가동</div>
+                    <div class="alert-time">1시간 전</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // WebRTC 관련 변수들
+        const socket = io('http://100.65.221.86:3010', {
+            transports: ['websocket'],
+        });
+        let pc;
+        let activeCameras = new Map(); // camera_id -> {element, status}
+
+        // 센서 데이터 저장소
+        const sensorData = {
+            temperature: { values: [], timestamps: [] },
+            humidity: { values: [], timestamps: [] },
+            gas: { values: [], timestamps: [] },
+            fire: { values: [], timestamps: [] }
+        };
+
+        // 차트 인스턴스 저장소
+        const chartInstances = {};
+
+        // ======= WebRTC 스트리밍 기능 =======
+
+        // 소켓 연결 및 이벤트 처리
+        socket.on('connect', () => {
+            console.log('[WebRTC] 서버에 연결됨');
+            socket.emit('join', { role: 'receiver' });
+        });
+
+        socket.on('active_cameras', (data) => {
+            console.log('[WebRTC] 활성 카메라 목록:', data.cameras);
+            data.cameras.forEach(cameraId => {
+                createCameraFeed(cameraId);
+            });
+        });
+
+        socket.on('need_offer', async (msg) => {
+            console.log('[WebRTC] need_offer 이벤트 수신');
+            if (pc && pc.signalingState !== 'closed') {
+                try {
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    socket.emit('offer', {
+                        sdp: offer.sdp,
+                        type: offer.type,
+                        role: 'receiver',
+                    });
+                } catch (err) {
+                    console.error('[WebRTC] 재협상 오류:', err);
+                }
+            }
+        });
+
+        socket.on('sender_removed', (msg) => {
+            console.log('[WebRTC] 카메라 제거됨:', msg.camera_id);
+            removeCameraFeed(msg.camera_id);
+        });
+
+        socket.on('answer', async (answer) => {
+            if (pc && pc.signalingState === 'have-local-offer') {
+                await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                console.log('[WebRTC] 원격 응답 설정 완료');
+            }
+        });
+
+        // WebRTC 연결 시작
+        async function startWebRTCReceiver() {
+            if (pc && pc.connectionState !== 'closed') {
+                console.log('[WebRTC] 이미 연결됨');
+                return;
+            }
+
+            pc = new RTCPeerConnection({
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    {
+                        urls: 'turn:openrelay.metered.ca:80',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject',
+                    }
+                ],
+            });
+
+            pc.oniceconnectionstatechange = () => {
+                console.log('[WebRTC] ICE 연결 상태:', pc.iceConnectionState);
+            };
+
+            pc.onconnectionstatechange = () => {
+                console.log('[WebRTC] 연결 상태:', pc.connectionState);
+            };
+
+            // 비디오 트랙 수신 처리
+            pc.ontrack = (event) => {
+                console.log('[WebRTC] 트랙 수신:', event.track.kind);
+
+                if (event.track.kind === 'video') {
+                    // 트랙 ID를 기반으로 카메라 식별
+                    const trackId = event.track.id;
+                    let cameraId = findCameraIdByTrack(trackId);
+
+                    if (!cameraId) {
+                        // 새로운 카메라로 추정하여 임시 ID 생성
+                        cameraId = `camera_${Date.now()}`;
+                        createCameraFeed(cameraId);
+                    }
+
+                    const cameraElement = activeCameras.get(cameraId);
+                    if (cameraElement) {
+                        const videoContainer = cameraElement.element.querySelector('.video-container');
+                        const placeholder = videoContainer.querySelector('.video-placeholder');
+
+                        let video = videoContainer.querySelector('video');
+                        if (!video) {
+                            video = document.createElement('video');
+                            video.autoplay = true;
+                            video.playsinline = true;
+                            video.muted = true;
+                            videoContainer.appendChild(video);
+                        }
+
+                        if (placeholder) {
+                            placeholder.style.display = 'none';
+                        }
+
+                        video.srcObject = new MediaStream([event.track]);
+                        video.play().catch(console.error);
+
+                        // 카메라 상태 업데이트
+                        updateCameraStatus(cameraId, 'streaming');
+
+                        event.track.onended = () => {
+                            console.log('[WebRTC] 트랙 종료:', cameraId);
+                            updateCameraStatus(cameraId, 'disconnected');
+                            if (placeholder) {
+                                placeholder.style.display = 'block';
+                                placeholder.textContent = `${cameraId} - 연결 끊김`;
+                            }
+                            if (video) {
+                                video.remove();
+                            }
+                        };
+                    }
+                }
+            };
+
+            // 트랜시버 미리 생성 (다중 스트림 수신용)
+            for (let i = 0; i < 8; i++) {
+                const videoTransceiver = pc.addTransceiver('video', { direction: 'recvonly' });
+                const audioTransceiver = pc.addTransceiver('audio', { direction: 'recvonly' });
+
+                // 명시적으로 방향 설정 (브라우저 호환성을 위해)
+                if (videoTransceiver.sender) {
+                    videoTransceiver.sender.track = null;
+                }
+                if (audioTransceiver.sender) {
+                    audioTransceiver.sender.track = null;
+                }
+            }
+
+            // 오퍼 생성 및 전송
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket.emit('offer', {
+                sdp: offer.sdp,
+                type: offer.type,
+                role: 'receiver',
+            });
+
+            console.log('[WebRTC] 오퍼 전송 완료');
+        }
+
+        // 카메라 피드 생성
+        function createCameraFeed(cameraId) {
+            if (activeCameras.has(cameraId)) {
+                return; // 이미 존재함
+            }
+
+            const cctvGrid = document.querySelector('.cctv-grid');
+            const feedElement = document.createElement('div');
+            feedElement.className = 'cctv-feed';
+            feedElement.id = `feed_${cameraId}`;
+
+            const locationName = getCameraLocationName(cameraId);
+
+            feedElement.innerHTML = `
+                <div class="cctv-header">
+                    <div class="cctv-title">${locationName}</div>
+                    <div class="cctv-status status-normal">연결중</div>
+                </div>
+                <div class="video-container">
+                    <div class="video-placeholder">${cameraId}<br>스트림 연결 대기중...</div>
+                    <button class="fullscreen-btn" onclick="event.stopPropagation(); toggleFullscreen('feed_${cameraId}')">전체화면</button>
+                    <div class="stream-controls">
+                        <button class="control-btn" onclick="reconnectCamera('${cameraId}')">재연결</button>
+                        <button class="control-btn" onclick="removeCamera('${cameraId}')">제거</button>
+                    </div>
+                </div>
+            `;
+
+            cctvGrid.appendChild(feedElement);
+            activeCameras.set(cameraId, {
+                element: feedElement,
+                status: 'connecting'
+            });
+
+            updateGridLayout();
+            console.log('[UI] 카메라 피드 생성:', cameraId);
+        }
+
+        // 카메라 피드 제거
+        function removeCameraFeed(cameraId) {
+            const cameraData = activeCameras.get(cameraId);
+            if (cameraData) {
+                cameraData.element.remove();
+                activeCameras.delete(cameraId);
+                updateGridLayout();
+                console.log('[UI] 카메라 피드 제거:', cameraId);
+            }
+        }
+
+        // 카메라 상태 업데이트
+        function updateCameraStatus(cameraId, status) {
+            const cameraData = activeCameras.get(cameraId);
+            if (cameraData) {
+                cameraData.status = status;
+                const statusElement = cameraData.element.querySelector('.cctv-status');
+
+                switch (status) {
+                    case 'streaming':
+                        statusElement.textContent = '정상';
+                        statusElement.className = 'cctv-status status-normal';
+                        cameraData.element.classList.remove('alert');
+                        break;
+                    case 'disconnected':
+                        statusElement.textContent = '연결 끊김';
+                        statusElement.className = 'cctv-status status-alert';
+                        break;
+                    case 'connecting':
+                        statusElement.textContent = '연결중';
+                        statusElement.className = 'cctv-status status-normal';
+                        break;
+                }
+            }
+        }
+
+        // 그리드 레이아웃 업데이트
+        function updateGridLayout() {
+            const cctvGrid = document.querySelector('.cctv-grid');
+            const cameraCount = activeCameras.size;
+
+            if (cameraCount <= 1) {
+                cctvGrid.style.gridTemplateColumns = '1fr';
+                cctvGrid.style.gridTemplateRows = '1fr';
+            } else if (cameraCount <= 4) {
+                cctvGrid.style.gridTemplateColumns = '1fr 1fr';
+                cctvGrid.style.gridTemplateRows = '1fr 1fr';
+            } else if (cameraCount <= 6) {
+                cctvGrid.style.gridTemplateColumns = '1fr 1fr 1fr';
+                cctvGrid.style.gridTemplateRows = '1fr 1fr';
+            } else {
+                cctvGrid.style.gridTemplateColumns = '1fr 1fr 1fr 1fr';
+                cctvGrid.style.gridTemplateRows = '1fr 1fr';
+            }
+        }
+
+        // 카메라 위치명 매핑
+        function getCameraLocationName(cameraId) {
+            const locationMap = {
+                'webcam1': '거실',
+                'webcam2': '침실',
+                'webcam3': '화장실',
+                'webcam4': '주방',
+                'webcam5': '현관',
+                'webcam6': '발코니',
+                'camera1': '카메라 1',
+                'camera2': '카메라 2'
+            };
+            return locationMap[cameraId] || cameraId;
+        }
+
+        // 트랙으로 카메라 ID 찾기 (개선 필요)
+        function findCameraIdByTrack(trackId) {
+            // 현재는 간단한 구현, 실제로는 더 정교한 매핑 필요
+            for (let [cameraId, data] of activeCameras) {
+                if (!data.hasTrack) {
+                    data.hasTrack = true;
+                    return cameraId;
+                }
+            }
+            return null;
+        }
+
+        // 카메라 재연결
+        function reconnectCamera(cameraId) {
+            console.log('[Control] 카메라 재연결:', cameraId);
+            updateCameraStatus(cameraId, 'connecting');
+            // 필요시 소켓 재연결 로직 추가
+        }
+
+        // 카메라 제거
+        function removeCamera(cameraId) {
+            console.log('[Control] 카메라 제거:', cameraId);
+            removeCameraFeed(cameraId);
+        }
+
+        // ======= 기존 센서 관련 함수들 =======
+
+        // 카드 토글 함수
+        function toggleCard(card) {
+            const expandedContainer = document.getElementById('expanded-container');
+            const cardsContainer = document.querySelector('.cards-container');
+
+            // 이미 확장된 카드가 있으면 원래 위치로 되돌리기
+            const currentExpandedCard = expandedContainer.querySelector('.sensor-card.expanded');
+            if (currentExpandedCard) {
+                currentExpandedCard.classList.remove('expanded');
+                // 원래 위치에 다시 넣기
+                const originalPosition = currentExpandedCard.getAttribute('data-original-position');
+                if (originalPosition) {
+                    const referenceCard = cardsContainer.children[parseInt(originalPosition)];
+                    cardsContainer.insertBefore(currentExpandedCard, referenceCard);
+                } else {
+                    cardsContainer.appendChild(currentExpandedCard);
+                }
+            }
+
+            // 확장 컨테이너 숨기기
+            expandedContainer.classList.remove('show');
+            expandedContainer.innerHTML = '';
+
+            // 클릭한 카드가 이미 확장된 상태가 아니라면 확장하기
+            if (card !== currentExpandedCard) {
+                // 원래 위치 저장
+                const originalPosition = Array.from(cardsContainer.children).indexOf(card);
+                card.setAttribute('data-original-position', originalPosition);
+
+                // 카드를 확장 컨테이너로 이동
+                expandedContainer.appendChild(card);
+                expandedContainer.classList.add('show');
+
+                // 확장 상태로 변경
+                card.classList.add('expanded');
+
+                // 차트 그리기
+                const sensorType = card.getAttribute('data-sensor');
+                setTimeout(() => drawChart(sensorType), 100);
+            }
+        }
+
+        // 카드 닫기 함수
+        function closeCard(event, card) {
+            event.stopPropagation(); // 카드 클릭 이벤트 방지
+
+            const expandedContainer = document.getElementById('expanded-container');
+            const cardsContainer = document.querySelector('.cards-container');
+
+            // 카드를 원래 위치로 되돌리기
+            card.classList.remove('expanded');
+            const originalPosition = card.getAttribute('data-original-position');
+
+            if (originalPosition) {
+                const referenceCard = cardsContainer.children[parseInt(originalPosition)];
+                cardsContainer.insertBefore(card, referenceCard);
+            } else {
+                cardsContainer.appendChild(card);
+            }
+
+            // 확장 컨테이너 숨기기
+            expandedContainer.classList.remove('show');
+            expandedContainer.innerHTML = '';
+
+            // 원래 위치 속성 제거
+            card.removeAttribute('data-original-position');
+        }
+
+        // 차트 그리기 함수
+        function drawChart(sensorType) {
+            const canvas = document.getElementById(`${sensorType}-chart`);
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const data = sensorData[sensorType];
+
+            // 캔버스 크기 설정
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            // 캔버스 초기화
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (data.values.length === 0) return;
+
+            // 차트 영역 설정
+            const padding = 20;
+            const chartWidth = canvas.width - padding * 2;
+            const chartHeight = canvas.height - padding * 2;
+
+            // 데이터 범위 계산
+            const minValue = Math.min(...data.values);
+            const maxValue = Math.max(...data.values);
+            const valueRange = maxValue - minValue || 1;
+
+            // 격자 그리기
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 1;
+
+            // 수직 격자선
+            for (let i = 0; i <= 5; i++) {
+                const x = padding + (chartWidth / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(x, padding);
+                ctx.lineTo(x, padding + chartHeight);
+                ctx.stroke();
+            }
+
+            // 수평 격자선
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (chartHeight / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(padding + chartWidth, y);
+                ctx.stroke();
+            }
+
+            // 데이터 라인 그리기
+            ctx.strokeStyle = getSensorColor(sensorType);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            data.values.forEach((value, index) => {
+                const x = padding + (chartWidth / (data.values.length - 1)) * index;
+                const y = padding + chartHeight - ((value - minValue) / valueRange) * chartHeight;
+
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+
+            ctx.stroke();
+
+            // 데이터 포인트 그리기
+            ctx.fillStyle = getSensorColor(sensorType);
+            data.values.forEach((value, index) => {
+                const x = padding + (chartWidth / (data.values.length - 1)) * index;
+                const y = padding + chartHeight - ((value - minValue) / valueRange) * chartHeight;
+
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+
+            // Y축 라벨
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'right';
+
+            for (let i = 0; i <= 4; i++) {
+                const value = maxValue - (valueRange / 4) * i;
+                const y = padding + (chartHeight / 4) * i + 3;
+                ctx.fillText(value.toFixed(1), padding - 5, y);
+            }
+        }
+
+        // 센서별 색상 반환
+        function getSensorColor(sensorType) {
+            const colors = {
+                temperature: '#ff6b35',
+                humidity: '#4834d4',
+                gas: '#ffb142',
+                fire: '#ff3838'
+            };
+            return colors[sensorType] || '#ffffff';
+        }
+
+        // 실시간 데이터 업데이트 시뮬레이션
+        function updateSensorData() {
+            const now = new Date();
+
+            // 온도 업데이트 (20-25도 사이)
+            const temperature = (20 + Math.random() * 5);
+            updateSensorValue('temperature', temperature, '°C', now);
+
+            // 습도 업데이트 (40-60% 사이)
+            const humidity = (40 + Math.random() * 20);
+            updateSensorValue('humidity', humidity, '%', now);
+
+            // 가스 농도 업데이트 (0.01-0.05 ppm 사이)
+            const gas = (0.01 + Math.random() * 0.04);
+            updateSensorValue('gas', gas, 'ppm', now);
+
+            // 화재 센서 (대부분 정상)
+            const fireStatus = Math.random() > 0.95 ? '화재감지' : '정상';
+            updateFireSensor(fireStatus, now);
+        }
+
+        // 센서 값 업데이트 함수
+        function updateSensorValue(sensorType, value, unit, timestamp) {
+            // 데이터 저장 (최대 20개 포인트)
+            sensorData[sensorType].values.push(value);
+            sensorData[sensorType].timestamps.push(timestamp);
+
+            if (sensorData[sensorType].values.length > 20) {
+                sensorData[sensorType].values.shift();
+                sensorData[sensorType].timestamps.shift();
+            }
+
+            // UI 업데이트
+            const card = document.querySelector(`[data-sensor="${sensorType}"]`);
+            const compactValue = card.querySelector('.card-compact .sensor-value');
+            const expandedValue = card.querySelector('.card-expanded .sensor-value-expanded');
+
+            const displayValue = sensorType === 'gas' ? value.toFixed(2) : value.toFixed(1);
+
+            if (compactValue) {
+                compactValue.innerHTML = `${displayValue}<span class="sensor-unit">${unit}</span>`;
+            }
+            if (expandedValue) {
+                expandedValue.innerHTML = `${displayValue}<span class="sensor-unit-expanded">${unit}</span>`;
+            }
+
+            // 확장된 카드의 차트 업데이트
+            if (card.classList.contains('expanded')) {
+                setTimeout(() => drawChart(sensorType), 50);
+            }
+        }
+
+        // 화재 센서 업데이트
+        function updateFireSensor(status, timestamp) {
+            sensorData.fire.values.push(status === '정상' ? 0 : 1);
+            sensorData.fire.timestamps.push(timestamp);
+
+            if (sensorData.fire.values.length > 20) {
+                sensorData.fire.values.shift();
+                sensorData.fire.timestamps.shift();
+            }
+
+            const card = document.querySelector('[data-sensor="fire"]');
+            const compactValue = card.querySelector('.card-compact .sensor-value');
+            const expandedValue = card.querySelector('.card-expanded .sensor-value-expanded');
+
+            if (compactValue) compactValue.textContent = status;
+            if (expandedValue) expandedValue.textContent = status;
+
+            if (card.classList.contains('expanded')) {
+                setTimeout(() => drawChart('fire'), 50);
+            }
+        }
+
+        // 전체화면 토글 함수
+        function toggleFullscreen(cctvId) {
+            const element = document.getElementById(cctvId);
+            if (!element) {
+                console.error(`전체화면 요소를 찾을 수 없음: ${cctvId}`);
+                return;
+            }
+
+            // 비디오 요소가 있으면 비디오를 전체화면으로, 없으면 컨테이너를 전체화면으로
+            const video = element.querySelector('video');
+            const targetElement = video || element;
+
+            if (!document.fullscreenElement) {
+                // 전체화면 요청
+                if (targetElement.requestFullscreen) {
+                    targetElement.requestFullscreen().catch(err => {
+                        console.log(`전체화면 모드 실패: ${err.message}`);
+                    });
+                } else if (targetElement.webkitRequestFullscreen) {
+                    // Safari 지원
+                    targetElement.webkitRequestFullscreen();
+                } else if (targetElement.mozRequestFullScreen) {
+                    // Firefox 지원
+                    targetElement.mozRequestFullScreen();
+                } else if (targetElement.msRequestFullscreen) {
+                    // IE/Edge 지원
+                    targetElement.msRequestFullscreen();
+                } else {
+                    console.log('전체화면이 지원되지 않는 브라우저입니다.');
+                }
+            } else {
+                // 전체화면 해제
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        // CCTV 상태 체크 및 알림 시뮬레이션
+        function checkCCTVStatus() {
+            // 예시: 랜덤하게 알림 상태 변경
+            const cctvFeeds = document.querySelectorAll('.cctv-feed');
+            cctvFeeds.forEach((feed, index) => {
+                if (Math.random() < 0.02) { // 2% 확률로 알림 발생
+                    feed.classList.add('alert');
+                    const status = feed.querySelector('.cctv-status');
+                    status.textContent = '낙상 감지!';
+                    status.className = 'cctv-status status-alert';
+
+                    // 알림 추가
+                    addAlert(`낙상 감지 - ${feed.querySelector('.cctv-title').textContent}`);
+                }
+            });
+        }
+
+        // 알림 추가 함수
+        function addAlert(message) {
+            const alertPanel = document.querySelector('.alert-panel');
+            const newAlert = document.createElement('div');
+            newAlert.className = 'alert-item';
+            newAlert.innerHTML = `
+                <div>${message}</div>
+                <div class="alert-time">방금 전</div>
+            `;
+
+            // 기존 알림들을 아래로 밀고 새 알림을 맨 위에 추가
+            const alertTitle = alertPanel.querySelector('.alert-title');
+            alertPanel.insertBefore(newAlert, alertTitle.nextSibling);
+
+            // 최대 5개 알림만 유지
+            const alerts = alertPanel.querySelectorAll('.alert-item');
+            if (alerts.length > 5) {
+                alerts[alerts.length - 1].remove();
+            }
+        }
+
+        // 초기화 및 실시간 업데이트 시작
+        document.addEventListener('DOMContentLoaded', function() {
+            // WebRTC 수신기 시작
+            startWebRTCReceiver();
+
+            // 5초마다 센서 데이터 업데이트
+            setInterval(updateSensorData, 5000);
+
+            // 30초마다 CCTV 상태 체크
+            setInterval(checkCCTVStatus, 30000);
+
+            // 초기 데이터 로드
+            updateSensorData();
+
+            console.log('CCTV 관제 시스템이 시작되었습니다.');
+            console.log('WebRTC 스트리밍 기능이 활성화되었습니다.');
+        });
+
+        // 키보드 단축키
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.fullscreenElement) {
+                // 크로스 브라우저 전체화면 해제
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        });
+
+        // 전체화면 상태 변경 이벤트 리스너
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+        function handleFullscreenChange() {
+            const isFullscreen = !!(document.fullscreenElement ||
+                                   document.webkitFullscreenElement ||
+                                   document.mozFullScreenElement ||
+                                   document.msFullscreenElement);
+
+            console.log('[Fullscreen] 상태 변경:', isFullscreen ? '전체화면' : '일반모드');
+
+            // 전체화면 해제 시 비디오 크기 복원
+            if (!isFullscreen) {
+                const videos = document.querySelectorAll('.cctv-feed video');
+                videos.forEach(video => {
+                    video.style.width = '';
+                    video.style.height = '';
+                    video.style.objectFit = 'cover';
+                });
+            }
+        }
+    </script>
+</body>
+</html>
