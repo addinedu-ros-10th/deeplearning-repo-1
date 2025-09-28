@@ -63,14 +63,51 @@ curl -sS http://localhost:5500/api/voices | jq '.' | less
 ```bash
 curl -sS http://localhost:5502/api/voices | python -m json.tool
 ```
-2) 목록에서 한국어(ko 또는 ko_KR) 보이스 ID를 선택(예: `ko_KR-xxxx-high`)
-3) 프록시 경유 테스트(보이스 파라미터 지정):
+2) 목록에서 Piper 한국어 보이스 ID를 선택(예: `ko_KR-kss-low`, `piper-kss-korean`)
+3) 프록시 경유 테스트(보이스 파라미터 지정, URL 인코딩 안전):
 ```bash
-curl -sS "http://localhost:5502/api/tts?voice=ko_KR-xxxx-high&text=안녕하세요" -o ko.wav
+curl -G "http://localhost:5502/api/tts" \
+  --data-urlencode "voice=piper:ko_KR-kss-low" \
+  --data-urlencode "text=안녕하세요, 테스트입니다" \
+  -o ko.wav
 ```
 4) 기본 보이스로 고정하려면 환경변수 조정:
  - `server/tts_server/docker/compose.yml`(또는 `compose.fixed2.yml`)의 `TTS_DEFAULT_VOICE` 값을 한국어 보이스 ID로 변경
  - Flutter `.env.dev`의 `TTS_DEFAULT_VOICE`도 동일 값으로 변경 후 앱에서 환경 리로드
+
+## 현황 업데이트 (2025-09-28)
+- Piper 한국어 모델 온보딩 상태 개선 및 스크립트/마운트 정리 완료
+  - `server/tts_server/docker/compose.fixed3.yml`
+    - `voices-fetcher` 권한 오류 해결: `user: "0:0"`로 실행하여 `/voices` 볼륨에 쓰기 보장
+    - 다운로드 URL을 모델 카드와 일치하도록 수정(`piper-kss-korean.onnx(.json)`)
+    - `tts-backend` 마운트 정리:
+      - `voices:/data/local/voices` (상위는 rw 권장)
+      - `../models/piper-onnx-kss-korean:/data/local/voices/piper/piper-kss-korean:ro`
+  - 정규화 스크립트 추가: `server/tts_server/script/normalize_piper_models.sh`
+    - 로컬/볼륨 내 파일명을 `model.onnx`, `model.onnx.json`으로 통일
+    - Piper 스캔 경로(`/voices/piper/<voice-id>/`)에 복사하여 인식 보장
+    - 실제 Compose 볼륨명 자동 탐지(`*_voices`, 컨테이너 마운트, 환경변수 `VOLUME_NAME` 우선)
+  - 문제 원인과 대책
+    - 보이스 미노출 원인: 경로가 `/data/local/voices/piper/<id>/`가 아님, 파일명이 `model.*` 아님, 상위 마운트가 `:ro`라 바인드 타깃 생성 실패
+    - 대책: 정규화 스크립트 실행 → 상위 rw 또는 볼륨 내 디렉터리 사전 생성 → 재기동 후 `/api/voices` 확인
+
+### 빠른 점검/테스트
+```bash
+# 정규화 실행(볼륨명 자동탐지)
+bash server/tts_server/script/normalize_piper_models.sh
+
+# 재기동
+docker compose -f server/tts_server/docker/compose.fixed3.yml up -d tts-backend
+
+# 보이스 확인
+curl -sS http://localhost:5500/api/voices | python -m json.tool | grep -i piper | cat
+
+# 합성
+curl -G "http://localhost:5500/api/tts" \
+  --data-urlencode "voice=piper:ko_KR-kss-low" \
+  --data-urlencode "text=안녕하세요, 테스트입니다" \
+  -o out.wav
+```
 
 ### 수동 테스트(마이크 사용, Flutter user_app 연동)
 1) TTS 서버 기동

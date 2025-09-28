@@ -1,0 +1,113 @@
+# compose.fixed3.yml
+# -----------------------------------------------------------------------------
+# 이 Compose 파일은 다음을 제공합니다:
+# 1) voices-fetcher: Hugging Face의 neurlang/piper-onnx-kss-korean 모델을
+#    (ONNX + JSON) 자동 다운로드하여 'voices' 볼륨에 저장합니다.
+# 2) opentts: OpenTTS(HTTP)를 기동하고, 위 'voices' 볼륨을 /data/local/voices 로 마운트하여
+#    Piper 한국어 보이스(ko_KR-kss-low)를 즉시 인식하도록 합니다.
+# 3) tts-server: (선택) 기존 FastAPI TTS 프록시/오케스트레이터 앱 컨테이너(빌드 예시 포함).
+# 4) tts-proxy: (선택) 단일 오리진 접근을 위한 nginx 프록시 예시.
+# -----------------------------------------------------------------------------
+# 주의:
+# - Compose v2에서는 'version:' 키가 필요없습니다(오히려 경고가 날 수 있으니 생략).
+# - Windows(MINGW/Git Bash)에서 ${VAR} 구문이 조기 보간되며 문제를 일으킬 수 있어,
+#   본 파일은 command 블록에 환경변수 보간을 사용하지 않습니다.
+# -----------------------------------------------------------------------------
+
+services:
+  # ======================= 한국어 Piper 보이스 자동 다운로드 (START) =======================
+  # Hugging Face: https://huggingface.co/neurlang/piper-onnx-kss-korean
+  # - 모델 파일: model.onnx
+  # - 메타 파일: model.onnx.json
+  # 아래 컨테이너는 위 두 파일을 /voices/ko_KR-kss-low 디렉토리에 저장하고 종료합니다.
+  voices-fetcher:
+    image: curlimages/curl:8.10.1
+    container_name: voices-fetcher
+    user: "0:0"
+    volumes:
+      - voices:/voices
+    command:
+      - sh
+      - -lc
+      - |
+        set -euo pipefail
+
+        mkdir -p "/voices/ko_KR-kss-low"
+        cd "/voices/ko_KR-kss-low"
+
+        echo "[voices-fetcher] downloading ko_KR-kss-low from neurlang/piper-onnx-kss-korean ..."
+        # 모델(ONNX)
+        curl -fL -o ko_KR-kss-low.onnx \
+          "https://huggingface.co/neurlang/piper-onnx-kss-korean/resolve/main/piper-kss-korean.onnx"
+        # 메타(JSON)
+        curl -fL -o ko_KR-kss-low.onnx.json \
+          "https://huggingface.co/neurlang/piper-onnx-kss-korean/resolve/main/piper-kss-korean.onnx.json"
+
+        echo "[voices-fetcher] done:"
+        ls -l
+    restart: "no"
+  # ======================= 한국어 Piper 보이스 자동 다운로드 (END) =========================
+
+  # ======================= OpenTTS (HTTP) - 한국어 보이스 등록 (START) ====================
+  # OpenTTS는 /data/local/voices 아래를 스캔하여 Piper 보이스를 자동 등록합니다.
+  # 이 컨테이너는 'voices-fetcher' 완료 후 시작되며, voice 파라미터로
+  # "piper:ko_KR-kss-low" 를 사용할 수 있습니다.
+  tts-backend:
+    image: synesthesiam/opentts:latest
+    container_name: tts-backend
+    ports:
+      - "5500:5500"
+    volumes:
+      - voices:/data/local/voices
+      - ../models/piper-onnx-kss-korean:/data/local/voices/piper/piper-kss-korean
+    depends_on:
+      voices-fetcher:
+        condition: service_completed_successfully
+    healthcheck:
+      # OpenTTS API: /api/voices (보이스 목록)
+      test: ["CMD", "wget", "-qO-", "http://localhost:5500/api/voices"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+  # ======================= OpenTTS (HTTP) - 한국어 보이스 등록 (END) ======================
+
+  # ======================= (선택) FastAPI TTS 프록시/오케스트레이터 (START) ===============
+  # 이미 자체 TTS 프록시 서버가 있다면 이 블록의 build/context/ports 등을
+  # 프로젝트 상황에 맞게 조정하세요. 아래는 예시입니다.
+  tts-server:
+    build:
+      context: ..
+      dockerfile: docker/tts.Dockerfile
+    env_file:
+      - ../secret/.env  # 필요 시 환경변수 주입
+    environment:
+      # OpenTTS 서비스에 프록시할 때 사용할 기본 주소를 알려줍니다.
+      OPENTTS_BASE: "http://tts-backend:5500"
+      TTS_VOICE: "piper:ko_KR-kss-low"
+    ports:
+      - "5502:5502"
+    depends_on:
+      - tts-backend
+    restart: unless-stopped
+  # ======================= (선택) FastAPI TTS 프록시/오케스트레이터 (END) =================
+
+  # ======================= (선택) Nginx 프록시 (START) =====================================
+  # 브라우저 단일 오리진 접근이 필요하거나, 라우팅을 합치고 싶을 때 사용하세요.
+  tts-proxy:
+    image: nginx:alpine
+    depends_on:
+      - tts-server
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+  # ======================= (선택) Nginx 프록시 (END) =======================================
+
+volumes:
+  # ======================= 보이스 영구 저장 볼륨 (START) =======================
+  voices:
+    # 모델 파일(ONNX/JSON)을 보존합니다(최초 합성 지연 감소).
+    # 이름 있는 볼륨으로 유지하면 컨테이너 재생성 시에도 재다운로드가 필요 없습니다.
+  # ======================= 보이스 영구 저장 볼륨 (END) =========================
