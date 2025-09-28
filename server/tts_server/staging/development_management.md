@@ -19,14 +19,15 @@
 - 공용 설정 명명은 `server/app_server`의 스타일을 최대한 준수 (`DB_APP_URL` 등)
 - PR 시 `analyze/test` 통과 로그 첨부
 
-## 현황 (2025-09-27)
-- FastAPI 서버 `/healthz`, `/api/tts` 라우트 제공
-- 보이스 조회 라우트 `/api/voices` 추가(OpenTTS/Mimic3 업스트림 프록시)
-- 업스트림 OpenTTS(HTTP 5500)로 전환, GET 우선/POST 폴백 지원
-- Settings 평탄화로 환경변수 신뢰성 향상(`TTS_BACKEND`, `TTS_BASE_URL`, `TTS_DEFAULT_VOICE`)
-- 기본 단위 테스트 추가: 헬스체크, 잘못된 입력 검증 + env 반영 테스트
+## 현황 (2025-09-28)
+- FastAPI 서버 `/healthz`, `/api/tts`, `/api/voices` 제공(업스트림 OpenTTS 프록시)
+- 업스트림 OpenTTS(HTTP 5500)로 전환 완료; 요청은 GET 우선/POST 폴백 지원
+- Settings 평탄화 적용(`TTS_BACKEND`, `TTS_BASE_URL`, `TTS_DEFAULT_VOICE`)
+  - 기본 보이스 표기 통일: `ko-KR-pml-high` (하이픈 표기)
+  - OpenTTS 실제 보이스 ID는 `/api/voices` 응답을 기준으로 선택 권장(언더스코어 변형 존재)
+- 기본 단위 테스트 유지: 헬스체크, 잘못된 입력 검증, env 오버라이드 반영
 - Docker Compose로 OpenTTS + TTS Server + (옵션) Nginx 프록시 구동 가능
-- Dockerfile(poetry) 정리 및 포트 노출(5502)
+- 옵션 구성: `voices-fetcher`로 Piper 한국어 보이스(예: `ko_KR-kss_high`) 자동 다운로드/마운트
 
 ## 다음 일정
 1. 통합 테스트: 실제 Piper 컨테이너와 end-to-end WAV 생성/재생 확인
@@ -34,10 +35,21 @@
 3. 운영 구성 샘플(.env, env 파일 템플릿) 제공
 4. `app_server`와 연동 가이드 및 헬스체크/장애 처리 흐름 문서화
 
+## 자동 보이스 다운로드(옵션)
+- 파일: `server/tts_server/docker/compose.fixed2.yml`
+- 목적: Piper 한국어 보이스(`ko_KR-kss_high`)를 사전 다운로드하여 OpenTTS가 즉시 인식
+- 방법 요약:
+  1) `voices-fetcher` 컨테이너가 Hugging Face 경로에서 보이스(.onnx, .json) 다운로드
+  2) 영구 볼륨 `voices`에 저장 후 `tts-backend`(OpenTTS)에 `/data/local/voices:ro`로 마운트
+  3) `depends_on`(service_completed_successfully)로 보이스 준비 후 백엔드 기동
+
 ## 수동 테스트 가이드 (로컬)
 ```bash
 cd server/tts_server/docker
-docker compose up --build -d
+# 기본 구동(업스트림 OpenTTS + TTS Server)
+docker compose -f docker/compose.yml up -d --build
+# (옵션) 보이스 자동 다운로드 구성 사용 시
+docker compose -f docker/compose.fixed2.yml up -d --build
 curl -sS "http://localhost:5502/api/tts?text=hello" --output test.wav
 aplay test.wav # 또는 시스템 재생기
 ```
@@ -57,7 +69,7 @@ curl -sS http://localhost:5502/api/voices | python -m json.tool
 curl -sS "http://localhost:5502/api/tts?voice=ko_KR-xxxx-high&text=안녕하세요" -o ko.wav
 ```
 4) 기본 보이스로 고정하려면 환경변수 조정:
- - `server/tts_server/docker/compose.yml`의 `TTS_DEFAULT_VOICE` 값을 한국어 보이스 ID로 변경
+ - `server/tts_server/docker/compose.yml`(또는 `compose.fixed2.yml`)의 `TTS_DEFAULT_VOICE` 값을 한국어 보이스 ID로 변경
  - Flutter `.env.dev`의 `TTS_DEFAULT_VOICE`도 동일 값으로 변경 후 앱에서 환경 리로드
 
 ### 수동 테스트(마이크 사용, Flutter user_app 연동)

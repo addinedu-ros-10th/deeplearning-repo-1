@@ -18,7 +18,7 @@ class HttpTtsService {
   // Returns 16-bit PCM WAV bytes
   Future<Uint8List> synthesize(String text, {String? voice}) async {
     final String backend = (AppEnv.ttsBackend.isEmpty ? 'system' : AppEnv.ttsBackend).toLowerCase();
-    final String pickVoice = (voice?.isNotEmpty == true ? voice! : (AppEnv.ttsDefaultVoice.isNotEmpty ? AppEnv.ttsDefaultVoice : 'ko_KR-pml_high'));
+    final String pickVoice = (voice?.isNotEmpty == true ? voice! : (AppEnv.ttsDefaultVoice.isNotEmpty ? AppEnv.ttsDefaultVoice : 'ko-KR-pml-high'));
 
     if (backend == 'piper') {
       // Common Piper HTTP wrapper convention: POST /api/tts?voice=ko_KR-pml_high -> audio/wav

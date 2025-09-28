@@ -181,7 +181,12 @@ flutter run -d emulator-5554 \
   - Piper 음성: ko_KR-pml_high / ko_KR-pml_low 선택 가능
   - 엔진/음성/STT 특성 안내 텍스트 표시
   - `.env`: `TTS_BACKEND`, `TTS_BASE_URL`, `TTS_DEFAULT_VOICE`
-- 기본값(개발): Piper + `ko_KR-pml_high` + `http://localhost:5002`
+- 기본값(개발): OpenTTS 프록시 + `ko-KR-pml-high` + `http://localhost:5502`
+  - 주의: OpenTTS의 보이스 ID는 `/api/voices` 응답 기준(언더스코어/하이픈 혼재 가능)
+  - Flutter `.env.dev` 예시:
+    - `TTS_BACKEND=opentts`
+    - `TTS_BASE_URL=http://localhost:5502`
+    - `TTS_DEFAULT_VOICE=ko-KR-pml-high`
 
 ### 체크리스트 (Korean TTS)
 - [x] UI에 Backend/Voice 선택 추가 및 안내 텍스트 노출
