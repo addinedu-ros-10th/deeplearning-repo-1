@@ -7,11 +7,21 @@ WORKDIR /app
 
 # Install system deps
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    curl build-essential && rm -rf /var/lib/apt/lists/*
+    curl build-essential git cmake pkg-config libespeak-ng1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install poetry
 RUN curl -sSL https://install.python-poetry.org | python3 - && \
     ln -s /root/.local/bin/poetry /usr/local/bin/poetry
+
+# Install Rust and Piper CLI for local testing (optional but helpful)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+    . /root/.cargo/env && \
+    git clone https://github.com/rhasspy/piper.git /tmp/piper && \
+    cd /tmp/piper/piper-cli && \
+    cargo build --release && \
+    cp target/release/piper /usr/local/bin/ && \
+    rm -rf /tmp/piper
 
 COPY pyproject.toml /app/
 RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi --no-root

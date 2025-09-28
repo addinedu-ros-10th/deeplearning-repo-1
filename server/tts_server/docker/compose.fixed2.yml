@@ -1,0 +1,74 @@
+services:
+  tts-backend:
+    image: synesthesiam/opentts:latest
+    ports:
+      - "5500:5500"
+
+    # ======================= 자동 다운로드 마운트 (START) =======================
+    volumes:
+      - voices:/data/local/voices:ro
+    # ======================= 자동 다운로드 마운트 (END) =========================
+
+    # ======================= 자동 다운로드 종속성 (START) =======================
+    depends_on:
+      voices-fetcher:
+        condition: service_completed_successfully
+    # ======================= 자동 다운로드 종속성 (END) =========================
+
+  tts-server:
+    build:
+      context: ..
+      dockerfile: docker/tts.Dockerfile
+    env_file:
+      - ../secret/.env
+    ports:
+      - "5502:5502"
+    depends_on:
+      - tts-backend
+
+  tts-proxy:
+    image: nginx:alpine
+    depends_on:
+      - tts-server
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # ======================= 자동 다운로드 서비스 (START) =======================
+  voices-fetcher:
+    image: curlimages/curl:8.10.1
+    container_name: voices-fetcher
+    user: root 
+    environment:
+      # neurlang/piper-onnx-kss-korean 저장소 사용
+      VOICE_VERSION: "main"
+      VOICE_ID: "kss-korean"
+      BASE_URL: "https://huggingface.co/neurlang/piper-onnx-kss-korean/resolve"
+      # 해당 저장소는 루트(main)에 파일이 위치함
+      VOICE_PATH_DIR: ""
+    volumes:
+      - voices:/voices
+    command:
+      - sh
+      - -lc
+      - |
+        set -euo pipefail
+        [ -n "$VOICE_ID" ] || { echo "VOICE_ID is required"; exit 1; }
+        [ -n "$VOICE_VERSION" ] || { echo "VOICE_VERSION is required"; exit 1; }
+        [ -n "$BASE_URL" ] || { echo "BASE_URL is required"; exit 1; }
+
+        mkdir -p "/voices/$VOICE_ID"
+        cd "/voices/$VOICE_ID"
+        echo "[voices-fetcher] downloading $VOICE_ID ..."
+
+        # neurlang 저장소는 루트에 파일이 있으므로 PATH_DIR 없이 다운로드
+        curl -fL -o "$VOICE_ID.onnx" "$BASE_URL/$VOICE_VERSION/$VOICE_ID.onnx?download=true"
+        curl -fL -o "$VOICE_ID.onnx.json" "$BASE_URL/$VOICE_VERSION/$VOICE_ID.onnx.json?download=true"
+
+        echo "[voices-fetcher] done"
+    restart: "no"
+  # ======================= 자동 다운로드 서비스 (END) =========================
+
+volumes:
+  voices:
