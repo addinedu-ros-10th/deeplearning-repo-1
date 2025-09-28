@@ -66,17 +66,27 @@ services:
         echo "  BASE_URL_RESOLVE=$$BASE_URL_RESOLVE"
         echo "  BASE_URL_RAW=$$BASE_URL_RAW"
 
-        mkdir -p "/voices/$$VOICE_ID"
-        cd "/voices/$$VOICE_ID"
+        # sanitize CRLF just in case (Windows line endings)
+        VID=$(printf '%s' "$$VOICE_ID" | tr -d '\r')
+        VER=$(printf '%s' "$$VOICE_VERSION" | tr -d '\r')
+        BRES=$(printf '%s' "$$BASE_URL_RESOLVE" | tr -d '\r')
+        BRAW=$(printf '%s' "$$BASE_URL_RAW" | tr -d '\r')
+
+        echo "[voices-fetcher] sanitized: VID=$VID VER=$VER"
+        echo "[voices-fetcher] sanitized: BRES=$BRES"
+        echo "[voices-fetcher] sanitized: BRAW=$BRAW"
+
+        mkdir -p "/voices/$VID"
+        cd "/voices/$VID"
         echo "[voices-fetcher] PWD=$(pwd)"
 
-        ONNX_URL="$$BASE_URL_RESOLVE/$$VOICE_VERSION/$$VOICE_ID.onnx?download=true"
-        JSON_URL="$$BASE_URL_RAW/$$VOICE_VERSION/$$VOICE_ID.onnx.json"
+        ONNX_URL="$BRES/$VER/$VID.onnx?download=true"
+        JSON_URL="$BRAW/$VER/$VID.onnx.json"
         echo "[voices-fetcher] ONNX_URL=$ONNX_URL"
         echo "[voices-fetcher] JSON_URL=$JSON_URL"
 
-        curl -fL -o "$$VOICE_ID.onnx" "$ONNX_URL"
-        curl -fL -o "$$VOICE_ID.onnx.json" "$JSON_URL"
+        curl -fL -o "$VID.onnx" "$ONNX_URL"
+        curl -fL -o "$VID.onnx.json" "$JSON_URL"
 
         echo "[voices-fetcher] done"
     restart: "no"

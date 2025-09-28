@@ -334,8 +334,8 @@ class VoiceProvider extends ChangeNotifier {
 
   void _refreshModelVoices() {
     if (_selectedBackend == 'piper') {
-      _availableModelVoices = <String>['ko_KR-pml_high', 'ko_KR-pml_low'];
-      _selectedModelVoice ??= 'ko_KR-pml_high';
+      _availableModelVoices = <String>['ko-KR-pml-high', 'ko-KR-pml-low'];
+      _selectedModelVoice ??= 'ko-KR-pml-high';
     } else {
       _availableModelVoices = <String>[];
       // keep selectedModelVoice as-is for non-Piper backends

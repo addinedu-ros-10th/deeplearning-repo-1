@@ -16,13 +16,13 @@ RUN curl -sSL https://install.python-poetry.org | python3 - && \
 
 # Install Rust and Piper CLI for local testing (optional but helpful)
 # Build Piper CLI from repo root (correct path)
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-    . /root/.cargo/env && \
-    git clone https://github.com/rhasspy/piper.git /tmp/piper && \
-    cd /tmp/piper && \
-    cargo build --release -p piper && \
-    cp target/release/piper /usr/local/bin/ && \
-    rm -rf /tmp/piper
+# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+#     . /root/.cargo/env && \
+#     git clone https://github.com/rhasspy/piper.git /tmp/piper && \
+#     cd /tmp/piper && \
+#     cargo build --release -p piper && \
+#     cp target/release/piper /usr/local/bin/ && \
+#     rm -rf /tmp/piper
 
 COPY pyproject.toml /app/
 RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi --no-root

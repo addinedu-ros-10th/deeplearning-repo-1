@@ -1,0 +1,84 @@
+services:
+  tts-backend:
+    image: synesthesiam/opentts:latest
+    ports:
+      - "5500:5500"  # OpenTTS HTTP API
+
+    # ======================= 자동 다운로드 마운트 (START) =======================
+    # 아래 볼륨 마운트는 'voices-fetcher' 컨테이너가 사전 다운로드한
+    # 한국어 Piper 보이스(ko_KR-kss_high)를 OpenTTS가 즉시 인식하도록 연결합니다.
+    # - 마운트 경로: /data/local/voices
+    # - OpenTTS는 이 경로를 자동 스캔하여 Piper 보이스를 등록합니다.
+    volumes:
+      - voices:/data/local/voices:ro
+    # ======================= 자동 다운로드 마운트 (END) =========================
+
+    # ======================= 자동 다운로드 종속성 (START) =======================
+    # voices-fetcher가 성공적으로 종료(service_completed_successfully)해야
+    # tts-backend가 기동됩니다. (보이스 파일이 준비된 뒤에 시작시키기 위함)
+    depends_on:
+      voices-fetcher:
+        condition: service_completed_successfully
+    # ======================= 자동 다운로드 종속성 (END) =========================
+
+  tts-server:
+    build:
+      context: ..
+      dockerfile: docker/tts.Dockerfile
+    env_file:
+      - ../secret/.env  # 실제 실행 시 --env-file 로 덮어씀
+    ports:
+      - "5502:5502"
+    depends_on:
+      - tts-backend
+
+  # Optional: single-origin reverse proxy for browser clients
+  tts-proxy:
+    image: nginx:alpine
+    depends_on:
+      - tts-server
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # ======================= 자동 다운로드 서비스 (START) =======================
+  # ❗️중요: 이전 파일에서는 ${VOICE_ID}/${BASE_URL}/${VOICE_VERSION} 형태를 사용해서
+  # Docker Compose가 YAML 파싱 시점에 '호스트 환경 변수 치환'을 해버렸습니다.
+  # (로그: The "VOICE_ID" variable is not set ...)
+  # 해결: 컨테이너 내부 셸에서 해석되도록 `$VOICE_ID` 처럼 '중괄호 없는' 표기를 사용합니다.
+  #      또는 $$VOICE_ID 로 이스케이프할 수도 있습니다.
+  voices-fetcher:
+    image: curlimages/curl:8.10.1
+    environment:
+      VOICE_VERSION: "v1.0.0"
+      VOICE_ID: "ko_KR-kss_high"
+      BASE_URL: "https://github.com/rhasspy/piper-voices/releases/download"
+    volumes:
+      - voices:/voices
+    command:
+      - sh
+      - -lc
+      - |
+        set -euo pipefail
+        # ✅ Compose가 아닌 컨테이너 셸에서 평가되도록 $VAR만 사용
+        [ -n "$VOICE_ID" ] || { echo "VOICE_ID is required"; exit 1; }
+        [ -n "$VOICE_VERSION" ] || { echo "VOICE_VERSION is required"; exit 1; }
+        [ -n "$BASE_URL" ] || { echo "BASE_URL is required"; exit 1; }
+
+        mkdir -p "/voices/$VOICE_ID"
+        cd "/voices/$VOICE_ID"
+        echo "[voices-fetcher] downloading $VOICE_ID ..."
+        curl -fL -o "$VOICE_ID.onnx" "$BASE_URL/$VOICE_VERSION/$VOICE_ID.onnx"
+        curl -fL -o "$VOICE_ID.onnx.json" "$BASE_URL/$VOICE_VERSION/$VOICE_ID.onnx.json"
+        echo "[voices-fetcher] done"
+    restart: "no"
+  # ======================= 자동 다운로드 서비스 (END) =========================
+
+volumes:
+  # ======================= 자동 다운로드 볼륨 (START) =======================
+  # 'voices' 볼륨은 다운로드된 Piper 보이스 파일을 영구 저장합니다.
+  # - 컨테이너 재생성 시에도 보이스를 재사용하여 최초 합성 지연을 줄입니다.
+  # - tts-backend에서는 읽기전용(ro)로 마운트합니다.
+  voices:
+  # ======================= 자동 다운로드 볼륨 (END) =========================
