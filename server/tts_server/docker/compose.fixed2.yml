@@ -54,17 +54,19 @@ services:
       - -lc
       - |
         set -euo pipefail
-        [ -n "$VOICE_ID" ] || { echo "VOICE_ID is required"; exit 1; }
-        [ -n "$VOICE_VERSION" ] || { echo "VOICE_VERSION is required"; exit 1; }
-        [ -n "$BASE_URL" ] || { echo "BASE_URL is required"; exit 1; }
+        # NOTE: Compose variable substitution occurs before container start.
+        # Escape with double-$ to defer expansion to container shell.
+        [ -n "$$VOICE_ID" ] || { echo "VOICE_ID is required"; exit 1; }
+        [ -n "$$VOICE_VERSION" ] || { echo "VOICE_VERSION is required"; exit 1; }
+        [ -n "$$BASE_URL" ] || { echo "BASE_URL is required"; exit 1; }
 
-        mkdir -p "/voices/$VOICE_ID"
-        cd "/voices/$VOICE_ID"
-        echo "[voices-fetcher] downloading $VOICE_ID ..."
+        mkdir -p "/voices/$$VOICE_ID"
+        cd "/voices/$$VOICE_ID"
+        echo "[voices-fetcher] downloading $$VOICE_ID ..."
 
         # neurlang 저장소는 루트에 파일이 있으므로 PATH_DIR 없이 다운로드
-        curl -fL -o "$VOICE_ID.onnx" "$BASE_URL/$VOICE_VERSION/$VOICE_ID.onnx?download=true"
-        curl -fL -o "$VOICE_ID.onnx.json" "$BASE_URL/$VOICE_VERSION/$VOICE_ID.onnx.json?download=true"
+        curl -fL -o "$$VOICE_ID.onnx" "$$BASE_URL/$$VOICE_VERSION/$$VOICE_ID.onnx?download=true"
+        curl -fL -o "$$VOICE_ID.onnx.json" "$$BASE_URL/$$VOICE_VERSION/$$VOICE_ID.onnx.json?download=true"
 
         echo "[voices-fetcher] done"
     restart: "no"
