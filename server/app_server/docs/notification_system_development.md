@@ -19,7 +19,7 @@
 
 ---
 
-## ✅ 개발 완료 현황 (2025-09-25)
+## ✅ 개발 완료 현황 (2025-09-29)
 
 ### 🎯 Core Domain Layer
 - [x] **Domain Models**
@@ -34,7 +34,7 @@
 
 ### 🔌 Ports (Interfaces)
 - [x] **Repository Ports**
-  - `NotifyMessageRepository`: 메시지 CRUD 인터페이스
+  - `NotifyMessageRepository`: 메시지 CRUD 인터페이스 + Sender ID 조회
   - `NotifyDeliveryRepository`: 전송 기록 CRUD 인터페이스
   - `NotifyDeviceRepository`: 디바이스 CRUD 인터페이스
 - [x] **Service Ports**
@@ -45,17 +45,20 @@
 - [x] **Database Adapters**
   - SQLAlchemy 기반 Repository 구현체들
   - PostgreSQL notify 스키마 연동
+  - JSONB 쿼리 지원 (Sender ID 조회)
 - [x] **WebSocket Adapter**
   - FastAPI WebSocket 연결 관리
   - 실시간 메시지 전송 구현
 - [x] **HTTP Adapter**
   - REST API 엔드포인트 구현
   - 알림 큐잉 API (`/api/v1/notify/queue`)
+  - Sender ID 기준 메시지 조회 API (`/api/v1/notify/messages/by-sender/{sender_id}`)
 
 ### 🏢 Application Layer
 - [x] **Use Cases**
   - `NotifyQueueUseCase`: 알림 큐 등록
   - `NotifyDispatchUseCase`: 알림 전송 처리
+  - `ListNotifyMessagesBySenderUseCase`: Sender ID 기준 메시지 조회
 - [x] **DTOs**
   - `NotifyQueueRequest`: 알림 생성 요청 DTO
   - `NotifyQueueResponse`: 알림 생성 응답 DTO
@@ -226,6 +229,7 @@ location /ws {
 ## 🚀 향후 개발 계획
 
 ### Phase 1: 기본 기능 확장
+- [x] Sender ID 기준 메시지 조회 API 구현 ✅ (2025-09-29)
 - [ ] 알림 읽음/확인 API 구현
 - [ ] 알림 히스토리 조회 API
 - [ ] 사용자별 알림 설정 관리
@@ -279,7 +283,31 @@ location /ws {
 
 ---
 
-*Last Updated: 2025-09-24*
-*Version: 1.0.0*
+*Last Updated: 2025-09-29*
+*Version: 1.1.0*
 *Status: ✅ Production Ready*
+
+---
+
+## 📋 최근 업데이트 (2025-09-29)
+
+### 🆕 새로운 기능
+- **Sender ID 기준 메시지 조회 API**: `GET /api/v1/notify/messages/by-sender/{sender_id}`
+  - 특정 발신자로 전송된 메시지들을 조회
+  - JSONB 필드에서 sender 값을 효율적으로 검색
+  - 페이지네이션 지원 (skip, limit)
+  - 생성 시간 기준 내림차순 정렬
+
+### 🔧 기술적 개선
+- **Repository Layer**: `list_by_sender()` 메서드 추가
+- **Use Case Layer**: `ListNotifyMessagesBySenderUseCase` 구현
+- **HTTP Adapter**: 새로운 엔드포인트 추가
+- **API 문서화**: 상세한 사용법과 예시 포함
+
+### 📁 변경된 파일
+- `app/domain/ports/notify_message_repository.py`
+- `app/adapters/repositories/notify_message_repository_impl.py`
+- `app/application/use_cases/notify_message_use_cases.py`
+- `app/adapters/http/notify_message_router.py`
+- `docs/apis/sender_messages_api.md` (신규)
 

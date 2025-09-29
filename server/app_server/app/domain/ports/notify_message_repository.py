@@ -15,6 +15,9 @@ class NotifyMessageRepository(ABC):
     async def list(self, *, skip: int = 0, limit: int = 100, kind: Optional[str] = None, severity: Optional[str] = None) -> List[NotifyMessage]: ...
 
     @abstractmethod
+    async def list_by_sender(self, *, sender_id: str, skip: int = 0, limit: int = 100) -> List[NotifyMessage]: ...
+
+    @abstractmethod
     async def update(self, message_id: UUID, payload: dict) -> Optional[NotifyMessage]: ...
 
     @abstractmethod
