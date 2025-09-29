@@ -781,6 +781,322 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
       },
     );
   }
+
+  Widget _buildWaveBackground() {
+    return AnimatedBuilder(
+      animation: _waveAnimation,
+      builder: (context, child) {
+        return CustomPaint(
+          size: Size.infinite,
+          painter: WaveBackgroundPainter(_waveAnimation.value),
+        );
+      },
+    );
+  }
+
+  Widget _buildUserInfo() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // 알림 버튼
+          NotificationBadge(
+            onTap: () {
+              context.push('/notifications');
+            },
+            child: IconButton(
+              onPressed: () {
+                context.push('/notifications');
+              },
+              icon: const Icon(
+                Icons.notifications,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+          ),
+          // TTS 설정 버튼
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TtsSettingsPage(),
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.settings_voice,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+          // 사용자 정보 버튼
+          IconButton(
+            onPressed: () {
+              final authProvider = context.read<AuthProvider>();
+              context.push('/users/${authProvider.userId}');
+            },
+            icon: const Icon(
+              Icons.person,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWaveVisualization() {
+    return AnimatedBuilder(
+      animation: _waveAnimation,
+      builder: (context, child) {
+        return CustomPaint(
+          size: const Size(300, 200),
+          painter: WaveVisualizationPainter(_waveAnimation.value),
+        );
+      },
+    );
+  }
+
+  Widget _buildCenterVoiceButton() {
+    return Center(
+      child: GestureDetector(
+        onTap: _isTtsPlaying ? null : _onVoiceButtonPress, // TTS 재생 중에는 터치 비활성화
+        child: AnimatedBuilder(
+          animation: _buttonAnimation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _isVoiceInputActive ? 1.3 : 1.0,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _isTtsPlaying 
+                      ? Colors.grey[600] // TTS 재생 중에는 회색
+                      : _isVoiceInputActive 
+                          ? Colors.blue.withOpacity(0.3)
+                          : Colors.blue[600],
+                  boxShadow: [
+                    BoxShadow(
+                      color: _isTtsPlaying 
+                          ? Colors.grey.withOpacity(0.3)
+                          : Colors.blue.withOpacity(0.5),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  _isTtsPlaying 
+                      ? Icons.volume_up // TTS 재생 중에는 스피커 아이콘
+                      : _isVoiceInputActive 
+                          ? Icons.mic 
+                          : Icons.mic_none,
+                  color: _isTtsPlaying 
+                      ? Colors.grey[300] // TTS 재생 중에는 연한 회색
+                      : Colors.white,
+                  size: 40,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuButton() {
+    return Positioned(
+      bottom: 30,
+      right: 30,
+      child: GestureDetector(
+        onTap: _onMenuButtonPress,
+        child: AnimatedBuilder(
+          animation: _buttonAnimation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _showMenuButtons ? 1.2 : 1.0,
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _showMenuButtons ? Colors.red[600] : Colors.blue[600],
+                  boxShadow: [
+                    BoxShadow(
+                      color: _showMenuButtons 
+                          ? Colors.red.withOpacity(0.5)
+                          : Colors.blue.withOpacity(0.5),
+                      blurRadius: 15,
+                      spreadRadius: 3,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  _showMenuButtons ? Icons.close : Icons.menu,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuOverlay() {
+    if (!_showMenuButtons) return const SizedBox.shrink();
+    
+    return Positioned(
+      bottom: 120,
+      right: 30,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildMenuOptionButton(
+            '나의 소지품 찾기',
+            Icons.search,
+            () {
+              setState(() {
+                _showMenuButtons = false;
+              });
+              context.push('/items');
+            },
+          ),
+          const SizedBox(height: 8),
+          _buildMenuOptionButton(
+            '메시지',
+            Icons.message,
+            () {
+              setState(() {
+                _showMenuButtons = false;
+              });
+              context.push('/messages');
+            },
+          ),
+          const SizedBox(height: 8),
+          _buildMenuOptionButton(
+            '긴급/응급 신고',
+            Icons.emergency,
+            () {
+              setState(() {
+                _showMenuButtons = false;
+              });
+              context.push('/emergency');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuOptionButton(String label, IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: () {
+        print('메뉴 옵션 버튼 터치됨: $label');
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: Colors.grey[700]!),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChatArea() {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: 200,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withOpacity(0.0),
+              Colors.black.withOpacity(0.3),
+              Colors.black.withOpacity(0.8),
+            ],
+          ),
+        ),
+        child: _messages.isEmpty
+            ? _buildEmptyChatState()
+            : ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(16),
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  return ChatBubble(message: _messages[index]);
+                },
+              ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyChatState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.chat_bubble_outline,
+            color: Colors.grey[600],
+            size: 48,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '음성 입력 버튼을 눌러 대화를 시작하세요',
+            style: TextStyle(
+              color: Colors.grey[400],
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '음성 인식이 활성화되면 실시간으로 텍스트가 표시됩니다',
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 12,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // 음파 배경 페인터
