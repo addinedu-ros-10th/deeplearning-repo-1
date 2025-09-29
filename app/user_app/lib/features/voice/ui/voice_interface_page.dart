@@ -112,6 +112,9 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
 
   // 알림 다이얼로그 표시
   void _showNotificationDialog(NotificationMessage message) {
+    // 메시지를 읽음 처리
+    context.read<NotificationProvider>().markAsRead(message.id);
+    
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -446,7 +449,11 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
       builder: (context, child) {
         return CustomPaint(
           size: const Size(300, 200),
-          painter: WaveVisualizationPainter(_waveAnimation.value),
+          painter: WaveVisualizationPainter(
+            _waveAnimation.value,
+            isVoiceInputActive: _isVoiceInputActive,
+            isTtsPlaying: _isTtsPlaying,
+          ),
         );
       },
     );
@@ -643,10 +650,13 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.black.withOpacity(0.0),
-              Colors.black.withOpacity(0.3),
-              Colors.black.withOpacity(0.8),
+              Colors.black.withOpacity(0.0),    // 완전 투명
+              Colors.black.withOpacity(0.1),    // 매우 연한 투명
+              Colors.black.withOpacity(0.3),    // 약간 투명
+              Colors.black.withOpacity(0.6),    // 중간 투명
+              Colors.black.withOpacity(0.9),    // 거의 불투명
             ],
+            stops: const [0.0, 0.2, 0.4, 0.7, 1.0], // 그라데이션 단계 조정
           ),
         ),
         child: _messages.isEmpty
@@ -742,16 +752,17 @@ class WaveBackgroundPainter extends CustomPainter {
 // 음파 시각화 페인터
 class WaveVisualizationPainter extends CustomPainter {
   final double animationValue;
+  final bool isVoiceInputActive;
+  final bool isTtsPlaying;
 
-  WaveVisualizationPainter(this.animationValue);
+  WaveVisualizationPainter(
+    this.animationValue, {
+    this.isVoiceInputActive = false,
+    this.isTtsPlaying = false,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.blue.withOpacity(0.8)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-
     final centerY = size.height / 2;
     final waveCount = 3;
 
@@ -761,9 +772,19 @@ class WaveVisualizationPainter extends CustomPainter {
       final frequency = 0.05 + (i * 0.02);
       final phase = (animationValue * 2 * math.pi) + (i * math.pi / 3);
 
+      // STT 활성화 시 진폭 증가
+      final adjustedAmplitude = isVoiceInputActive 
+          ? amplitude * 1.5 
+          : amplitude;
+
+      // TTS 재생 시 진폭 감소
+      final finalAmplitude = isTtsPlaying 
+          ? adjustedAmplitude * 0.7 
+          : adjustedAmplitude;
+
       for (double x = 0; x <= size.width; x += 2) {
         final y = centerY + 
-            math.sin((x * frequency) + phase) * amplitude *
+            math.sin((x * frequency) + phase) * finalAmplitude *
             (1 - (i / waveCount) * 0.3);
 
         if (x == 0) {
@@ -773,11 +794,37 @@ class WaveVisualizationPainter extends CustomPainter {
         }
       }
 
-      paint.color = Colors.blue.withOpacity(0.8 - (i * 0.15));
+      // 상태별 색상 조정
+      Color waveColor;
+      double opacity;
+      
+      if (isTtsPlaying) {
+        waveColor = Colors.grey;
+        opacity = 0.6 - (i * 0.1);
+      } else if (isVoiceInputActive) {
+        waveColor = Colors.blue;
+        opacity = 0.9 - (i * 0.15);
+      } else {
+        waveColor = Colors.blue;
+        opacity = 0.8 - (i * 0.15);
+      }
+
+      final paint = Paint()
+        ..color = waveColor.withOpacity(opacity)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = isVoiceInputActive ? 4.0 : 3.0; // STT 활성화 시 선 굵기 증가
+
       canvas.drawPath(path, paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    if (oldDelegate is WaveVisualizationPainter) {
+      return oldDelegate.animationValue != animationValue ||
+             oldDelegate.isVoiceInputActive != isVoiceInputActive ||
+             oldDelegate.isTtsPlaying != isTtsPlaying;
+    }
+    return true;
+  }
 }

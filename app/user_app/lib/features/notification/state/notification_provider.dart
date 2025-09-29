@@ -12,6 +12,7 @@ class NotificationProvider extends ChangeNotifier {
   List<NotificationMessage> _messages = [];
   bool _isLoading = false;
   String? _errorMessage;
+  Set<String> _readMessageIds = {}; // 읽은 메시지 ID 추적
 
   // Getters
   bool get isConnected => _isConnected;
@@ -19,6 +20,13 @@ class NotificationProvider extends ChangeNotifier {
   List<NotificationMessage> get messages => List.unmodifiable(_messages);
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  
+  // 읽지 않은 메시지 개수
+  int get unreadCount => _messages.where((msg) => !_readMessageIds.contains(msg.id)).length;
+  
+  // 읽지 않은 메시지 목록
+  List<NotificationMessage> get unreadMessages => 
+      _messages.where((msg) => !_readMessageIds.contains(msg.id)).toList();
 
   // 알림 서비스 스트림 구독
   StreamSubscription<NotificationMessage>? _notificationSubscription;
@@ -136,15 +144,29 @@ class NotificationProvider extends ChangeNotifier {
     // NotificationProvider는 상태 관리만 담당
   }
 
+  // 메시지 읽음 처리
+  void markAsRead(String messageId) {
+    _readMessageIds.add(messageId);
+    notifyListeners();
+  }
+
+  // 모든 메시지 읽음 처리
+  void markAllAsRead() {
+    _readMessageIds.addAll(_messages.map((msg) => msg.id));
+    notifyListeners();
+  }
+
   // 메시지 삭제
   void removeMessage(String messageId) {
     _messages.removeWhere((msg) => msg.id == messageId);
+    _readMessageIds.remove(messageId); // 읽음 상태도 제거
     notifyListeners();
   }
 
   // 모든 메시지 삭제
   void clearMessages() {
     _messages.clear();
+    _readMessageIds.clear();
     notifyListeners();
   }
 

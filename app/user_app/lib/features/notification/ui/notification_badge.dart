@@ -16,7 +16,7 @@ class NotificationBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<NotificationProvider>(
       builder: (context, notificationProvider, _) {
-        final unreadCount = notificationProvider.messages.length;
+        final unreadCount = notificationProvider.unreadCount;
         
         return GestureDetector(
           onTap: onTap,
