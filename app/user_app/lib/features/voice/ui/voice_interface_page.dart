@@ -240,7 +240,7 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
 
     try {
       // AI 응답 요청
-      final response = await _openAiService.getChatCompletion(text);
+      final response = await _openAiService.chat(text);
       
       if (response != null && response.isNotEmpty) {
         // AI 응답을 메시지에 추가
