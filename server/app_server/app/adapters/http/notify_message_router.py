@@ -13,6 +13,7 @@ from app.application.use_cases.notify_message_use_cases import (
     CreateNotifyMessageUseCase,
     GetNotifyMessageUseCase,
     ListNotifyMessagesUseCase,
+    ListNotifyMessagesBySenderUseCase,
     UpdateNotifyMessageUseCase,
     DeleteNotifyMessageUseCase,
 )
@@ -52,6 +53,21 @@ async def list_messages(
 ):
     use_case = ListNotifyMessagesUseCase(repo)
     return await use_case.execute(skip=skip, limit=limit, kind=kind, severity=severity)
+
+
+@router.get("/by-sender/{sender_id}", response_model=List[NotifyMessageResponse])
+async def list_messages_by_sender(
+    sender_id: str,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    repo: NotifyMessageRepositoryImpl = Depends(get_repository),
+):
+    """
+    특정 sender ID로 전송된 메시지들을 조회합니다.
+    data 필드의 sender 값이 일치하는 메시지들을 반환합니다.
+    """
+    use_case = ListNotifyMessagesBySenderUseCase(repo)
+    return await use_case.execute(sender_id=sender_id, skip=skip, limit=limit)
 
 
 @router.get("/{message_id}", response_model=NotifyMessageResponse)

@@ -48,6 +48,12 @@
 
 8. **WebSocket 기반 실시간 알림 시스템 구현 (2025-09-24)**
    - Hexagonal Architecture 기반 알림 시스템 설계 및 구현
+
+9. **Sender ID 기준 메시지 조회 API 구현 (2025-09-29)**
+   - JSONB 필드에서 sender 값을 효율적으로 조회하는 API 추가
+   - Repository, Use Case, HTTP Adapter 레이어에 기능 구현
+   - 페이지네이션 및 정렬 기능 포함
+   - 상세한 API 문서화 완료
    - PostgreSQL 알림 스키마 구축 (notify_message, notify_delivery, notify_device)
    - WebSocket 연결 관리 및 실시간 메시지 전송
    - 백그라운드 디스패처를 통한 비동기 알림 처리

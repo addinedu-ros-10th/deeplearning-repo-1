@@ -1,7 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import select, insert, update, delete, text
 from app.domain.entities.notify_message import NotifyMessage
 from app.domain.ports.notify_message_repository import NotifyMessageRepository
 from app.infrastructure.db.models.notify_models import NotifyMessage as NotifyMessageModel
@@ -29,6 +29,14 @@ class NotifyMessageRepositoryImpl(NotifyMessageRepository):
             stmt = stmt.where(NotifyMessageModel.kind == kind)
         if severity:
             stmt = stmt.where(NotifyMessageModel.severity == severity)
+        res = await self.session.execute(stmt)
+        return [self._to_entity(m) for m in res.scalars().all()]
+
+    async def list_by_sender(self, *, sender_id: str, skip: int = 0, limit: int = 100) -> List[NotifyMessage]:
+        # JSONB 필드에서 sender 값을 조회하는 쿼리
+        stmt = select(NotifyMessageModel).where(
+            text("data->>'sender' = :sender_id")
+        ).params(sender_id=sender_id).offset(skip).limit(limit).order_by(NotifyMessageModel.created_at.desc())
         res = await self.session.execute(stmt)
         return [self._to_entity(m) for m in res.scalars().all()]
 

@@ -32,6 +32,14 @@ class ListNotifyMessagesUseCase:
         return await self.repo.list(skip=skip, limit=limit, kind=kind, severity=severity)
 
 
+class ListNotifyMessagesBySenderUseCase:
+    def __init__(self, repo: NotifyMessageRepository):
+        self.repo = repo
+
+    async def execute(self, *, sender_id: str, skip: int = 0, limit: int = 100):
+        return await self.repo.list_by_sender(sender_id=sender_id, skip=skip, limit=limit)
+
+
 class UpdateNotifyMessageUseCase:
     def __init__(self, repo: NotifyMessageRepository):
         self.repo = repo
