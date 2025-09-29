@@ -36,6 +36,7 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
   bool _isTtsPlaying = false;
   Timer? _buttonHoldTimer;
   Timer? _voiceProcessingTimer;
+  bool _isDialogShowing = false; // 다이얼로그 표시 상태 추적
   
   final SpeechToText _speechToText = SpeechToText();
   final OpenAiService _openAiService = OpenAiService();
@@ -101,6 +102,9 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initNotifications();
     });
+    
+    // 알림 수신 리스너 설정
+    _setupNotificationListener();
   }
 
   void _initNotifications() {
@@ -110,8 +114,28 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
     }
   }
 
+  void _setupNotificationListener() {
+    // NotificationProvider의 메시지 변경을 감지
+    context.read<NotificationProvider>().addListener(() {
+      final notificationProvider = context.read<NotificationProvider>();
+      if (notificationProvider.messages.isNotEmpty && !_isDialogShowing) {
+        final latestMessage = notificationProvider.messages.first;
+        print('새 알림 수신: ${latestMessage.title}');
+        _showNotificationDialog(latestMessage);
+      }
+    });
+  }
+
   // 알림 다이얼로그 표시
   void _showNotificationDialog(NotificationMessage message) {
+    if (_isDialogShowing) {
+      print('다이얼로그가 이미 표시 중입니다.');
+      return;
+    }
+    
+    _isDialogShowing = true;
+    print('다이얼로그 표시 시작: ${message.title}');
+    
     // 메시지를 읽음 처리
     context.read<NotificationProvider>().markAsRead(message.id);
     
@@ -119,21 +143,33 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
       context: context,
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
-        return NotificationDialog(
-          message: message,
-          onClose: () {
-            print('닫기 버튼 클릭됨');
-            Navigator.of(dialogContext).pop();
+        return WillPopScope(
+          onWillPop: () async {
+            print('다이얼로그 닫기 (뒤로가기)');
+            _isDialogShowing = false;
+            return true;
           },
-          onViewDetails: () {
-            print('상세보기 버튼 클릭됨');
-            Navigator.of(dialogContext).pop();
-            // 알림 목록 페이지로 이동
-            context.push('/notifications');
-          },
+          child: NotificationDialog(
+            message: message,
+            onClose: () {
+              print('닫기 버튼 클릭됨');
+              _isDialogShowing = false;
+              Navigator.of(dialogContext).pop();
+            },
+            onViewDetails: () {
+              print('상세보기 버튼 클릭됨');
+              _isDialogShowing = false;
+              Navigator.of(dialogContext).pop();
+              // 알림 목록 페이지로 이동
+              context.push('/notifications');
+            },
+          ),
         );
       },
-    );
+    ).then((_) {
+      print('다이얼로그 닫힘 완료');
+      _isDialogShowing = false;
+    });
   }
 
   void _initSpeech() async {
@@ -150,6 +186,14 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
     _scrollController.dispose();
     _buttonHoldTimer?.cancel();
     _voiceProcessingTimer?.cancel();
+    
+    // NotificationProvider 리스너 제거
+    try {
+      context.read<NotificationProvider>().removeListener(() {});
+    } catch (e) {
+      print('리스너 제거 중 오류: $e');
+    }
+    
     super.dispose();
   }
 
@@ -322,15 +366,6 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
   Widget build(BuildContext context) {
     return Consumer<NotificationProvider>(
       builder: (context, notificationProvider, child) {
-        // 새 알림이 있으면 다이얼로그 표시
-        if (notificationProvider.messages.isNotEmpty) {
-          final latestMessage = notificationProvider.messages.first;
-          // 다이얼로그가 이미 표시되었는지 확인하는 로직 추가 필요
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _showNotificationDialog(latestMessage);
-          });
-        }
-        
         return Scaffold(
           backgroundColor: Colors.black,
           body: GestureDetector(
