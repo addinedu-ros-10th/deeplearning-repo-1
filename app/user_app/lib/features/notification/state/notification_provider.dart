@@ -115,7 +115,10 @@ class NotificationProvider extends ChangeNotifier {
   // 메시지 목록 로드
   Future<void> _loadMessages() async {
     try {
-      final messages = await _notificationService.getMessages();
+      // 현재 사용자 ID가 있으면 사용자별 메시지 조회
+      final messages = await _notificationService.getMessages(
+        userId: _currentUserId,
+      );
       _messages = messages;
       notifyListeners();
     } catch (e) {

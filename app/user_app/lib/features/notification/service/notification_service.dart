@@ -155,12 +155,13 @@ class NotificationService {
     }
   }
 
-  // 메시지 목록 조회
+  // 메시지 목록 조회 (사용자별)
   Future<List<NotificationMessage>> getMessages({
     int skip = 0,
     int limit = 100,
     String? kind,
     String? severity,
+    String? userId, // 사용자 ID 추가
   }) async {
     try {
       // 알림 시스템이 비활성화된 경우
@@ -169,6 +170,18 @@ class NotificationService {
         return [];
       }
 
+      // 사용자 ID가 제공된 경우 by-sender API 사용
+      if (userId != null && userId.isNotEmpty) {
+        return await _getMessagesBySender(
+          userId: userId,
+          skip: skip,
+          limit: limit,
+          kind: kind,
+          severity: severity,
+        );
+      }
+
+      // 기본 메시지 조회 API
       final queryParams = <String, dynamic>{
         'skip': skip,
         'limit': limit,
@@ -191,6 +204,42 @@ class NotificationService {
       }
     } catch (e) {
       print('메시지 조회 오류: $e');
+      return [];
+    }
+  }
+
+  // 사용자별 메시지 조회 (by-sender API)
+  Future<List<NotificationMessage>> _getMessagesBySender({
+    required String userId,
+    int skip = 0,
+    int limit = 100,
+    String? kind,
+    String? severity,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'skip': skip,
+        'limit': limit,
+      };
+      
+      if (kind != null) queryParams['kind'] = kind;
+      if (severity != null) queryParams['severity'] = severity;
+
+      final response = await _dio.get(
+        '${_getApiUrl()}/api/v1/notify/messages/by-sender/$userId',
+        queryParameters: queryParams,
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data;
+        print('사용자별 메시지 조회 성공: ${data.length}개 메시지');
+        return data.map((json) => NotificationMessage.fromJson(json)).toList();
+      } else {
+        print('사용자별 메시지 조회 실패: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      print('사용자별 메시지 조회 오류: $e');
       return [];
     }
   }

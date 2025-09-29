@@ -123,7 +123,10 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
   }
 
   void _onVoiceButtonPress() {
-    if (_isTtsPlaying) return; // TTS 재생 중에는 음성 입력 비활성화
+    if (_isTtsPlaying) {
+      print('TTS 재생 중 - 음성 입력 비활성화');
+      return; // TTS 재생 중에는 음성 입력 비활성화
+    }
     
     if (_isVoiceInputActive) {
       _stopListening();
@@ -133,7 +136,10 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
   }
 
   void _startListening() async {
-    if (!_speechEnabled || _isTtsPlaying) return;
+    if (!_speechEnabled || _isTtsPlaying) {
+      print('STT 시작 실패 - speechEnabled: $_speechEnabled, isTtsPlaying: $_isTtsPlaying');
+      return;
+    }
     
     setState(() {
       _isVoiceInputActive = true;
@@ -272,13 +278,22 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
 
   Future<void> _playTtsResponse(String text) async {
     try {
+      // STT 완전 중지
+      if (_isVoiceInputActive) {
+        await _speechToText.stop();
+        setState(() {
+          _isVoiceInputActive = false;
+        });
+      }
+      
       setState(() {
         _isTtsPlaying = true;
       });
       
+      print('TTS 시작: $text');
       await _ttsService.speak(text);
       print('TTS Audio playing: $text');
-      
+
       // TTS 재생 완료는 콜백에서 처리됨
     } catch (e) {
       print('TTS Error: $e');
