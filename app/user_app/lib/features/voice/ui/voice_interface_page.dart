@@ -330,6 +330,7 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
   }
 
   void _onMenuButtonPress() {
+    print('메뉴 버튼 클릭됨: $_showMenuButtons -> ${!_showMenuButtons}');
     setState(() {
       _showMenuButtons = !_showMenuButtons;
     });
@@ -368,32 +369,33 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
       builder: (context, notificationProvider, child) {
         return Scaffold(
           backgroundColor: Colors.black,
-          body: GestureDetector(
-            onTap: _onBackgroundTap,
-            child: Stack(
-              children: [
+          body: Stack(
+            children: [
                 // 음파형 배경
                 _buildWaveBackground(),
                 
                 // 메인 컨텐츠
                 SafeArea(
-                  child: Column(
-                    children: [
-                      // 상단 사용자 정보
-                      _buildUserInfo(),
-                      
-                      // 중앙 음파 시각화
-                      Expanded(
-                        child: Center(
-                          child: _buildWaveVisualization(),
+                  child: GestureDetector(
+                    onTap: _onBackgroundTap,
+                    child: Column(
+                      children: [
+                        // 상단 사용자 정보
+                        _buildUserInfo(),
+                        
+                        // 중앙 음파 시각화
+                        Expanded(
+                          child: Center(
+                            child: _buildWaveVisualization(),
+                          ),
                         ),
-                      ),
-                      
-                      // 중앙 음성 입력 버튼
-                      _buildCenterVoiceButton(),
-                      
-                      const SizedBox(height: 50),
-                    ],
+                        
+                        // 중앙 음성 입력 버튼
+                        _buildCenterVoiceButton(),
+                        
+                        const SizedBox(height: 50),
+                      ],
+                    ),
                   ),
                 ),
                 
@@ -407,7 +409,6 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
                 _buildChatArea(),
               ],
             ),
-          ),
         );
       },
     );
@@ -548,37 +549,41 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
     return Positioned(
       bottom: 30,
       right: 30,
-      child: GestureDetector(
-        onTap: _onMenuButtonPress,
-        child: AnimatedBuilder(
-          animation: _buttonAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _showMenuButtons ? 1.2 : 1.0,
-              child: Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _showMenuButtons ? Colors.red[600] : Colors.blue[600],
-                  boxShadow: [
-                    BoxShadow(
-                      color: _showMenuButtons 
-                          ? Colors.red.withOpacity(0.5)
-                          : Colors.blue.withOpacity(0.5),
-                      blurRadius: 15,
-                      spreadRadius: 3,
-                    ),
-                  ],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _onMenuButtonPress,
+          borderRadius: BorderRadius.circular(30),
+          child: AnimatedBuilder(
+            animation: _buttonAnimation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _showMenuButtons ? 1.2 : 1.0,
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _showMenuButtons ? Colors.red[600] : Colors.blue[600],
+                    boxShadow: [
+                      BoxShadow(
+                        color: _showMenuButtons 
+                            ? Colors.red.withOpacity(0.5)
+                            : Colors.blue.withOpacity(0.5),
+                        blurRadius: 15,
+                        spreadRadius: 3,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    _showMenuButtons ? Icons.close : Icons.menu,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
-                child: Icon(
-                  _showMenuButtons ? Icons.close : Icons.menu,
-                  color: Colors.white,
-                  size: 28,
-                ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -631,39 +636,43 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
   }
 
   Widget _buildMenuOptionButton(String label, IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: () {
-        print('메뉴 옵션 버튼 터치됨: $label');
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.grey[900],
-          borderRadius: BorderRadius.circular(25),
-          border: Border.all(color: Colors.grey[700]!),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          print('메뉴 옵션 버튼 터치됨: $label');
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(25),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.circular(25),
+            border: Border.all(color: Colors.grey[700]!),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
