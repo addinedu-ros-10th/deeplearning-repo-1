@@ -460,54 +460,48 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
   }
 
   Widget _buildCenterVoiceButton() {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      child: Center(
-        child: GestureDetector(
-          onTap: _isTtsPlaying ? null : _onVoiceButtonPress, // TTS 재생 중에는 터치 비활성화
-          child: AnimatedBuilder(
-            animation: _buttonAnimation,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _isVoiceInputActive ? 1.3 : 1.0,
-                child: Container(
-                  width: 150, // 120에서 150으로 확대
-                  height: 150, // 120에서 150으로 확대
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _isTtsPlaying 
-                        ? Colors.grey[600] // TTS 재생 중에는 회색
-                        : _isVoiceInputActive 
-                            ? Colors.blue.withOpacity(0.3) // STT 활성화 시 반투명
-                            : Colors.blue[600],
-                    boxShadow: [
-                      BoxShadow(
-                        color: _isTtsPlaying 
-                            ? Colors.grey.withOpacity(0.3)
-                            : Colors.blue.withOpacity(0.5),
-                        blurRadius: 25, // 20에서 25로 증가
-                        spreadRadius: 8, // 5에서 8로 증가
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    _isTtsPlaying 
-                        ? Icons.volume_up // TTS 재생 중에는 스피커 아이콘
-                        : _isVoiceInputActive 
-                            ? Icons.mic 
-                            : Icons.mic_none,
-                    color: _isTtsPlaying 
-                        ? Colors.grey[300] // TTS 재생 중에는 연한 회색
-                        : Colors.white,
-                    size: 50, // 40에서 50으로 확대
-                  ),
+    return Center(
+      child: GestureDetector(
+        onTap: _isTtsPlaying ? null : _onVoiceButtonPress, // TTS 재생 중에는 터치 비활성화
+        child: AnimatedBuilder(
+          animation: _buttonAnimation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _isVoiceInputActive ? 1.3 : 1.0,
+              child: Container(
+                width: 150, // 120에서 150으로 확대
+                height: 150, // 120에서 150으로 확대
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _isTtsPlaying 
+                      ? Colors.grey[600] // TTS 재생 중에는 회색
+                      : _isVoiceInputActive 
+                          ? Colors.blue.withOpacity(0.3) // STT 활성화 시 반투명
+                          : Colors.blue[600],
+                  boxShadow: [
+                    BoxShadow(
+                      color: _isTtsPlaying 
+                          ? Colors.grey.withOpacity(0.3)
+                          : Colors.blue.withOpacity(0.5),
+                      blurRadius: 25, // 20에서 25로 증가
+                      spreadRadius: 8, // 5에서 8로 증가
+                    ),
+                  ],
                 ),
-              );
-            },
-          ),
+                child: Icon(
+                  _isTtsPlaying 
+                      ? Icons.volume_up // TTS 재생 중에는 스피커 아이콘
+                      : _isVoiceInputActive 
+                          ? Icons.mic 
+                          : Icons.mic_none,
+                  color: _isTtsPlaying 
+                      ? Colors.grey[300] // TTS 재생 중에는 연한 회색
+                      : Colors.white,
+                  size: 50, // 40에서 50으로 확대
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
