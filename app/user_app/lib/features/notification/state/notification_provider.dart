@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/notification_models.dart';
 import '../service/notification_service.dart';
+import '../ui/notification_dialog.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final NotificationService _notificationService = NotificationService();
@@ -130,6 +131,40 @@ class NotificationProvider extends ChangeNotifier {
   void _addMessage(NotificationMessage message) {
     _messages.insert(0, message); // 최신 메시지를 맨 위에 추가
     notifyListeners();
+    
+    // 새 알림이 수신되면 다이얼로그 표시
+    _showNotificationDialog(message);
+  }
+
+  // 알림 다이얼로그 표시
+  void _showNotificationDialog(NotificationMessage message) {
+    // 현재 컨텍스트가 있는지 확인
+    final context = _getCurrentContext();
+    if (context != null) {
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (BuildContext context) {
+          return NotificationDialog(
+            message: message,
+            onClose: () {
+              Navigator.of(context).pop();
+            },
+            onViewDetails: () {
+              Navigator.of(context).pop();
+              // 알림 목록 페이지로 이동
+              Navigator.of(context).pushNamed('/notifications');
+            },
+          );
+        },
+      );
+    }
+  }
+
+  // 현재 컨텍스트 가져오기 (글로벌 키 사용)
+  BuildContext? _getCurrentContext() {
+    // 글로벌 네비게이션 키를 통해 현재 컨텍스트 가져오기
+    return navigatorKey.currentContext;
   }
 
   // 메시지 삭제
