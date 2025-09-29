@@ -118,14 +118,16 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return NotificationDialog(
           message: message,
           onClose: () {
-            Navigator.of(context).pop();
+            print('닫기 버튼 클릭됨');
+            Navigator.of(dialogContext).pop();
           },
           onViewDetails: () {
-            Navigator.of(context).pop();
+            print('상세보기 버튼 클릭됨');
+            Navigator.of(dialogContext).pop();
             // 알림 목록 페이지로 이동
             context.push('/notifications');
           },

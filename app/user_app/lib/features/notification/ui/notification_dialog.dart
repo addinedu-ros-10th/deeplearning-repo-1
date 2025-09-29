@@ -15,88 +15,69 @@ class NotificationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
+    return AlertDialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      elevation: 8,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        constraints: const BoxConstraints(maxWidth: 400),
-        padding: const EdgeInsets.all(24),
+      title: Row(
+        children: [
+          // 알림 아이콘
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _getSeverityColor(message.severity).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              _getKindIcon(message.kind),
+              color: _getSeverityColor(message.severity),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          // 제목
+          Expanded(
+            child: Text(
+              message.title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 헤더
-            Row(
-              children: [
-                // 알림 아이콘
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: _getSeverityColor(message.severity).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Icon(
-                    _getKindIcon(message.kind),
-                    color: _getSeverityColor(message.severity),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // 제목과 시간
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        message.title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatDateTime(message.createdAt),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // 닫기 버튼
-                IconButton(
-                  onPressed: onClose,
-                  icon: const Icon(Icons.close, color: Colors.grey),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
+            // 시간
+            Text(
+              _formatDateTime(message.createdAt),
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
             ),
             const SizedBox(height: 16),
             
             // 메시지 내용
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey[200]!),
               ),
               child: Text(
                 message.body,
                 style: const TextStyle(
                   fontSize: 14,
-                  color: Colors.black87,
                   height: 1.4,
                 ),
               ),
@@ -107,10 +88,10 @@ class NotificationDialog extends StatelessWidget {
               const SizedBox(height: 12),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: Colors.blue[200]!),
                 ),
                 child: Column(
@@ -119,7 +100,7 @@ class NotificationDialog extends StatelessWidget {
                     const Text(
                       '추가 정보',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
                         color: Colors.blue,
                       ),
@@ -128,52 +109,30 @@ class NotificationDialog extends StatelessWidget {
                     Text(
                       _formatMetadata(message.metadata!),
                       style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black87,
+                        fontSize: 11,
                       ),
                     ),
                   ],
                 ),
               ),
             ],
-            
-            const SizedBox(height: 20),
-            
-            // 버튼들
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onClose,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('닫기'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: onViewDetails,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _getSeverityColor(message.severity),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('상세보기'),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),
+      actions: [
+        TextButton(
+          onPressed: onClose,
+          child: const Text('닫기'),
+        ),
+        ElevatedButton(
+          onPressed: onViewDetails,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _getSeverityColor(message.severity),
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('상세보기'),
+        ),
+      ],
     );
   }
 
