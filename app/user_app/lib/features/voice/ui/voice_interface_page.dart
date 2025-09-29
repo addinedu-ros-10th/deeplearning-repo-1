@@ -12,6 +12,8 @@ import '../service/flutter_tts_service.dart';
 import 'tts_settings_page.dart';
 import '../../notification/state/notification_provider.dart';
 import '../../notification/ui/notification_badge.dart';
+import '../../notification/ui/notification_dialog.dart';
+import '../../notification/models/notification_models.dart';
 
 class VoiceInterfacePage extends StatefulWidget {
   const VoiceInterfacePage({super.key});
@@ -105,6 +107,27 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
     if (authProvider.isLoggedIn && authProvider.userId != null) {
       context.read<NotificationProvider>().connect(authProvider.userId!);
     }
+  }
+
+  // 알림 다이얼로그 표시
+  void _showNotificationDialog(NotificationMessage message) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return NotificationDialog(
+          message: message,
+          onClose: () {
+            Navigator.of(context).pop();
+          },
+          onViewDetails: () {
+            Navigator.of(context).pop();
+            // 알림 목록 페이지로 이동
+            context.push('/notifications');
+          },
+        );
+      },
+    );
   }
 
   void _initSpeech() async {
@@ -320,7 +343,18 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Consumer<NotificationProvider>(
+      builder: (context, notificationProvider, child) {
+        // 새 알림이 있으면 다이얼로그 표시
+        if (notificationProvider.messages.isNotEmpty) {
+          final latestMessage = notificationProvider.messages.first;
+          // 다이얼로그가 이미 표시되었는지 확인하는 로직 추가 필요
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _showNotificationDialog(latestMessage);
+          });
+        }
+        
+        return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
         onTap: _onBackgroundTap,
@@ -743,6 +777,8 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
           ),
         ],
       ),
+    );
+      },
     );
   }
 }
