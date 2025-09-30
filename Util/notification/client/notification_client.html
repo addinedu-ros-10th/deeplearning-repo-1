@@ -580,9 +580,30 @@
         
         // 화면에 알림 표시
         function showNotification(notification) {
+            log(`🔔 알림 표시: ${JSON.stringify(notification)}`, 'success');
+            
             const notificationArea = document.getElementById('notification-area');
             const notificationEl = document.createElement('div');
-            notificationEl.className = `notification ${notification.kind || 'info'}`;
+            
+            // severity에 따른 스타일 클래스 결정
+            const severityClass = notification.severity || 'green';
+            const kindClass = notification.kind || 'info';
+            
+            notificationEl.className = `notification ${kindClass} severity-${severityClass}`;
+            
+            // severity에 따른 색상 설정
+            const severityColors = {
+                'green': '#10b981',
+                'blue': '#3b82f6', 
+                'yellow': '#f59e0b',
+                'orange': '#f97316',
+                'red': '#ef4444'
+            };
+            
+            const borderColor = severityColors[severityClass] || '#6b7280';
+            
+            notificationEl.style.borderLeftColor = borderColor;
+            
             notificationEl.innerHTML = `
                 <div class="notification-header">
                     <div class="notification-title">${notification.title || '알림'}</div>
@@ -590,26 +611,36 @@
                 </div>
                 <div>${notification.body || ''}</div>
                 <small style="color: #6b7280; margin-top: 8px; display: block;">
-                    종류: ${notification.kind || 'info'} • 
+                    종류: ${kindClass} • 심각도: ${severityClass} • 
                     ${new Date().toLocaleTimeString()}
                 </small>
             `;
             
             notificationArea.appendChild(notificationEl);
             
-            // 5초 후 자동 제거
+            // severity에 따른 자동 제거 시간 조정
+            const autoRemoveTime = severityClass === 'red' ? 10000 : 5000; // red는 10초, 나머지는 5초
+            
             setTimeout(() => {
                 if (notificationEl.parentElement) {
                     notificationEl.remove();
                 }
-            }, 5000);
+            }, autoRemoveTime);
             
             // 브라우저 알림도 표시 (권한이 있는 경우)
             if (Notification.permission === 'granted') {
-                new Notification(notification.title || '알림', {
-                    body: notification.body,
-                    icon: '/favicon.ico'
+                const browserNotification = new Notification(notification.title || '알림', {
+                    body: `${notification.body}\n종류: ${kindClass} • 심각도: ${severityClass}`,
+                    icon: '/favicon.ico',
+                    tag: notification.id || 'notification-' + Date.now()
                 });
+                
+                // red severity는 브라우저 알림도 더 오래 유지
+                if (severityClass === 'red') {
+                    setTimeout(() => {
+                        browserNotification.close();
+                    }, 10000);
+                }
             }
         }
         

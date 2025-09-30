@@ -370,18 +370,65 @@ class NotificationClient {
      * @param {Object} notification - 알림 데이터
      */
     handleNotificationMessage(notification) {
-        if (notification.kind) {
-            const handlers = this.messageHandlers.get(notification.kind);
-            if (handlers) {
-                handlers.forEach(handler => {
-                    try {
-                        handler(notification);
-                    } catch (error) {
-                        this.log('❌ 알림 핸들러 오류:', error.message);
-                    }
-                });
-            }
+        this.log('📨 알림 메시지 처리 시작:', notification);
+        
+        // kind 필드 추출 (다양한 위치에서 찾기)
+        let kind = notification.kind;
+        
+        // 1. 직접 필드에서 찾기
+        if (!kind) {
+            kind = notification.type || notification.category;
         }
+        
+        // 2. data/metadata 객체 안에서 찾기
+        if (!kind && notification.data) {
+            kind = notification.data.kind || notification.data.type || notification.data.category;
+        }
+        
+        // 3. 기본값 설정
+        if (!kind) {
+            kind = 'info';
+            this.log('⚠️ kind 필드를 찾을 수 없어 기본값(info) 사용');
+        }
+        
+        // severity 필드 추출
+        let severity = notification.severity;
+        if (!severity && notification.data) {
+            severity = notification.data.severity || notification.data.level || notification.data.priority;
+        }
+        if (!severity) {
+            severity = 'green';
+            this.log('⚠️ severity 필드를 찾을 수 없어 기본값(green) 사용');
+        }
+        
+        this.log(`📋 파싱된 필드: kind=${kind}, severity=${severity}`);
+        
+        // 알림 객체에 파싱된 값 추가
+        const processedNotification = {
+            ...notification,
+            kind: kind,
+            severity: severity,
+            title: notification.title || notification.subject || notification.heading || '알림',
+            body: notification.body || notification.message || notification.content || notification.text || '',
+            timestamp: notification.timestamp || notification.created_at || new Date().toISOString()
+        };
+        
+        this.log('📋 처리된 알림:', processedNotification);
+        
+        // kind별 핸들러 실행
+        const handlers = this.messageHandlers.get(kind);
+        if (handlers) {
+            handlers.forEach(handler => {
+                try {
+                    handler(processedNotification);
+                } catch (error) {
+                    this.log('❌ 알림 핸들러 오류:', error.message);
+                }
+            });
+        }
+        
+        // 일반 메시지 핸들러도 실행
+        this.emit('message', processedNotification);
     }
     
     /**

@@ -19,7 +19,16 @@ class CreateMessageAndQueueUseCase:
         # 2) recipients × channel 큐잉 (endpoint는 이후 렌더링 단계에서 사용)
         queued = 0
         for user_id in req.recipients:
-            payload = {"title": req.title, "body": req.body, "data": req.data}
+            # kind와 severity 필드를 포함한 완전한 payload 생성
+            payload = {
+                "title": req.title, 
+                "body": req.body, 
+                "data": req.data,
+                "kind": req.kind,
+                "severity": req.severity,
+                "message_id": str(message.message_id),
+                "created_at": message.created_at.isoformat() if message.created_at else None
+            }
             await self.deliv_repo.create({
                 "message_id": message.message_id,
                 "user_id": user_id,

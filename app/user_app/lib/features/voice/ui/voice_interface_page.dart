@@ -112,11 +112,16 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
     if (authProvider.isLoggedIn && authProvider.userId != null) {
       context.read<NotificationProvider>().connect(authProvider.userId!);
     }
+    
+    // NotificationProvider에 컨텍스트 설정 (긴급 알림용)
+    context.read<NotificationProvider>().setContext(context);
   }
 
   void _setupNotificationListener() {
     // NotificationProvider의 메시지 변경을 감지
     context.read<NotificationProvider>().addListener(() {
+      if (!mounted) return; // 위젯이 마운트되지 않은 경우 리턴
+      
       final notificationProvider = context.read<NotificationProvider>();
       if (notificationProvider.messages.isNotEmpty && !_isDialogShowing) {
         final latestMessage = notificationProvider.messages.first;
@@ -329,6 +334,24 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
     }
   }
 
+  // severity에 따른 색상 반환
+  Color _getSeverityColor(String severity) {
+    switch (severity) {
+      case 'green':
+        return Colors.green;
+      case 'blue':
+        return Colors.blue;
+      case 'yellow':
+        return Colors.yellow[600]!;
+      case 'orange':
+        return Colors.orange[600]!;
+      case 'red':
+        return Colors.red[600]!;
+      default:
+        return Colors.grey;
+    }
+  }
+
   void _onMenuButtonPress() {
     print('메뉴 버튼 클릭됨: $_showMenuButtons -> ${!_showMenuButtons}');
     setState(() {
@@ -376,37 +399,37 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
                 
                 // 메인 컨텐츠
                 SafeArea(
-                  child: GestureDetector(
-                    onTap: _onBackgroundTap,
-                    child: Column(
-                      children: [
-                        // 상단 사용자 정보
-                        _buildUserInfo(),
-                        
-                        // 중앙 음파 시각화
-                        Expanded(
+                  child: Column(
+                    children: [
+                      // 상단 사용자 정보
+                      _buildUserInfo(),
+                      
+                      // 중앙 음파 시각화
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: _onBackgroundTap,
                           child: Center(
                             child: _buildWaveVisualization(),
                           ),
                         ),
-                        
-                        // 중앙 음성 입력 버튼
-                        _buildCenterVoiceButton(),
-                        
-                        const SizedBox(height: 50),
-                      ],
-                    ),
+                      ),
+                      
+                      const SizedBox(height: 50),
+                    ],
                   ),
                 ),
                 
-                // 메뉴 버튼
-                _buildMenuButton(),
+                // 중앙 음성 입력 버튼 (Stack 중앙에 위치)
+                _buildCenterVoiceButton(),
                 
                 // 메뉴 오버레이
                 _buildMenuOverlay(),
                 
                 // 채팅 영역
                 _buildChatArea(),
+                
+                // 메뉴 버튼 (Stack 맨 앞으로 이동하여 클릭 이벤트 최우선 확보)
+                _buildMenuButton(),
               ],
             ),
         );
@@ -432,21 +455,58 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // 알림 버튼
-          NotificationBadge(
-            onTap: () {
-              context.push('/notifications');
-            },
-            child: IconButton(
-              onPressed: () {
-                context.push('/notifications');
-              },
-              icon: const Icon(
-                Icons.notifications,
-                color: Colors.white,
-                size: 28,
+          // 알림 상태 표시 및 버튼
+          Row(
+            children: [
+              // 알림 상태 표시
+              Consumer<NotificationProvider>(
+                builder: (context, notificationProvider, child) {
+                  final lastMessage = notificationProvider.messages.isNotEmpty 
+                      ? notificationProvider.messages.first 
+                      : null;
+                  
+                  if (lastMessage != null) {
+                    return Container(
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _getSeverityColor(lastMessage.severity),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        '${lastMessage.kind}:${lastMessage.severity}',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
               ),
-            ),
+              // 알림 버튼
+              NotificationBadge(
+                onTap: () {
+                  context.push('/notifications');
+                },
+                child: IconButton(
+                  onPressed: () {
+                    context.push('/notifications');
+                  },
+                  icon: const Icon(
+                    Icons.notifications,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              ),
+            ],
           ),
           // TTS 설정 버튼
           IconButton(
@@ -499,86 +559,69 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
 
   Widget _buildCenterVoiceButton() {
     return Center(
-      child: GestureDetector(
-        onTap: _isTtsPlaying ? null : _onVoiceButtonPress, // TTS 재생 중에는 터치 비활성화
-        child: AnimatedBuilder(
-          animation: _buttonAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _isVoiceInputActive ? 1.3 : 1.0,
-              child: Container(
-                width: 150, // 120에서 150으로 확대
-                height: 150, // 120에서 150으로 확대
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _isTtsPlaying 
-                      ? Colors.grey[600] // TTS 재생 중에는 회색
-                      : _isVoiceInputActive 
-                          ? Colors.blue.withOpacity(0.3) // STT 활성화 시 반투명
-                          : Colors.blue[600],
-                  boxShadow: [
-                    BoxShadow(
-                      color: _isTtsPlaying 
-                          ? Colors.grey.withOpacity(0.3)
-                          : Colors.blue.withOpacity(0.5),
-                      blurRadius: 25, // 20에서 25로 증가
-                      spreadRadius: 8, // 5에서 8로 증가
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  _isTtsPlaying 
-                      ? Icons.volume_up // TTS 재생 중에는 스피커 아이콘
-                      : _isVoiceInputActive 
-                          ? Icons.mic 
-                          : Icons.mic_none,
-                  color: _isTtsPlaying 
-                      ? Colors.grey[300] // TTS 재생 중에는 연한 회색
-                      : Colors.white,
-                  size: 50, // 40에서 50으로 확대
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuButton() {
-    return Positioned(
-      bottom: 30,
-      right: 30,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: _onMenuButtonPress,
-          borderRadius: BorderRadius.circular(30),
+          onTap: _isTtsPlaying ? null : _onVoiceButtonPress,
+          borderRadius: BorderRadius.circular(100),
           child: AnimatedBuilder(
             animation: _buttonAnimation,
             builder: (context, child) {
+              // 심장 박동 애니메이션 (STT 활성화 시)
+              final heartbeatScale = _isVoiceInputActive 
+                  ? 1.0 + 0.1 * math.sin(_buttonAnimation.value * 2 * math.pi)
+                  : 1.0;
+              
               return Transform.scale(
-                scale: _showMenuButtons ? 1.2 : 1.0,
+                scale: _isVoiceInputActive ? 1.8 * heartbeatScale : 1.0,
                 child: Container(
-                  width: 60,
-                  height: 60,
+                  width: 200,
+                  height: 200,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: _showMenuButtons ? Colors.red[600] : Colors.blue[600],
+                    color: _isTtsPlaying 
+                        ? Colors.grey[400] 
+                        : _isVoiceInputActive 
+                            ? Colors.white.withOpacity(0.2) // 더 투명하게 하여 마이크 아이콘 명확히 보이게
+                            : Colors.white.withOpacity(0.6), // 기본 상태에서도 더 투명하게
+                    border: Border.all(
+                      color: _isTtsPlaying 
+                          ? Colors.grey[600]!
+                          : _isVoiceInputActive 
+                              ? Colors.white.withOpacity(0.8)
+                              : Colors.white.withOpacity(0.6),
+                      width: 3,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: _showMenuButtons 
-                            ? Colors.red.withOpacity(0.5)
-                            : Colors.blue.withOpacity(0.5),
-                        blurRadius: 15,
-                        spreadRadius: 3,
+                        color: _isTtsPlaying 
+                            ? Colors.grey.withOpacity(0.3)
+                            : _isVoiceInputActive 
+                                ? Colors.white.withOpacity(0.4)
+                                : Colors.white.withOpacity(0.2),
+                        blurRadius: _isVoiceInputActive ? 30 : 20,
+                        spreadRadius: _isVoiceInputActive ? 10 : 5,
                       ),
+                      if (_isVoiceInputActive)
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.1),
+                          blurRadius: 50,
+                          spreadRadius: 20,
+                        ),
                     ],
                   ),
                   child: Icon(
-                    _showMenuButtons ? Icons.close : Icons.menu,
-                    color: Colors.white,
-                    size: 28,
+                    _isTtsPlaying 
+                        ? Icons.volume_up
+                        : _isVoiceInputActive 
+                            ? Icons.mic
+                            : Icons.mic_none,
+                    color: _isTtsPlaying 
+                        ? Colors.grey[600]
+                        : _isVoiceInputActive 
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.9), // 아이콘을 더 명확하게 보이게
+                    size: _isVoiceInputActive ? 60 : 50,
                   ),
                 ),
               );
@@ -589,18 +632,78 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
     );
   }
 
+  Widget _buildMenuButton() {
+    return Positioned(
+      bottom: 40,
+      right: 40,
+      child: GestureDetector(
+        onTap: () {
+          print('메뉴 버튼 클릭됨: $_showMenuButtons -> ${!_showMenuButtons}');
+          _onMenuButtonPress();
+        },
+        child: AnimatedBuilder(
+          animation: _buttonAnimation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _showMenuButtons ? 1.05 : 1.0,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _showMenuButtons 
+                      ? Colors.red[500] 
+                      : Colors.white.withOpacity(0.95),
+                  border: Border.all(
+                    color: _showMenuButtons 
+                        ? Colors.red[300]!
+                        : Colors.white.withOpacity(0.8),
+                    width: 3,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _showMenuButtons 
+                          ? Colors.red.withOpacity(0.5)
+                          : Colors.black.withOpacity(0.3),
+                      blurRadius: 25,
+                      spreadRadius: 8,
+                      offset: const Offset(0, 8),
+                    ),
+                    if (!_showMenuButtons)
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.2),
+                        blurRadius: 40,
+                        spreadRadius: 15,
+                      ),
+                  ],
+                ),
+                child: Icon(
+                  _showMenuButtons ? Icons.close_rounded : Icons.apps_rounded,
+                  color: _showMenuButtons 
+                      ? Colors.white
+                      : Colors.grey[800],
+                  size: 36,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildMenuOverlay() {
     if (!_showMenuButtons) return const SizedBox.shrink();
     
     return Positioned(
-      bottom: 120,
-      right: 30,
+      bottom: 130,
+      right: 40,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildMenuOptionButton(
-            '나의 소지품 찾기',
-            Icons.search,
+            '소지품 찾기',
+            Icons.search_rounded,
             () {
               setState(() {
                 _showMenuButtons = false;
@@ -608,10 +711,10 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
               context.push('/items');
             },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           _buildMenuOptionButton(
             '메시지',
-            Icons.message,
+            Icons.chat_bubble_rounded,
             () {
               setState(() {
                 _showMenuButtons = false;
@@ -619,15 +722,29 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
               context.push('/messages');
             },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           _buildMenuOptionButton(
-            '긴급/응급 신고',
-            Icons.emergency,
+            '긴급 신고',
+            Icons.emergency_rounded,
             () {
               setState(() {
                 _showMenuButtons = false;
               });
               context.push('/emergency');
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildMenuOptionButton(
+            '긴급 알림 테스트',
+            Icons.warning_rounded,
+            () {
+              print('긴급 알림 테스트 버튼 클릭됨');
+              setState(() {
+                _showMenuButtons = false;
+              });
+              // 테스트용 긴급 알림 생성
+              print('테스트용 긴급 알림 생성 시도');
+              context.read<NotificationProvider>().createTestEmergencyNotification();
             },
           ),
         ],
@@ -636,43 +753,57 @@ class _VoiceInterfacePageState extends State<VoiceInterfacePage>
   }
 
   Widget _buildMenuOptionButton(String label, IconData icon, VoidCallback onTap) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          print('메뉴 옵션 버튼 터치됨: $label');
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(25),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: BoxDecoration(
-            color: Colors.grey[900],
-            borderRadius: BorderRadius.circular(25),
-            border: Border.all(color: Colors.grey[700]!),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
+    return GestureDetector(
+      onTap: () {
+        print('=== 메뉴 옵션 버튼 터치됨 ===');
+        print('버튼 라벨: $label');
+        print('아이콘: $icon');
+        print('콜백 함수: $onTap');
+        print('========================');
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.95),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.3),
+            width: 1,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: Colors.white, size: 20),
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              spreadRadius: 2,
+              offset: const Offset(0, 8),
+            ),
+            BoxShadow(
+              color: Colors.white.withOpacity(0.1),
+              blurRadius: 30,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon, 
+              color: Colors.grey[800], 
+              size: 24,
+            ),
+            const SizedBox(width: 16),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey[800],
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

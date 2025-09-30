@@ -29,7 +29,7 @@ void main() {
       final List<int> wavBytes = <int>[82, 73, 70, 70]; // 'RIFF' header start
       adapter.onPost(
         '/api/tts',
-        (server) => server.reply(200, wavBytes, headers: <String, dynamic>{'content-type': 'audio/wav'}),
+        (server) => server.reply(200, wavBytes, headers: <String, List<String>>{'content-type': ['audio/wav']}),
         queryParameters: <String, dynamic>{'voice': 'ko_KR-pml_high'},
         data: <String, dynamic>{'text': '안녕하세요'},
       );
@@ -55,7 +55,7 @@ void main() {
       final List<int> wavBytes = <int>[82, 73, 70, 70];
       adapter.onGet(
         '/api/tts',
-        (server) => server.reply(200, wavBytes, headers: <String, dynamic>{'content-type': 'audio/wav'}),
+        (server) => server.reply(200, wavBytes, headers: <String, List<String>>{'content-type': ['audio/wav']}),
         queryParameters: <String, dynamic>{'voice': 'ko_KR-pml_high', 'text': '테스트'},
       );
 
@@ -72,7 +72,7 @@ void main() {
       final List<int> wavBytes = <int>[82, 73, 70, 70];
       adapter.onGet(
         '/api/tts',
-        (server) => server.reply(200, wavBytes, headers: <String, dynamic>{'content-type': 'audio/wav'}),
+        (server) => server.reply(200, wavBytes, headers: <String, List<String>>{'content-type': ['audio/wav']}),
         queryParameters: <String, dynamic>{'voice': 'ko_KR-pml_high', 'text': 'Hello'},
       );
 
@@ -95,7 +95,7 @@ void main() {
       final List<int> wavBytes = <int>[82, 73, 70, 70];
       adapter.onPost(
         '/api/tts',
-        (server) => server.reply(200, wavBytes, headers: <String, dynamic>{'content-type': 'audio/wav'}),
+        (server) => server.reply(200, wavBytes, headers: <String, List<String>>{'content-type': ['audio/wav']}),
         queryParameters: <String, dynamic>{'voice': 'ko_KR-pml_high'},
         data: <String, dynamic>{'text': 'Hello'},
       );

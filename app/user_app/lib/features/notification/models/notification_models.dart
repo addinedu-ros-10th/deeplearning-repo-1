@@ -24,20 +24,130 @@ class NotificationMessage {
   });
 
   factory NotificationMessage.fromJson(Map<String, dynamic> json) {
+    print('=== NotificationMessage.fromJson 파싱 시작 ===');
+    print('입력 JSON: $json');
+    
+    // ID 파싱 (다양한 필드명 지원)
+    final id = _extractString(json, ['message_id', 'id', 'notification_id']) ?? 
+                DateTime.now().millisecondsSinceEpoch.toString();
+    
+    // kind 파싱 (다양한 위치에서 찾기)
+    final kind = _extractKind(json);
+    
+    // severity 파싱 (다양한 위치에서 찾기)
+    final severity = _extractSeverity(json);
+    
+    // title 파싱
+    final title = _extractString(json, ['title', 'subject', 'heading']) ?? '알림';
+    
+    // body 파싱
+    final body = _extractString(json, ['body', 'message', 'content', 'text']) ?? '';
+    
+    // createdAt 파싱
+    final createdAt = _extractDateTime(json, ['created_at', 'timestamp', 'created']) ?? 
+                      DateTime.now();
+    
+    // updatedAt 파싱
+    final updatedAt = _extractDateTime(json, ['updated_at', 'modified_at']);
+    
+    // metadata 파싱
+    final metadata = json['data'] ?? json['metadata'] ?? json['payload'];
+    
+    print('파싱 결과:');
+    print('  id: $id');
+    print('  kind: $kind');
+    print('  severity: $severity');
+    print('  title: $title');
+    print('  body: $body');
+    print('  createdAt: $createdAt');
+    print('  updatedAt: $updatedAt');
+    print('  metadata: $metadata');
+    print('==========================================');
+    
     return NotificationMessage(
-      id: json['message_id'] ?? '',
-      kind: json['kind'] ?? '',
-      severity: json['severity'] ?? '',
-      title: json['title'] ?? '',
-      body: json['body'] ?? '',
+      id: id,
+      kind: kind,
+      severity: severity,
+      title: title,
+      body: body,
       recipients: [], // 서버에서는 recipients가 별도로 관리됨
       channel: 'websocket', // 기본값
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at']) 
-          : null,
-      metadata: json['data'],
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      metadata: metadata,
     );
+  }
+  
+  // kind 값 추출 (다양한 위치에서 찾기)
+  static String _extractKind(Map<String, dynamic> json) {
+    // 1. 직접 필드에서 찾기
+    final directKind = _extractString(json, ['kind', 'type', 'category']);
+    if (directKind != null && directKind.isNotEmpty) {
+      return directKind;
+    }
+    
+    // 2. data/metadata 객체 안에서 찾기
+    final data = json['data'] ?? json['metadata'] ?? json['payload'];
+    if (data is Map<String, dynamic>) {
+      final dataKind = _extractString(data, ['kind', 'type', 'category']);
+      if (dataKind != null && dataKind.isNotEmpty) {
+        return dataKind;
+      }
+    }
+    
+    // 3. 기본값 (정보 알림으로 가정)
+    return 'info';
+  }
+  
+  // severity 값 추출 (다양한 위치에서 찾기)
+  static String _extractSeverity(Map<String, dynamic> json) {
+    // 1. 직접 필드에서 찾기
+    final directSeverity = _extractString(json, ['severity', 'level', 'priority']);
+    if (directSeverity != null && directSeverity.isNotEmpty) {
+      return directSeverity;
+    }
+    
+    // 2. data/metadata 객체 안에서 찾기
+    final data = json['data'] ?? json['metadata'] ?? json['payload'];
+    if (data is Map<String, dynamic>) {
+      final dataSeverity = _extractString(data, ['severity', 'level', 'priority']);
+      if (dataSeverity != null && dataSeverity.isNotEmpty) {
+        return dataSeverity;
+      }
+    }
+    
+    // 3. 기본값 (정상 수준으로 가정)
+    return 'green';
+  }
+  
+  // 문자열 값 추출 (여러 필드명 시도)
+  static String? _extractString(Map<String, dynamic> json, List<String> fieldNames) {
+    for (final fieldName in fieldNames) {
+      final value = json[fieldName];
+      if (value != null && value.toString().isNotEmpty) {
+        return value.toString();
+      }
+    }
+    return null;
+  }
+  
+  // DateTime 값 추출
+  static DateTime? _extractDateTime(Map<String, dynamic> json, List<String> fieldNames) {
+    for (final fieldName in fieldNames) {
+      final value = json[fieldName];
+      if (value != null) {
+        try {
+          if (value is String) {
+            return DateTime.parse(value);
+          } else if (value is int) {
+            return DateTime.fromMillisecondsSinceEpoch(value);
+          }
+        } catch (e) {
+          print('DateTime 파싱 오류 ($fieldName): $e');
+        }
+      }
+    }
+    return null;
   }
 
   Map<String, dynamic> toJson() {

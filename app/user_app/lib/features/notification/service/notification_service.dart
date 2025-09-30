@@ -65,12 +65,39 @@ class NotificationService {
       _channel!.stream.listen(
         (data) {
           try {
+            print('=== WebSocket 수신 원본 데이터 ===');
+            print('Raw Data Type: ${data.runtimeType}');
+            print('Raw Data: $data');
+            print('===============================');
+            
             final jsonData = jsonDecode(data);
+            print('=== WebSocket 수신 JSON 데이터 ===');
+            print('JSON Type: ${jsonData.runtimeType}');
+            print('JSON Data: $jsonData');
+            print('JSON Keys: ${jsonData.keys.toList()}');
+            print('===============================');
+            
+            // 모든 필드 값 확인
+            jsonData.forEach((key, value) {
+              print('$key: $value (${value.runtimeType})');
+            });
+            
+            print('=== 필드별 상세 분석 ===');
+            print('kind: ${jsonData['kind']} (${jsonData['kind'].runtimeType})');
+            print('severity: ${jsonData['severity']} (${jsonData['severity'].runtimeType})');
+            print('title: ${jsonData['title']} (${jsonData['title'].runtimeType})');
+            print('body: ${jsonData['body']} (${jsonData['body'].runtimeType})');
+            print('message_id: ${jsonData['message_id']} (${jsonData['message_id'].runtimeType})');
+            print('created_at: ${jsonData['created_at']} (${jsonData['created_at'].runtimeType})');
+            print('data: ${jsonData['data']} (${jsonData['data'].runtimeType})');
+            print('========================');
+            
             final notification = NotificationMessage.fromJson(jsonData);
             _notificationController.add(notification);
             print('알림 수신: ${notification.title}');
           } catch (e) {
             print('알림 파싱 오류: $e');
+            print('Stack trace: ${StackTrace.current}');
           }
         },
         onError: (error) {

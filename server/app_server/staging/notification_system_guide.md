@@ -1,7 +1,34 @@
 # 알림 기능 개발 종합 가이드 (Hexagonal Architecture 기반)
-**버전:** 2025-09-23 14:56  
+**버전:** 2025-09-30 16:30  
 **대상:** FastAPI + PostgreSQL (async SQLAlchemy) + WebSocket  
 **핵심 테이블:** `notify.notify_message`, `notify.notify_delivery`, `notify.notify_device`
+
+## 🚀 최신 업데이트 (2025-09-30)
+
+### ✅ 해결된 문제들
+1. **긴급 알림 다이얼로그 BuildContext 오류 해결**
+   - `EmergencyNotificationService.showEmergencyAlert`에 `context.mounted` 검사 추가
+   - `NotificationProvider`에 context 유효성 검사 강화
+
+2. **서버 WebSocket payload 개선**
+   - `notify_queue_use_cases.py`에서 `kind`, `severity`, `message_id`, `created_at` 필드 추가
+   - WebSocket 전송 시 완전한 알림 데이터 포함
+
+3. **Flutter 앱 알림 파싱 로직 개선**
+   - `NotificationMessage.fromJson`에서 중첩된 `data` 객체에서 `kind`/`severity` 추출
+   - 기본값을 `info`/`green`으로 변경 (더 안전한 기본값)
+
+4. **HTML 클라이언트 개선**
+   - `notification_client.js`에서 `kind`/`severity` 파싱 로직 강화
+   - `notification_client.html`에서 severity별 색상 구분 및 자동 제거 시간 조정
+
+### 🔧 수정된 파일들
+- `server/app_server/app/application/use_cases/notify_queue_use_cases.py`
+- `app/user_app/lib/features/notification/services/emergency_notification_service.dart`
+- `app/user_app/lib/features/notification/state/notification_provider.dart`
+- `app/user_app/lib/features/notification/models/notification_models.dart`
+- `Util/notification/client/notification_client.js`
+- `Util/notification/client/notification_client.html`
 
 ---
 ## 0. 문서 목적

@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/notification_models.dart';
+import '../models/emergency_notification.dart';
 import '../service/notification_service.dart';
+import '../services/emergency_notification_service.dart';
 import '../ui/notification_dialog.dart';
 
 class NotificationProvider extends ChangeNotifier {
@@ -10,14 +12,17 @@ class NotificationProvider extends ChangeNotifier {
   bool _isConnected = false;
   String? _currentUserId;
   List<NotificationMessage> _messages = [];
+  List<EmergencyNotification> _emergencyNotifications = [];
   bool _isLoading = false;
   String? _errorMessage;
   Set<String> _readMessageIds = {}; // 읽은 메시지 ID 추적
+  BuildContext? _context; // 긴급 알림 표시를 위한 컨텍스트
 
   // Getters
   bool get isConnected => _isConnected;
   String? get currentUserId => _currentUserId;
   List<NotificationMessage> get messages => List.unmodifiable(_messages);
+  List<EmergencyNotification> get emergencyNotifications => List.unmodifiable(_emergencyNotifications);
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   
@@ -27,6 +32,12 @@ class NotificationProvider extends ChangeNotifier {
   // 읽지 않은 메시지 목록
   List<NotificationMessage> get unreadMessages => 
       _messages.where((msg) => !_readMessageIds.contains(msg.id)).toList();
+  
+  // 긴급 알림 개수
+  int get emergencyCount => _emergencyNotifications.length;
+  
+  // 위기 단계 5단계 알림 개수
+  int get emergencyLevel5Count => _emergencyNotifications.where((n) => n.isEmergencyLevel5).length;
 
   // 알림 서비스 스트림 구독
   StreamSubscription<NotificationMessage>? _notificationSubscription;
@@ -137,11 +148,50 @@ class NotificationProvider extends ChangeNotifier {
 
   // 새 메시지 추가
   void _addMessage(NotificationMessage message) {
+    print('=== 새 알림 도착 ===');
+    print('알림 ID: ${message.id}');
+    print('제목: ${message.title}');
+    print('내용: ${message.body}');
+    print('kind: ${message.kind}');
+    print('severity: ${message.severity}');
+    print('생성 시간: ${message.createdAt}');
+    print('메타데이터: ${message.metadata}');
+    print('==================');
+    
     _messages.insert(0, message); // 최신 메시지를 맨 위에 추가
     notifyListeners();
     
-    // 새 알림이 수신되면 다이얼로그 표시는 UI에서 처리
-    // NotificationProvider는 상태 관리만 담당
+    // 긴급 알림인지 확인하고 처리
+    _checkAndHandleEmergencyNotification(message);
+  }
+
+  // 긴급 알림 확인 및 처리
+  void _checkAndHandleEmergencyNotification(NotificationMessage message) {
+    // NotificationMessage를 EmergencyNotification으로 변환
+    final emergencyNotification = EmergencyNotification(
+      id: message.id,
+      kind: message.kind,
+      severity: message.severity,
+      title: message.title,
+      message: message.body,
+      timestamp: message.createdAt,
+      isRead: _readMessageIds.contains(message.id),
+      metadata: message.metadata,
+    );
+    
+    print('긴급 알림 확인: kind=${message.kind}, severity=${message.severity}, isEmergency=${emergencyNotification.isEmergency}, isEmergencyLevel5=${emergencyNotification.isEmergencyLevel5}');
+
+    // 긴급 알림인지 확인
+    if (emergencyNotification.isEmergency) {
+      _emergencyNotifications.insert(0, emergencyNotification);
+      
+      // 위기 단계 5단계 알림이면 즉시 다이얼로그 표시
+      if (emergencyNotification.isEmergencyLevel5 && _context != null) {
+        EmergencyNotificationService.showEmergencyAlert(_context!, emergencyNotification);
+      }
+      
+      notifyListeners();
+    }
   }
 
   // 메시지 읽음 처리
@@ -186,6 +236,64 @@ class NotificationProvider extends ChangeNotifier {
   void _clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  // 컨텍스트 설정 (긴급 알림 표시용)
+  void setContext(BuildContext context) {
+    _context = context;
+  }
+
+  // 긴급 알림 추가 (테스트용)
+  void addEmergencyNotification(EmergencyNotification notification) {
+    print('긴급 알림 추가: ${notification.title}');
+    print('kind: ${notification.kind}, severity: ${notification.severity}');
+    print('isEmergency: ${notification.isEmergency}, isEmergencyLevel5: ${notification.isEmergencyLevel5}');
+    print('context is null: ${_context == null}');
+    
+    _emergencyNotifications.insert(0, notification);
+    notifyListeners();
+    
+    // 위기 단계 5단계 알림이면 즉시 다이얼로그 표시
+    if (notification.isEmergencyLevel5 && _context != null) {
+      print('위기 5단계 다이얼로그 표시 시도');
+      
+      // context 유효성 검사
+      if (_context!.mounted) {
+        EmergencyNotificationService.showEmergencyAlert(_context!, notification);
+      } else {
+        print('context가 mounted되지 않음. 긴급 알림을 대기열에 추가합니다.');
+        // TODO: 긴급 알림을 대기열에 추가하여 나중에 표시
+      }
+    } else {
+      print('다이얼로그 표시 조건 미충족: isEmergencyLevel5=${notification.isEmergencyLevel5}, context=${_context != null}');
+    }
+  }
+
+  // 긴급 알림 제거
+  void removeEmergencyNotification(String notificationId) {
+    _emergencyNotifications.removeWhere((n) => n.id == notificationId);
+    notifyListeners();
+  }
+
+  // 모든 긴급 알림 제거
+  void clearEmergencyNotifications() {
+    _emergencyNotifications.clear();
+    notifyListeners();
+  }
+
+  // 긴급 알림 읽음 처리
+  void markEmergencyAsRead(String notificationId) {
+    final index = _emergencyNotifications.indexWhere((n) => n.id == notificationId);
+    if (index != -1) {
+      _emergencyNotifications[index] = _emergencyNotifications[index].copyWith(isRead: true);
+      notifyListeners();
+    }
+  }
+
+  // 테스트용 긴급 알림 생성
+  void createTestEmergencyNotification() {
+    final testNotification = EmergencyNotificationService.createTestEmergencyNotification();
+    addEmergencyNotification(testNotification);
   }
 
   @override
