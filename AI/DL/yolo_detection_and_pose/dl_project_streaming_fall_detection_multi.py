@@ -78,7 +78,7 @@ for video_idx in video_file_list:
 
     fourcc = cv2.VideoWriter_fourcc(*"XVID")
 
-    save_file = video_save_path + "/" + str(start_number) + video_type
+    save_file = video_save_path + "/" + str(start_number) + video_idx.split(".")[0] + "_edit" + video_type
 
     cap_out = cv2.VideoWriter(save_file, fourcc, fps, (1280, 960))
 
