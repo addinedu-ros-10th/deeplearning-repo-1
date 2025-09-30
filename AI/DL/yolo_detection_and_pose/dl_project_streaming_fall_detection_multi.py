@@ -155,26 +155,26 @@ for video_idx in video_file_list:
             #         message_sent = False
 
             """----------------------------- 낙상 감지 알림 모듈 ----------------------------------"""
-            if fall_detection_count == (fps * 2):
-                sender = NotificationSender('ws://ec2-43-201-96-23.ap-northeast-2.compute.amazonaws.com')
-                result_fall_detection = sender.send_notification(
-                    recipients=['10fa45f2-f375-41c9-a62a-093efcd01bd3'],
-                    title='낙상 감지',
-                    body='응급 상황',
-                    kind='system',
-                    severity='red',
-                    data={
-                        'sender': '10fa45f2-f375-41c9-a62a-093efcd01bd3',
-                        'disk_usage': 85,
-                        'server': 'python-test-server',
-                        'timestamp': datetime.now().isoformat(),
-                        'kind': 'system',
-                        'severity': 'red',
-                        'webcam_id': 'webcam53'
-                    },
-                    # scheduled_at: "2025-09-29T12:14:51.614Z", # 지금 저희 상황에선 필요없는 필드입니다.
-                    # expires_at: "2025-09-29T12:14:51.614Z"    # 지금 저희 상황에선 필요없는 필드입니다.
-                )
+            # if fall_detection_count == (fps * 2):
+            #     sender = NotificationSender('ws://ec2-43-201-96-23.ap-northeast-2.compute.amazonaws.com')
+            #     result_fall_detection = sender.send_notification(
+            #         recipients=['10fa45f2-f375-41c9-a62a-093efcd01bd3'],
+            #         title='낙상 감지',
+            #         body='응급 상황',
+            #         kind='system',
+            #         severity='red',
+            #         data={
+            #             'sender': '10fa45f2-f375-41c9-a62a-093efcd01bd3',
+            #             'disk_usage': 85,
+            #             'server': 'python-test-server',
+            #             'timestamp': datetime.now().isoformat(),
+            #             'kind': 'system',
+            #             'severity': 'red',
+            #             'webcam_id': 'webcam53'
+            #         },
+            #         # scheduled_at: "2025-09-29T12:14:51.614Z", # 지금 저희 상황에선 필요없는 필드입니다.
+            #         # expires_at: "2025-09-29T12:14:51.614Z"    # 지금 저희 상황에선 필요없는 필드입니다.
+            #     )
                 # print("낙상 감지")
                 
             """---------------------------------------------------------------------------------"""
