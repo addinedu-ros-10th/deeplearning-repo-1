@@ -4,7 +4,7 @@ import os
 
 """----------------------------- 비디오 폴더 경로 입력 --------------------------------"""
 
-video_folder_path = "/home/dj/Videos/Screencasts"
+video_folder_path = "/home/dj/Videos/Screencasts/test/items_videos"
 video_file_list = os.listdir(video_folder_path)
 video_type = ".mp4"
 
@@ -29,7 +29,7 @@ for video_idx in video_file_list:
 
     fourcc = cv2.VideoWriter_fourcc(*"XVID")
 
-    save_file = video_save_path + "/" + str(start_number) + video_idx.split(".")[0] + "_edit" + video_type
+    save_file = video_save_path + "/" + video_idx.split(".")[0] + "_edit" + video_type
 
     cap_out = cv2.VideoWriter(save_file, fourcc, fps, (1280, 960))
 
@@ -40,13 +40,15 @@ for video_idx in video_file_list:
         if not ret:
             break
 
+        frame = cv2.resize(frame, (1280, 960))
+
         result = model(frame, classes = [0, 80, 81, 82, 83, 84], conf = 0.45)
 
         image = list(result)[0].plot()
 
-        cv2.imshow("test", image)
+        cap_out.write(image)
 
-        cap_out.write(frame)
+        cv2.imshow("test", image)
 
         key_input = cv2.waitKey(1)
 
