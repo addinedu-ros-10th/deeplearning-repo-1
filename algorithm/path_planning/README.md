@@ -2,58 +2,88 @@
 
 ## 📋 개요
 
-이 브랜치는 **노인공경 (R.F.T.E) 스마트 케어 하우스 프로젝트**의 자율 주행 시스템을 위한 A* 경로 계획 알고리즘 구현을 담당합니다. YOLO 객체 탐지와 점유 격자 맵(Occupancy Grid Map)을 통합하여 실시간 경로 계획을 수행합니다.
+이 브랜치는 **노인공경 (R.F.T.E) 스마트 케어 하우스 프로젝트**의 **실내 이동 경로 계획 데모**를 다룹니다.
+멀티카메라 캘리브레이션 결과 (내/외부 파라미터, homography)를 이용해 **YOLO 객체 탐지 결과를 바닥 평면(world floor plane)으로 투영**하고,
+이를 **2D 점유 격자 맵(OGM)**으로 만들어 **A\* 알고리즘**으로 **방문(시작) -> 화장실문(목표)** 경로를 계산합니다.
+
+---
 
 ## 🎯 주요 기능
 
-### 🤖 AI 기반 환경 인식
-- **YOLO 객체 탐지**: 실시간 장애물 탐지 및 분류
-- **점유 격자 맵**: 2D/3D 공간 정보 표현
-- **동적 장애물 처리**: 움직이는 객체에 대한 실시간 대응
+### 🤖 환경 인식
+- **YOLO 객체 탐지 (YOLOv10)** : 각 카메라 프레임에서 객체의 바운딩박스 감지
+- **바닥 평면 투영(Homography 변환)** : 멀티카메라 캘리브레이션으로 얻은 homography 행렬을 이용해, 감지된 **bbox 하단 중심점**을 **월드 좌표(mm)**로 변환
+- **2D Occupancy Grid Map (OGM) 생성** : 변환된 월드 좌표를 **격자 공간(Grid)**에 투영하여 다음과 같이 표현함
+  - 장애물 (Occupied) = 1
+  - 빈공간 (Free) = 0
+  - "내부 `matrix`는 True = Free, False = Obstacle을 사용하지만, 저장/시각화 시 OGM 스펙(Free=0, Occ=1)으로 변환한다."
 
-### 🗺️ 경로 계획 알고리즘
-- **A* 알고리즘**: 최적 경로 탐색
-- **다중 목표점 지원**: 여러 목적지를 고려한 경로 계획
-- **실시간 재계획**: 환경 변화에 따른 동적 경로 수정
+### 🗺️ 경로 계획 (Path Planning)
+- **A \* 알고리즘**: 2D Occupancy Grid Map 상에서 **최단 경로 탐색** 수행
+- **고정 출/도착점** :
+  - **시작(Start)** : 방문 (거실 문 근처)
+  - **목표(Goal)**  : 화장실 문
+- **결과 시각화** :
+  - 경로 탐색 결과를 `PathPlanning_outputs/TCxx_outputs/` 경로에 **이미지(final_astar_result.png)** 로 저장
+  - CSV/JSON 파일(`final_path.csv`,`final_path.json`)로도 경로 좌표 기록
 
-### 📷 다중 카메라 시스템
-- **카메라 보정**: 내부/외부 파라미터 자동 보정
-- **다중 뷰 통합**: 여러 카메라 정보 융합
-- **Bundle Adjustment**: 정밀한 포즈 추정
 
 ## 🏗️ 아키텍처
 
 ```
-algorithm/path_planning/
-├── core/                           # 핵심 알고리즘
-│   ├── a_star.py                   # A* 경로 계획 알고리즘
-│   ├── occupancy_grid.py          # 점유 격자 맵 처리
-│   └── path_optimizer.py          # 경로 최적화
-├── vision/                         # 컴퓨터 비전 모듈
-│   ├── yolo_detector.py           # YOLO 객체 탐지
-│   ├── camera_calibration.py      # 카메라 보정
-│   └── spatial_mapper.py          # 공간 매핑
-├── integration/                    # 통합 모듈
-│   ├── yolo_ogm_integration.py    # YOLO-OGM 통합
-│   ├── multi_camera_fusion.py     # 다중 카메라 융합
-│   └── real_time_planner.py       # 실시간 계획기
-├── utils/                          # 유틸리티
-│   ├── geometry_utils.py          # 기하학적 계산
-│   ├── visualization.py           # 시각화 도구
-│   └── config.py                  # 설정 관리
-├── tests/                          # 테스트
-│   ├── test_a_star.py             # A* 알고리즘 테스트
-│   ├── test_yolo_integration.py   # YOLO 통합 테스트
-│   └── test_multi_camera.py      # 다중 카메라 테스트
-├── examples/                       # 예제
-│   ├── basic_path_planning.py     # 기본 경로 계획 예제
-│   ├── yolo_integration_demo.py   # YOLO 통합 데모
-│   └── multi_camera_demo.py      # 다중 카메라 데모
-└── docs/                          # 문서
-    ├── algorithm_design.md         # 알고리즘 설계 문서
-    ├── api_reference.md           # API 참조
-    └── integration_guide.md       # 통합 가이드
+algorithm/path_planning/multi_camera_calibration
+├── calibration_retouch/           # intrinsics와 extrinsics 해상도 차이 보정
+│   ├── intrinsics_rescaled.py     # intrinsics와 extrinsics의 해상도 차이를 보정하기 위한 rescale 스크립트
+│   ├── landmarks_global_01.py
+│   └── landmarks_rescaled.py
+├── frames/                        # intrinsics에 사용된 frames
+│   ├── cam51_up
+│   ├── cam52_up
+│   ├── cam53_up
+│   └── cam54_up
+├── input_files/                   # multiview_calib용 설정 파일들
+│   ├── ba_config.json
+│   ├── filenames.json
+│   ├── intrinsics_scaled.json     # intrinsics.json에 calibration_retouch 적용한 버전
+│   ├── intrinsics.json
+│   ├── landmarks_global.json
+│   ├── landmarks_scaled.json      # landmarks.json에 calibration_retouch 적용한 버전
+│   ├── landmarks.json
+│   └── setup.json
+├── intrinsics_outputs/            # intrinsics 결과물
+│   ├── output_51_update
+│   ├── output_52_update
+│   ├── output_53_update
+│   └── output_54_update
+├── outputs/                       # extrinsics 및 bundle adjustment 결과물
+│   ├── bundle_adjustment
+│   ├── global_registration        #bundle adjustment 이후 Umeyama alignment를 통해 mm 단위 전역 정합 수행 결과
+│   └── relative_poses
+├── videos/                        # calibration용 영상 및 frame 단위 추출본
+│   ├── frames
+│   ├── 51_videos.webm
+│   ├── 52_videos.webm
+│   ├── 53_videos.webm
+│   └── 54_videos.webm
+├── landmarks_click.ipynb/        # multiview_calib의 landmark 클릭 기능을 Jupyter 환경에서 실행 가능하도록 수정한 노트북
+├── pathplanning/                           # YOLO + OGM + A* 알고리즘 핵심 코드
+│   ├── pathplanning_final.py               # 전체 파이프라인 통합 코드
+│   ├── pathplanning_final_TC01.py          # Test Case 01 적용 코드
+│   ├── pathplanning_final_TC02.py          # Test Case 02 적용 코드
+│   └── pathplanning_final_TC03.py          # Test Case 03 적용 코드
+├── PathPlanning_outputs/                   # YOLO + Homography + A* 출력 결과물
+│   ├── TC01_outputs
+│   ├── TC02_outputs
+│   └── TC03_outputs
+└── Test_frames/                            # Test Case별 입력 프레임 데이터
+    ├── TC01
+    ├── TC02
+    ├── TC03
+    └── TC04
 ```
+> **참고** : `multiview_calib` 코드는 포함하지 않으며, 별도 저장소를 통해 참조합니다. (`multi_camera_calibration/README.md`)
+
+
 
 ## 🚀 빠른 시작
 
@@ -68,171 +98,29 @@ pip install -r requirements.txt
 ```
 
 ### 2. 기본 사용법
-```python
-from algorithm.path_planning.core.a_star import AStarPlanner
-from algorithm.path_planning.vision.yolo_detector import YOLODetector
-from algorithm.path_planning.integration.real_time_planner import RealTimePlanner
-
-# YOLO 탐지기 초기화
-detector = YOLODetector(model_path="yolo11n.pt")
-
-# A* 계획기 초기화
-planner = AStarPlanner(grid_size=0.1, heuristic_weight=1.0)
-
-# 실시간 계획기 초기화
-rt_planner = RealTimePlanner(detector, planner)
-
-# 경로 계획 실행
-start = (0, 0)
-goal = (10, 10)
-path = rt_planner.plan_path(start, goal)
 ```
-
-### 3. 다중 카메라 설정
-```python
-from algorithm.path_planning.vision.camera_calibration import MultiCameraCalibrator
-
-# 다중 카메라 보정
-calibrator = MultiCameraCalibrator()
-calibrator.calibrate_cameras(camera_configs)
+python pathplanning/pathplanning_final.py
 ```
+- 이 스크립트는 **저장된 프레임**을 입력 받아, YOLO 감지 -> 바닥 평면 투영(homography) -> 2D OGM 생성 -> A* 경로 계산 -> 결과 시각화를 수행합니다.
+- 실시간(웹캠/RTSP) 처리, 동적 재계획, 다중 목표점은 현재 범위에 포함되지 않습니다.
+
+---
 
 ## 🔧 핵심 구성 요소
 
-### 1. A* 알고리즘 (`a_star.py`)
-- **휴리스틱 함수**: 유클리드 거리 기반
-- **비용 함수**: 거리 + 장애물 회피 비용
-- **동적 재계획**: 환경 변화 감지 시 자동 재계획
+### 1. A* 경로 계획
+- 입력 : 2D OGM (장애물 = 1, 빈공간 = 0), start/goal (world -> grid 변환)
+- 휴리스틱 : Octile distance (8방향 이동 고려)
+- 출력 : grid 경로 + world 좌표 경로, 시각화 이미지
 
-### 2. YOLO 통합 (`yolo_detector.py`)
-- **실시간 탐지**: 30fps 이상 처리 성능
-- **클래스 필터링**: 사람, 가구, 장애물 등 분류
-- **신뢰도 임계값**: 탐지 정확도 조절
+### 2. YOLO 감지
+- 프레임 단위 객체 감지
+- 바운딩박스 하단 중앙점을 **바닥 평면 homography**로 world 좌표로 투영
+- 클래스 필터 (사람/가구 등)는 스크립트 내 파라미터로 제어
 
-### 3. 점유 격자 맵 (`occupancy_grid.py`)
-- **해상도**: 0.1m 격자 크기
-- **확률적 업데이트**: 베이지안 필터링
-- **동적 업데이트**: 실시간 환경 변화 반영
+### 3. OGM 생성
+- world 좌표 -> 격자화 (기본 셀 크기 : 450mm)
 
-### 4. 다중 카메라 융합 (`multi_camera_fusion.py`)
-- **시점 통합**: 여러 카메라 정보 융합
-- **깊이 추정**: 스테레오 비전 기반
-- **3D 매핑**: 점유 격자 맵 3D 확장
-
-## 📊 성능 지표
-
-### 🎯 정확도
-- **경로 최적성**: 최적 경로 대비 95% 이상
-- **탐지 정확도**: YOLO mAP@0.5 > 0.8
-- **재계획 속도**: < 100ms
-
-### ⚡ 속도
-- **계획 시간**: 평균 50ms
-- **탐지 속도**: 30fps
-- **메모리 사용량**: < 2GB
-
-### 🔄 실시간성
-- **지연 시간**: < 200ms
-- **프레임 드롭**: < 5%
-- **CPU 사용률**: < 80%
-
-## 🧪 테스트
-
-### 단위 테스트
-```bash
-# A* 알고리즘 테스트
-python -m pytest tests/test_a_star.py -v
-
-# YOLO 통합 테스트
-python -m pytest tests/test_yolo_integration.py -v
-
-# 다중 카메라 테스트
-python -m pytest tests/test_multi_camera.py -v
-```
-
-### 통합 테스트
-```bash
-# 전체 시스템 테스트
-python -m pytest tests/ -v --cov=algorithm.path_planning
-```
-
-### 성능 테스트
-```bash
-# 성능 벤치마크
-python examples/performance_benchmark.py
-```
-
-## 📈 사용 예제
-
-### 1. 기본 경로 계획
-```python
-# 단순한 A* 경로 계획
-from algorithm.path_planning.core.a_star import AStarPlanner
-
-planner = AStarPlanner()
-path = planner.find_path(start=(0, 0), goal=(10, 10), obstacles=[])
-print(f"계획된 경로: {path}")
-```
-
-### 2. YOLO 통합 경로 계획
-```python
-# YOLO와 통합된 실시간 경로 계획
-from algorithm.path_planning.integration.real_time_planner import RealTimePlanner
-
-planner = RealTimePlanner()
-planner.start_planning(camera_source=0)  # 웹캠 사용
-```
-
-### 3. 다중 카메라 시스템
-```python
-# 다중 카메라 환경에서의 경로 계획
-from algorithm.path_planning.vision.multi_camera_fusion import MultiCameraFusion
-
-fusion = MultiCameraFusion(camera_configs)
-fusion.start_fusion()
-```
-
-## 🔧 설정
-
-### 환경 변수
-```bash
-# YOLO 모델 경로
-export YOLO_MODEL_PATH="models/yolo11n.pt"
-
-# 카메라 설정
-export CAMERA_WIDTH=640
-export CAMERA_HEIGHT=480
-
-# 계획 설정
-export GRID_SIZE=0.1
-export HEURISTIC_WEIGHT=1.0
-```
-
-### 설정 파일 (`config.yaml`)
-```yaml
-# A* 알고리즘 설정
-a_star:
-  grid_size: 0.1
-  heuristic_weight: 1.0
-  max_iterations: 10000
-
-# YOLO 설정
-yolo:
-  model_path: "models/yolo11n.pt"
-  confidence_threshold: 0.5
-  nms_threshold: 0.4
-
-# 카메라 설정
-cameras:
-  - id: 0
-    width: 640
-    height: 480
-    fps: 30
-  - id: 1
-    width: 640
-    height: 480
-    fps: 30
-```
 
 ## 🐛 문제 해결
 
@@ -262,6 +150,7 @@ cameras:
 
 ## 📚 참고 자료
 
+- [multiview_calib](https://github.com/cvlab-epfl/multiview_calib)
 - [A* 알고리즘 위키](https://en.wikipedia.org/wiki/A*_search_algorithm)
 - [YOLO 논문](https://arxiv.org/abs/1506.02640)
 - [점유 격자 맵](https://en.wikipedia.org/wiki/Occupancy_grid_mapping)

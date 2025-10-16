@@ -5,12 +5,12 @@
 ### ✅ 핵심 알고리즘 파일들
 
 #### 1. A* 알고리즘 구현
-- [ ] **`core/a_star.py`** - A* 경로 계획 핵심 알고리즘
+- [✅] **`core/a_star.py`** - A* 경로 계획 핵심 알고리즘
 - [ ] **`core/path_optimizer.py`** - 경로 최적화 알고리즘
 - [ ] **`core/heuristic_functions.py`** - 휴리스틱 함수 모음
 
 #### 2. 점유 격자 맵 처리
-- [ ] **`core/occupancy_grid.py`** - 점유 격자 맵 핵심 클래스
+- [✅] **`core/occupancy_grid.py`** - 점유 격자 맵 핵심 클래스
 - [ ] **`core/grid_mapper.py`** - 격자 맵 생성 및 업데이트
 - [ ] **`core/probability_mapping.py`** - 확률적 매핑 알고리즘
 
@@ -22,11 +22,11 @@
 - [ ] **`vision/obstacle_classifier.py`** - 장애물 분류기
 
 #### 4. 카메라 보정 및 처리
-- [ ] **`vision/camera_calibration.py`** - 카메라 보정
-- [ ] **`vision/intrinsics_calibration.py`** - 내부 파라미터 보정
-- [ ] **`vision/extrinsics_calibration.py`** - 외부 파라미터 보정
-- [ ] **`vision/multi_camera_calibration.py`** - 다중 카메라 보정
-- [ ] **`vision/multi_view_calibration.py`** - 다중 뷰 보정 도구
+- [✅] **`vision/camera_calibration.py`** - 카메라 보정
+- [✅] **`vision/intrinsics_calibration.py`** - 내부 파라미터 보정
+- [✅] **`vision/extrinsics_calibration.py`** - 외부 파라미터 보정
+- [✅] **`vision/multi_camera_calibration.py`** - 다중 카메라 보정
+- [✅] **`vision/multi_view_calibration.py`** - 다중 뷰 보정 도구
 
 #### 5. 공간 매핑
 - [ ] **`vision/spatial_mapper.py`** - 공간 매핑
@@ -36,19 +36,19 @@
 ### 🔗 통합 모듈
 
 #### 6. YOLO-OGM 통합
-- [ ] **`integration/yolo_ogm_integration.py`** - YOLO와 OGM 통합
-- [ ] **`integration/yolo_occupancy_grid.py`** - YOLO와 점유 격자 맵 통합
-- [ ] **`integration/ogm_processor.py`** - OGM 처리기
+- [✅] **`integration/yolo_ogm_integration.py`** - YOLO와 OGM 통합
+- [✅] **`integration/yolo_occupancy_grid.py`** - YOLO와 점유 격자 맵 통합
+- [✅] **`integration/ogm_processor.py`** - OGM 처리기
 
 #### 7. 다중 카메라 융합
-- [ ] **`integration/multi_camera_fusion.py`** - 다중 카메라 융합
-- [ ] **`integration/camera_pose_estimator.py`** - 카메라 포즈 추정
-- [ ] **`integration/bundle_adjustment.py`** - Bundle Adjustment 알고리즘
+- [✅] **`integration/multi_camera_fusion.py`** - 다중 카메라 융합
+- [✅] **`integration/camera_pose_estimator.py`** - 카메라 포즈 추정
+- [✅] **`integration/bundle_adjustment.py`** - Bundle Adjustment 알고리즘
 
 #### 8. 포즈 처리
-- [ ] **`integration/compute_relative_poses_robust.py`** - 강건한 상대 포즈 계산
-- [ ] **`integration/concatenate_relative_poses.py`** - 상대 포즈 연결
-- [ ] **`integration/global_registration.py`** - 전역 등록 알고리즘
+- [✅] **`integration/compute_relative_poses_robust.py`** - 강건한 상대 포즈 계산
+- [✅] **`integration/concatenate_relative_poses.py`** - 상대 포즈 연결
+- [✅] **`integration/global_registration.py`** - 전역 등록 알고리즘
 
 #### 9. 실시간 처리
 - [ ] **`integration/real_time_planner.py`** - 실시간 경로 계획기

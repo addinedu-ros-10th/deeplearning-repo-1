@@ -1,0 +1,6 @@
+{
+
+    "views" : [ "cam51", "cam52", "cam53", "cam54"],
+    "minimal_tree" : [["cam52", "cam53"], ["cam52", "cam54"], ["cam51", "cam52"]]
+    
+}

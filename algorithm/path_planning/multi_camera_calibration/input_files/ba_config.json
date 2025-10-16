@@ -1,0 +1,28 @@
+{
+  "each_training": 1,
+  "each_visualisation": 1,
+
+  "th_outliers_early": 0,  
+  "th_outliers": 20,    
+
+  "optimize_points": true,
+  "optimize_camera_params": true,
+
+  "bounds": false,       
+  "bounds_cp": [
+    0.3, 0.3, 0.3,
+    100, 100, 100,
+    300, 300, 300, 300,
+    0.5, 0.5, 0.1, 0.1, 0.1
+  ],
+  "bounds_pt": [1000, 1000, 1000],
+
+  "max_nfev": 300,
+  "max_nfev2": 300,
+  "ftol": 1e-08,
+  "xtol": 1e-08,
+  "loss": "soft_l1",
+  "f_scale": 5,
+
+  "output_path": "algorithm/path_planning/multi_camera_calibration/outputs/bundle_adjustment/"
+}
